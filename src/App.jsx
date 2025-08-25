@@ -18,7 +18,6 @@ import dicomImageLoader, {
   init as dicomImageLoaderInit,
 } from "@cornerstonejs/dicom-image-loader";
 import * as dicomParser from "dicom-parser";
-import "./App.css";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -275,9 +274,9 @@ function App() {
           <div
             style={{
               position: "absolute",
-              left:"0",
+              left: "0",
               color: "#ccc",
-              textAlign: "center", 
+              textAlign: "center",
             }}
           >
             图像将自动加载，或点击按钮重新加载
