@@ -18,7 +18,6 @@ export type DcmList = {
 };
 
 // 使用可靠的DICOM测试数据源
-// http://t1am3584v.hn-bkt.clouddn.com/1/000e6a9a.dcm
 export const qiniuBaseUrl = "http://t1am3584v.hn-bkt.clouddn.com/";
 
 // 模拟读取文件系统数据

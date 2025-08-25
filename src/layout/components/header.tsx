@@ -9,6 +9,8 @@ const HeaderComponents = (): React.JSX.Element => {
   const navigate = useNavigate();
 
   const isDetailPage = location.pathname.startsWith("/detail/");
+  const isAdminPage = location.pathname === "/admin";
+  const isAdmin = userInfo?.role === "admin";
 
   const handleLogout = (): void => {
     addToast({
@@ -22,8 +24,12 @@ const HeaderComponents = (): React.JSX.Element => {
     navigate(-1);
   };
 
-  const handleTest = (): void => {
-    navigate("/dicom-test");
+  const handleAdmin = (): void => {
+    navigate("/admin");
+  };
+
+  const handleHome = (): void => {
+    navigate("/list");
   };
 
   return (
@@ -32,9 +38,9 @@ const HeaderComponents = (): React.JSX.Element => {
         <div className="flex justify-between items-center h-16">
           {/* 左侧：返回按钮和应用标题 */}
           <div className="flex items-center space-x-3">
-            {isDetailPage && (
+            {(isDetailPage || isAdminPage) && (
               <button
-                onClick={handleBack}
+                onClick={isDetailPage ? handleBack : handleHome}
                 className="group flex items-center justify-center w-9 h-9 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
               >
                 <svg
@@ -43,12 +49,21 @@ const HeaderComponents = (): React.JSX.Element => {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
+                  {isDetailPage ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  )}
                 </svg>
               </button>
             )}
@@ -90,14 +105,37 @@ const HeaderComponents = (): React.JSX.Element => {
 
             {/* 操作按钮组 */}
             <div className="flex items-center space-x-2">
+              {/* 管理员专用：管理端按钮 */}
+              {isAdmin && !isAdminPage && (
+                <button
+                  onClick={handleAdmin}
+                  className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                >
+                  <svg
+                    className="w-4 h-4 transition-transform duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">管理端</span>
+                </button>
+              )}
+
               {/* 退出按钮 */}
               <button
                 onClick={handleLogout}
-                className="group relative cursor-pointer flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                className="group relative flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
               >
                 {/* 退出图标 */}
                 <svg
-                  className="w-4 h-4 transition-transform duration-200"
+                  className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
