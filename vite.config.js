@@ -7,6 +7,9 @@ import path from "path";
 
 export default defineConfig({
   assetsInclude: ["**/*.wasm"],
+  server: {
+    port: 3000,
+  },
   plugins: [
     react(),
     wasm(),
