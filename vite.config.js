@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import worker from 'vite-plugin-worker';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import path from 'path';
+
 export default defineConfig({
   assetsInclude: ['**/*.wasm'],
   plugins: [
@@ -54,6 +56,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       zlib: './src/shims/zlib.js',
     },
   },
