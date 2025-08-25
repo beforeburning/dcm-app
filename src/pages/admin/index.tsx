@@ -298,7 +298,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
 
           {/* 分页组件 */}
           {!loading && totalPages > 1 && (
-            <div className="flex justify-center items-center p-6 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-center items-center px-6 py-5 border-t border-gray-200">
               <Pagination
                 total={totalPages}
                 page={currentPage}
@@ -306,18 +306,17 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 showControls
                 size="md"
                 color="primary"
+                variant="flat"
+                radius="md"
                 classNames={{
-                  wrapper:
-                    "gap-0 overflow-visible h-8 rounded border border-divider",
-                  item: "w-8 h-8 text-small rounded-none bg-transparent",
-                  cursor:
-                    "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
+                  wrapper: "gap-4 overflow-visible h-12",
+                  item: "w-12 h-12 text-base cursor-pointer",
+                  cursor: "w-12 h-12 text-base cursor-pointer",
+                  prev: "w-12 h-12 text-base cursor-pointer",
+                  next: "w-12 h-12 text-base cursor-pointer",
+                  ellipsis: "w-12 h-12 text-base cursor-pointer",
                 }}
               />
-              <div className="ml-4 text-sm text-gray-600">
-                显示 {(currentPage - 1) * pageSize + 1} -{" "}
-                {Math.min(currentPage * pageSize, total)} 条，共 {total} 条
-              </div>
             </div>
           )}
         </div>

@@ -122,15 +122,6 @@ let mockAllUsers: AdminUser[] = [
     lastLoginTime: "2024-01-04",
   },
   {
-    userId: "admin_002",
-    userName: "副管理员",
-    email: "viceadmin@hospital.com",
-    role: "admin",
-    createTime: "2021-05-15",
-    updateTime: "2024-01-03",
-    lastLoginTime: "2024-01-03",
-  },
-  {
     userId: "student_007",
     userName: "曾硕士",
     email: "zengmaster@medical.edu",
