@@ -1,4 +1,5 @@
 import { ApiResponse } from ".";
+import type { UserRole } from "./login";
 
 export type DcmFile = {
   id: string;
@@ -15,13 +16,30 @@ export type DcmList = {
   files: DcmFile[];
   totalFiles: number;
   totalSize: number;
+  ownerId?: string; // 数据拥有者ID
+  ownerName?: string; // 数据拥有者名称
+  isPublic?: boolean; // 是否为公开数据
+  originalId?: string; // 原始数据 ID（用于复制数据）
+  category?: string; // 大分类
+  tags?: string[]; // 标签列表
 };
 
-// 使用可靠的DICOM测试数据源
-export const qiniuBaseUrl = "http://t1am3584v.hn-bkt.clouddn.com/";
+// 分页响应接口
+export interface PaginatedDcmResponse {
+  data: DcmList[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
-// 模拟读取文件系统数据
-const getDcmFolderData = (): DcmList[] => {
+// 模拟数据库
+let mockDcmData: DcmList[] = [];
+let mockStudentData: DcmList[] = []; // 学生复制的数据
+let dataIdCounter = 100; // 新数据 ID 计数器
+
+// 初始化公开数据（为所有用户可见）
+const initializePublicData = (): DcmList[] => {
   // 模拟从文件系统读取的数据
   const folderData = [
     {
@@ -507,18 +525,237 @@ const getDcmFolderData = (): DcmList[] => {
       files: folder.files,
       totalFiles: folder.files.length,
       totalSize,
+      ownerId: "system",
+      ownerName: "系统",
+      isPublic: true,
     };
   });
 };
 
-export const getDcmListRequest = async (): Promise<ApiResponse<DcmList[]>> => {
+// 初始化数据
+if (mockDcmData.length === 0) {
+  mockDcmData = initializePublicData();
+}
+
+// 使用可靠的DICOM测试数据源
+export const qiniuBaseUrl = "http://t1am3584v.hn-bkt.clouddn.com/";
+
+// 获取所有公开数据列表（所有用户可见）
+export const getDcmListRequest = async (
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ApiResponse<PaginatedDcmResponse>> => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  const dcmList = getDcmFolderData();
+  const publicData = mockDcmData.filter((item) => item.isPublic);
+  const total = publicData.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = publicData.slice(startIndex, endIndex);
 
   return {
     code: 200,
     message: "success",
-    data: dcmList,
+    data: {
+      data: paginatedData,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    },
+  };
+};
+
+// 学生复制数据到自己账户
+export const copyDcmToStudentRequest = async (
+  dcmId: string,
+  userId: string,
+  userName: string
+): Promise<ApiResponse<DcmList>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  const originalData = mockDcmData.find((item) => item.id === dcmId);
+  if (!originalData) {
+    return {
+      code: 404,
+      message: "数据不存在",
+    };
+  }
+
+  // 检查是否已经复制过
+  const existingCopy = mockStudentData.find(
+    (item) => item.originalId === dcmId && item.ownerId === userId
+  );
+  if (existingCopy) {
+    return {
+      code: 400,
+      message: "您已经复制过该数据",
+    };
+  }
+
+  const newId = (dataIdCounter++).toString();
+  const copiedData: DcmList = {
+    ...originalData,
+    id: newId,
+    name: `${originalData.name}-副本`,
+    createTime: Math.floor(Date.now() / 1000),
+    updateTime: Math.floor(Date.now() / 1000),
+    ownerId: userId,
+    ownerName: userName,
+    isPublic: false,
+    originalId: dcmId,
+  };
+
+  mockStudentData.push(copiedData);
+
+  return {
+    code: 200,
+    message: "复制成功",
+    data: copiedData,
+  };
+};
+
+// 获取学生自己的数据列表
+export const getStudentDcmListRequest = async (
+  userId: string,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ApiResponse<PaginatedDcmResponse>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  const studentData = mockStudentData.filter((item) => item.ownerId === userId);
+  const total = studentData.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = studentData.slice(startIndex, endIndex);
+
+  return {
+    code: 200,
+    message: "success",
+    data: {
+      data: paginatedData,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    },
+  };
+};
+
+// 更新学生数据名称
+export const updateStudentDcmNameRequest = async (
+  dcmId: string,
+  userId: string,
+  newName: string
+): Promise<ApiResponse<DcmList>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  const dataIndex = mockStudentData.findIndex(
+    (item) => item.id === dcmId && item.ownerId === userId
+  );
+
+  if (dataIndex === -1) {
+    return {
+      code: 404,
+      message: "数据不存在或无权限修改",
+    };
+  }
+
+  mockStudentData[dataIndex] = {
+    ...mockStudentData[dataIndex],
+    name: newName,
+    updateTime: Math.floor(Date.now() / 1000),
+  };
+
+  return {
+    code: 200,
+    message: "修改成功",
+    data: mockStudentData[dataIndex],
+  };
+};
+
+// 教师上传数据
+export const uploadDcmRequest = async (
+  name: string,
+  userId: string,
+  userName: string,
+  files: File[],
+  category?: string,
+  tags?: string[]
+): Promise<ApiResponse<DcmList>> => {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const newId = (dataIdCounter++).toString();
+  const mockFiles: DcmFile[] = files.map((file, index) => ({
+    id: `${newId}-${index + 1}`,
+    name: file.name,
+    size: file.size,
+    path: `${newId}/${file.name}`,
+  }));
+
+  const totalSize = mockFiles.reduce((sum, file) => sum + file.size, 0);
+  const newData: DcmList = {
+    id: newId,
+    name,
+    createTime: Math.floor(Date.now() / 1000),
+    updateTime: Math.floor(Date.now() / 1000),
+    files: mockFiles,
+    totalFiles: mockFiles.length,
+    totalSize,
+    ownerId: userId,
+    ownerName: userName,
+    isPublic: true, // 教师上传的数据为公开数据
+    category,
+    tags: tags || [],
+  };
+
+  mockDcmData.push(newData);
+
+  return {
+    code: 200,
+    message: "上传成功",
+    data: newData,
+  };
+};
+
+// 教师/管理员搜索所有学生数据
+export const searchAllStudentDataRequest = async (
+  searchTerm: string = "",
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ApiResponse<PaginatedDcmResponse>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  let filteredData = mockStudentData;
+
+  // 按搜索词过滤
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filteredData = filteredData.filter(
+      (item) =>
+        item.name.toLowerCase().includes(term) ||
+        item.ownerName?.toLowerCase().includes(term) ||
+        item.ownerId?.toLowerCase().includes(term)
+    );
+  }
+
+  const total = filteredData.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  return {
+    code: 200,
+    message: "success",
+    data: {
+      data: paginatedData,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    },
   };
 };

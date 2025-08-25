@@ -10,7 +10,10 @@ const HeaderComponents = (): React.JSX.Element => {
 
   const isDetailPage = location.pathname.startsWith("/detail/");
   const isAdminPage = location.pathname === "/admin";
+  const isUploadPage = location.pathname === "/upload";
   const isAdmin = userInfo?.role === "admin";
+  const isTeacher = userInfo?.role === "teacher";
+  const canUpload = isAdmin || isTeacher;
 
   const handleLogout = (): void => {
     addToast({
@@ -28,6 +31,10 @@ const HeaderComponents = (): React.JSX.Element => {
     navigate("/admin");
   };
 
+  const handleUpload = (): void => {
+    navigate("/upload");
+  };
+
   const handleHome = (): void => {
     navigate("/list");
   };
@@ -38,7 +45,7 @@ const HeaderComponents = (): React.JSX.Element => {
         <div className="flex justify-between items-center h-16">
           {/* 左侧：返回按钮和应用标题 */}
           <div className="flex items-center space-x-3">
-            {(isDetailPage || isAdminPage) && (
+            {(isDetailPage || isAdminPage || isUploadPage) && (
               <button
                 onClick={isDetailPage ? handleBack : handleHome}
                 className="group flex items-center justify-center w-9 h-9 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200"
@@ -105,6 +112,29 @@ const HeaderComponents = (): React.JSX.Element => {
 
             {/* 操作按钮组 */}
             <div className="flex items-center space-x-2">
+              {/* 教师/管理员专用：上传按钮 */}
+              {canUpload && !isUploadPage && (
+                <button
+                  onClick={handleUpload}
+                  className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                >
+                  <svg
+                    className="w-4 h-4 transition-transform duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">上传</span>
+                </button>
+              )}
+
               {/* 管理员专用：管理端按钮 */}
               {isAdmin && !isAdminPage && (
                 <button

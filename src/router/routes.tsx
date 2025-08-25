@@ -4,6 +4,7 @@ import ListPage from "../pages/list";
 import DetailPage from "../pages/detail";
 import LoginPage from "../pages/login";
 import AdminPage from "../pages/admin";
+import UploadPage from "../pages/upload";
 
 const routes: RouteObject[] = [
   {
@@ -31,6 +32,14 @@ const routes: RouteObject[] = [
     element: (
       <PageLayout>
         <AdminPage />
+      </PageLayout>
+    ),
+  },
+  {
+    path: "/upload",
+    element: (
+      <PageLayout>
+        <UploadPage />
       </PageLayout>
     ),
   },
