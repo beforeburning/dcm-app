@@ -52,7 +52,7 @@ function LoginPage(): React.JSX.Element {
       <div className="max-w-xl w-full mx-auto p-8">
         {/* Logo 区域 */}
         <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold text-white">DICOM 查看器</h1>
+          <h1 className="text-3xl font-bold text-white">智慧诊疗 v1.5</h1>
         </div>
 
         {/* 登录表单 */}
@@ -61,7 +61,7 @@ function LoginPage(): React.JSX.Element {
             {/* 用户名 */}
             <div>
               <div className="block text-sm font-medium text-white mb-2">
-                用户名
+                账号
               </div>
               <input
                 type="text"

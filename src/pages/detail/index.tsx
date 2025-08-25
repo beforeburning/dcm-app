@@ -201,60 +201,36 @@ function DetailPage() {
   }, [isInitialized, loadDicomFile]);
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      <h1>DICOM 图像查看器</h1>
+    <div className="p-5 flex flex-col items-center">
+      <h1 className="text-2xl font-bold mb-6">DICOM 图像查看器</h1>
 
-      <div style={{ marginBottom: "20px" }}>
+      <div className="mb-5">
         <button
           onClick={loadDicomFile}
           disabled={!isInitialized || isLoading}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            backgroundColor: isInitialized ? "#007bff" : "#6c757d",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: isInitialized ? "pointer" : "not-allowed",
-          }}
+          className={`
+            px-5 py-2.5 text-base text-white border-none rounded 
+            transition-colors duration-200
+            ${
+              isInitialized
+                ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                : "bg-gray-500 cursor-not-allowed"
+            }
+            ${!isInitialized || isLoading ? "opacity-75" : ""}
+          `}
         >
           {isLoading ? "加载中..." : "重新加载 DICOM 文件"}
         </button>
       </div>
 
       {error && (
-        <div
-          style={{
-            padding: "10px",
-            backgroundColor: "#f8d7da",
-            color: "#721c24",
-            border: "1px solid #f5c6cb",
-            borderRadius: "4px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="p-2.5 bg-red-100 text-red-800 border border-red-300 rounded mb-5">
           错误: {error}
         </div>
       )}
 
       {!isInitialized && (
-        <div
-          style={{
-            padding: "10px",
-            backgroundColor: "#d1ecf1",
-            color: "#0c5460",
-            border: "1px solid #bee5eb",
-            borderRadius: "4px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="p-2.5 bg-cyan-100 text-cyan-800 border border-cyan-300 rounded mb-5">
           正在初始化 Cornerstone...
         </div>
       )}
@@ -262,23 +238,10 @@ function DetailPage() {
       {/* DICOM 显示区域 */}
       <div
         ref={elementRef}
-        style={{
-          width: "512px",
-          height: "512px",
-          backgroundColor: "#000",
-          border: "1px solid #ccc",
-          position: "relative",
-        }}
+        className="w-[512px] h-[512px] bg-black border border-gray-400 relative"
       >
         {!isLoading && isInitialized && (
-          <div
-            style={{
-              position: "absolute",
-              left: "0",
-              color: "#ccc",
-              textAlign: "center",
-            }}
-          >
+          <div className="absolute left-0 text-gray-400 text-center">
             图像将自动加载，或点击按钮重新加载
           </div>
         )}

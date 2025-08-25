@@ -52,7 +52,7 @@ const HeaderComponents = (): React.JSX.Element => {
                 </svg>
               </button>
             )}
-            <h1 className="text-xl font-bold text-white">DICOM 查看器</h1>
+            <h1 className="text-xl font-bold text-white">智慧诊疗 v1.5</h1>
           </div>
 
           {/* 右侧：用户信息和操作 */}

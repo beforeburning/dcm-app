@@ -1,12 +1,12 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import wasm from 'vite-plugin-wasm';
-import worker from 'vite-plugin-worker';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import path from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import wasm from "vite-plugin-wasm";
+import worker from "vite-plugin-worker";
+import { viteStaticCopy } from "vite-plugin-static-copy";
+import path from "path";
 
 export default defineConfig({
-  assetsInclude: ['**/*.wasm'],
+  assetsInclude: ["**/*.wasm"],
   plugins: [
     react(),
     wasm(),
@@ -16,20 +16,20 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'node_modules/@cornerstonejs/codec-libjpeg-turbo-8bit/dist/libjpegturbowasm_decode.wasm',
-          dest: 'wasm',
+          src: "node_modules/@cornerstonejs/codec-libjpeg-turbo-8bit/dist/libjpegturbowasm_decode.wasm",
+          dest: "wasm",
         },
         {
-          src: 'node_modules/@cornerstonejs/codec-openjpeg/dist/openjpegwasm.wasm',
-          dest: 'wasm',
+          src: "node_modules/@cornerstonejs/codec-openjpeg/dist/openjpegwasm.wasm",
+          dest: "wasm",
         },
         {
-          src: 'node_modules/@cornerstonejs/codec-openjph/dist/openjphjs.wasm',
-          dest: 'wasm',
+          src: "node_modules/@cornerstonejs/codec-openjph/dist/openjphjs.wasm",
+          dest: "wasm",
         },
         {
-          src: 'node_modules/@cornerstonejs/codec-charls/dist/charlswasm_decode.wasm',
-          dest: 'wasm',
+          src: "node_modules/@cornerstonejs/codec-charls/dist/charlswasm_decode.wasm",
+          dest: "wasm",
         },
       ],
     }),
@@ -38,29 +38,27 @@ export default defineConfig({
   ],
   // seems like only required in dev mode
   optimizeDeps: {
-    exclude: [
-      '@cornerstonejs/dicom-image-loader',
-    ],
+    exclude: ["@cornerstonejs/dicom-image-loader"],
     include: [
-      'dicom-parser',
-      '@cornerstonejs/codec-libjpeg-turbo-8bit',
-      '@cornerstonejs/codec-libjpeg-turbo-8bit/decodewasmjs',
-      '@cornerstonejs/codec-openjpeg',
-      '@cornerstonejs/codec-openjpeg/decodewasmjs',
-      '@cornerstonejs/codec-openjph',
-      '@cornerstonejs/codec-openjph/wasmjs',
-      '@cornerstonejs/codec-charls',
-      '@cornerstonejs/codec-charls/decodewasmjs',
-      'comlink',
+      "dicom-parser",
+      "@cornerstonejs/codec-libjpeg-turbo-8bit",
+      "@cornerstonejs/codec-libjpeg-turbo-8bit/decodewasmjs",
+      "@cornerstonejs/codec-openjpeg",
+      "@cornerstonejs/codec-openjpeg/decodewasmjs",
+      "@cornerstonejs/codec-openjph",
+      "@cornerstonejs/codec-openjph/wasmjs",
+      "@cornerstonejs/codec-charls",
+      "@cornerstonejs/codec-charls/decodewasmjs",
+      "comlink",
     ],
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      zlib: './src/shims/zlib.js',
+      "@": path.resolve(__dirname, "src"),
+      zlib: "./src/shims/zlib.js",
     },
   },
   worker: {
-    format: 'es',
+    format: "es",
   },
 });
