@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { addToast } from "@heroui/toast";
+import { Pagination } from "@heroui/react";
 import {
-  getAllUsersRequest,
-  updateUserRoleRequest,
   searchUsersRequest,
+  updateUserRoleRequest,
   type AdminUser,
+  type PaginatedResponse,
 } from "@/api/admin";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
@@ -13,10 +14,15 @@ interface AdminPageProps {}
 const AdminPage: React.FC<AdminPageProps> = () => {
   const { isAdmin } = useAdminAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
+
+  // 分页相关状态
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize] = useState<number>(10);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
 
   // 如果不是管理员，不渲染内容
   if (!isAdmin) {
@@ -29,14 +35,25 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     );
   }
 
-  // 获取所有用户
-  const fetchUsers = async () => {
+  // 获取用户列表（使用搜索接口）
+  const fetchUsers = async (
+    search: string = searchTerm,
+    role: string = selectedRole,
+    page: number = currentPage
+  ) => {
     setLoading(true);
     try {
-      const res = await getAllUsersRequest();
+      const res = await searchUsersRequest(
+        search,
+        role === "all" ? undefined : (role as "admin" | "teacher" | "student"),
+        page,
+        pageSize
+      );
       if (res.code === 200 && res.data) {
-        setUsers(res.data);
-        setFilteredUsers(res.data);
+        setUsers(res.data.data);
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+        setCurrentPage(res.data.page);
       } else {
         addToast({
           color: "danger",
@@ -65,7 +82,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
           color: "success",
           description: "权限更新成功",
         });
-        // 刷新用户列表
+        // 重新获取当前页数据
         fetchUsers();
       } else {
         addToast({
@@ -81,28 +98,36 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     }
   };
 
-  // 搜索和过滤
+  // 处理搜索和筛选变化
+  const handleSearchChange = (search: string) => {
+    setSearchTerm(search);
+    setCurrentPage(1); // 重置到第一页
+  };
+
+  const handleRoleFilterChange = (role: string) => {
+    setSelectedRole(role);
+    setCurrentPage(1); // 重置到第一页
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // 监听搜索和筛选变化
   useEffect(() => {
-    let filtered = users;
+    const timeoutId = setTimeout(() => {
+      fetchUsers(searchTerm, selectedRole, currentPage);
+    }, 300); // 防抖动处理
 
-    // 按搜索词过滤
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (user) =>
-          user.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.userId.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, selectedRole]);
 
-    // 按权限过滤
-    if (selectedRole !== "all") {
-      filtered = filtered.filter((user) => user.role === selectedRole);
-    }
+  // 监听分页变化
+  useEffect(() => {
+    fetchUsers(searchTerm, selectedRole, currentPage);
+  }, [currentPage]);
 
-    setFilteredUsers(filtered);
-  }, [searchTerm, selectedRole, users]);
-
+  // 初始化加载数据
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -147,7 +172,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full px-4 outline-none py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="输入用户名、邮箱或用户ID搜索..."
               />
@@ -160,7 +185,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               </label>
               <select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
+                onChange={(e) => handleRoleFilterChange(e.target.value)}
                 className="w-full px-4 py-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">所有权限</option>
@@ -176,7 +201,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800">
-              用户列表 ({filteredUsers.length})
+              用户列表 ({total})
             </h2>
           </div>
 
@@ -204,7 +229,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
+                  {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -261,13 +286,38 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 </tbody>
               </table>
 
-              {filteredUsers.length === 0 && !loading && (
+              {users.length === 0 && !loading && (
                 <div className="p-6 text-center text-gray-500">
                   {searchTerm || selectedRole !== "all"
                     ? "没有找到匹配的用户"
                     : "暂无用户数据"}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 分页组件 */}
+          {!loading && totalPages > 1 && (
+            <div className="flex justify-center items-center p-6 border-t border-gray-200">
+              <Pagination
+                total={totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+                showControls
+                size="md"
+                color="primary"
+                classNames={{
+                  wrapper:
+                    "gap-0 overflow-visible h-8 rounded border border-divider",
+                  item: "w-8 h-8 text-small rounded-none bg-transparent",
+                  cursor:
+                    "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
+                }}
+              />
+              <div className="ml-4 text-sm text-gray-600">
+                显示 {(currentPage - 1) * pageSize + 1} -{" "}
+                {Math.min(currentPage * pageSize, total)} 条，共 {total} 条
+              </div>
             </div>
           )}
         </div>
