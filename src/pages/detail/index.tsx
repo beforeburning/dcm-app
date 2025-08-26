@@ -20,6 +20,21 @@ import {
   ProbeTool,
   AngleTool,
   BidirectionalTool,
+  CobbAngleTool,
+  RectangleROIStartEndThresholdTool,
+  RectangleROIThresholdTool,
+  SplineROITool,
+  LivewireContourTool,
+  MagnifyTool,
+  ReferenceLinesTool,
+  OverlayGridTool,
+  CrosshairsTool,
+  ScaleOverlayTool,
+  AdvancedMagnifyTool,
+  UltrasoundDirectionalTool,
+  RectangleScissorsTool,
+  CircleScissorsTool,
+  SphereScissorsTool,
   ToolGroupManager,
   Enums as ToolsEnums,
 } from "@cornerstonejs/tools";
@@ -60,6 +75,36 @@ const getToolDisplayName = (toolName: string): string => {
       return "双向测量";
     case "PlanarFreehandROI":
       return "平面自由绘制";
+    case "CobbAngle":
+      return "Cobb角度测量";
+    case "RectangleROIStartEndThreshold":
+      return "矩形阈值标注";
+    case "RectangleROIThreshold":
+      return "矩形阈值工具";
+    case "SplineROI":
+      return "样条线标注";
+    case "LivewireContour":
+      return "活线轮廓";
+    case "Magnify":
+      return "放大镜";
+    case "ReferenceLines":
+      return "参考线";
+    case "OverlayGrid":
+      return "网格覆盖";
+    case "Crosshairs":
+      return "十字线";
+    case "ScaleOverlay":
+      return "比例尺";
+    case "AdvancedMagnify":
+      return "高级放大镜";
+    case "UltrasoundDirectional":
+      return "超声方向工具";
+    case "RectangleScissors":
+      return "矩形剪切";
+    case "CircleScissors":
+      return "圆形剪切";
+    case "SphereScissors":
+      return "球形剪切";
     default:
       return toolName;
   }
@@ -94,6 +139,36 @@ const getToolInstructions = (toolName: string): string => {
       return "拖动测量两个方向的距离";
     case "PlanarFreehandROI":
       return "拖动鼠标平面自由绘制";
+    case "CobbAngle":
+      return "测量Cobb角，常用于脊柱弯曲分析";
+    case "RectangleROIStartEndThreshold":
+      return "画矩形区域并设置阈值范围";
+    case "RectangleROIThreshold":
+      return "矩形阈值分割工具";
+    case "SplineROI":
+      return "绘制样条曲线区域";
+    case "LivewireContour":
+      return "智能边缘检测轮廓绘制";
+    case "Magnify":
+      return "点击显示局部放大镜";
+    case "ReferenceLines":
+      return "显示切面参考线";
+    case "OverlayGrid":
+      return "显示网格覆盖层";
+    case "Crosshairs":
+      return "显示十字线定位";
+    case "ScaleOverlay":
+      return "显示比例尺标记";
+    case "AdvancedMagnify":
+      return "高级放大镜功能";
+    case "UltrasoundDirectional":
+      return "超声图像方向标注";
+    case "RectangleScissors":
+      return "矩形区域剪切工具";
+    case "CircleScissors":
+      return "圆形区域剪切工具";
+    case "SphereScissors":
+      return "球形区域剪切工具";
     default:
       return "选择工具进行操作";
   }
@@ -189,6 +264,21 @@ function DetailPage() {
         addTool(AngleTool);
         addTool(BidirectionalTool);
         addTool(PlanarFreehandROITool);
+        addTool(CobbAngleTool);
+        addTool(RectangleROIStartEndThresholdTool);
+        addTool(RectangleROIThresholdTool);
+        addTool(SplineROITool);
+        addTool(LivewireContourTool);
+        addTool(MagnifyTool);
+        addTool(ReferenceLinesTool);
+        addTool(OverlayGridTool);
+        addTool(CrosshairsTool);
+        addTool(ScaleOverlayTool);
+        addTool(AdvancedMagnifyTool);
+        addTool(UltrasoundDirectionalTool);
+        addTool(RectangleScissorsTool);
+        addTool(CircleScissorsTool);
+        addTool(SphereScissorsTool);
 
         setIsInitialized(true);
         console.log("Cornerstone 初始化成功");
@@ -308,6 +398,21 @@ function DetailPage() {
       toolGroup.addTool(AngleTool.toolName);
       toolGroup.addTool(BidirectionalTool.toolName);
       toolGroup.addTool(PlanarFreehandROITool.toolName);
+      toolGroup.addTool(CobbAngleTool.toolName);
+      toolGroup.addTool(RectangleROIStartEndThresholdTool.toolName);
+      toolGroup.addTool(RectangleROIThresholdTool.toolName);
+      toolGroup.addTool(SplineROITool.toolName);
+      toolGroup.addTool(LivewireContourTool.toolName);
+      toolGroup.addTool(MagnifyTool.toolName);
+      toolGroup.addTool(ReferenceLinesTool.toolName);
+      toolGroup.addTool(OverlayGridTool.toolName);
+      toolGroup.addTool(CrosshairsTool.toolName);
+      toolGroup.addTool(ScaleOverlayTool.toolName);
+      toolGroup.addTool(AdvancedMagnifyTool.toolName);
+      toolGroup.addTool(UltrasoundDirectionalTool.toolName);
+      toolGroup.addTool(RectangleScissorsTool.toolName);
+      toolGroup.addTool(CircleScissorsTool.toolName);
+      toolGroup.addTool(SphereScissorsTool.toolName);
 
       // 设置工具为激活状态
       toolGroup.setToolActive(WindowLevelTool.toolName, {
@@ -362,6 +467,21 @@ function DetailPage() {
       toolGroup.setToolPassive(AngleTool.toolName);
       toolGroup.setToolPassive(BidirectionalTool.toolName);
       toolGroup.setToolPassive(PlanarFreehandROITool.toolName);
+      toolGroup.setToolPassive(CobbAngleTool.toolName);
+      toolGroup.setToolPassive(RectangleROIStartEndThresholdTool.toolName);
+      toolGroup.setToolPassive(RectangleROIThresholdTool.toolName);
+      toolGroup.setToolPassive(SplineROITool.toolName);
+      toolGroup.setToolPassive(LivewireContourTool.toolName);
+      toolGroup.setToolPassive(MagnifyTool.toolName);
+      toolGroup.setToolPassive(ReferenceLinesTool.toolName);
+      toolGroup.setToolPassive(OverlayGridTool.toolName);
+      toolGroup.setToolPassive(CrosshairsTool.toolName);
+      toolGroup.setToolPassive(ScaleOverlayTool.toolName);
+      toolGroup.setToolPassive(AdvancedMagnifyTool.toolName);
+      toolGroup.setToolPassive(UltrasoundDirectionalTool.toolName);
+      toolGroup.setToolPassive(RectangleScissorsTool.toolName);
+      toolGroup.setToolPassive(CircleScissorsTool.toolName);
+      toolGroup.setToolPassive(SphereScissorsTool.toolName);
 
       // 激活选中的工具
       switch (toolName) {
@@ -422,6 +542,81 @@ function DetailPage() {
           break;
         case "PlanarFreehandROI":
           toolGroup.setToolActive(PlanarFreehandROITool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "CobbAngle":
+          toolGroup.setToolActive(CobbAngleTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "RectangleROIStartEndThreshold":
+          toolGroup.setToolActive(RectangleROIStartEndThresholdTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "RectangleROIThreshold":
+          toolGroup.setToolActive(RectangleROIThresholdTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "SplineROI":
+          toolGroup.setToolActive(SplineROITool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "LivewireContour":
+          toolGroup.setToolActive(LivewireContourTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Magnify":
+          toolGroup.setToolActive(MagnifyTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "ReferenceLines":
+          toolGroup.setToolActive(ReferenceLinesTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "OverlayGrid":
+          toolGroup.setToolActive(OverlayGridTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Crosshairs":
+          toolGroup.setToolActive(CrosshairsTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "ScaleOverlay":
+          toolGroup.setToolActive(ScaleOverlayTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "AdvancedMagnify":
+          toolGroup.setToolActive(AdvancedMagnifyTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "UltrasoundDirectional":
+          toolGroup.setToolActive(UltrasoundDirectionalTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "RectangleScissors":
+          toolGroup.setToolActive(RectangleScissorsTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "CircleScissors":
+          toolGroup.setToolActive(CircleScissorsTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "SphereScissors":
+          toolGroup.setToolActive(SphereScissorsTool.toolName, {
             bindings: [{ mouseButton: MouseBindings.Primary }],
           });
           break;
@@ -695,20 +890,6 @@ function DetailPage() {
                 `}
               >
                 ◯ 圆形标注
-              </button>
-
-              <button
-                onClick={() => switchTool("FreehandROI")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "FreehandROI"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
-              >
-                ✍️ 自由画线
               </button>
 
               <button
