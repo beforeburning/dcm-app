@@ -909,203 +909,152 @@ function DetailPage() {
 
         {/* 工具栏 */}
         {isInitialized && (
-          <div className="mt-4 space-y-3">
-            {/* 基本操作工具 */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-blue-300">
-                基本操作:
+          <div className="mt-2 space-y-2">
+            {/* 紧凑工具栏 */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* 基本操作 */}
+              <span className="text-xs font-medium text-blue-300 mr-1">
+                基本:
               </span>
-
               <button
                 onClick={() => switchTool("WindowLevel")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "WindowLevel"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "WindowLevel"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                🌅 窗位/窗宽
+                🌅 窗位
               </button>
-
               <button
                 onClick={() => switchTool("Pan")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "Pan"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Pan"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
                 ✋ 平移
               </button>
-
               <button
                 onClick={() => switchTool("Zoom")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "Zoom"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Zoom"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
                 🔍 缩放
               </button>
-
               <button
                 onClick={() => switchTool("Probe")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "Probe"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Probe"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
                 🔎 探针
               </button>
-            </div>
 
-            {/* 测量工具 */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-green-300">
-                测量工具:
+              {/* 测量工具 */}
+              <span className="text-xs font-medium text-green-300 mr-1 ml-3">
+                测量:
               </span>
-
               <button
                 onClick={() => switchTool("Length")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "Length"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Length"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                📏 长度测量
+                📏 长度
               </button>
-
               <button
                 onClick={() => switchTool("Angle")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "Angle"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Angle"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                📐 角度测量
+                📐 角度
               </button>
-
               <button
                 onClick={() => switchTool("Bidirectional")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "Bidirectional"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Bidirectional"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                ↔️ 双向测量
+                ↔️ 双向
               </button>
-            </div>
 
-            {/* 标注工具 */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-sm font-medium text-purple-300">
-                标注工具:
+              {/* 标注工具 */}
+              <span className="text-xs font-medium text-purple-300 mr-1 ml-3">
+                标注:
               </span>
-
               <button
                 onClick={() => switchTool("RectangleROI")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "RectangleROI"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "RectangleROI"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                ▭ 矩形标注
+                ▭ 矩形
               </button>
-
               <button
                 onClick={() => switchTool("EllipticalROI")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "EllipticalROI"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "EllipticalROI"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                ⚬ 椭圆标注
+                ⚬ 椭圆
               </button>
-
               <button
                 onClick={() => switchTool("CircleROI")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "CircleROI"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "CircleROI"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                ◯ 圆形标注
+                ◯ 圆形
               </button>
-
               <button
                 onClick={() => switchTool("PlanarFreehandROI")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "PlanarFreehandROI"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "PlanarFreehandROI"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                🎨 平面绘制
+                🎨 绘制
               </button>
-
               <button
                 onClick={() => switchTool("ArrowAnnotate")}
-                className={`
-                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                  ${
-                    activeTool === "ArrowAnnotate"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                  }
-                `}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "ArrowAnnotate"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
               >
-                ➡️ 箭头标注
+                ➡️ 箭头
               </button>
             </div>
 
-            {/* 当前工具信息 */}
-            <div className="text-sm text-gray-300 bg-gray-700 bg-opacity-50 px-3 py-2 rounded">
-              <span className="text-yellow-300">当前工具:</span>{" "}
+            {/* 当前工具信息 - 更紧凑 */}
+            <div className="text-xs text-gray-300 bg-gray-700 bg-opacity-50 px-2 py-1 rounded">
+              <span className="text-yellow-300">当前:</span>{" "}
               <span className="font-medium">
                 {getToolDisplayName(activeTool)}
               </span>
-              <span className="mx-2 text-gray-500">|</span>
+              <span className="mx-1 text-gray-500">|</span>
               <span className="text-blue-300">
                 {getToolInstructions(activeTool)}
               </span>
