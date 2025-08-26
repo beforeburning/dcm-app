@@ -125,6 +125,17 @@ function ListPage(): React.JSX.Element {
     }
   };
 
+  // 复制成功后切换到我的数据标签页
+  const handleCopySuccess = () => {
+    if (isStudent) {
+      setSelectedTab("student");
+      // 刷新学生数据
+      if (studentDataListRef.current) {
+        studentDataListRef.current.refresh();
+      }
+    }
+  };
+
   // 跳转到详情页
   const handleFileClick = (id: string): void => {
     navigate(`/detail/${id}`);
@@ -146,7 +157,10 @@ function ListPage(): React.JSX.Element {
         >
           {/* 公共数据列表 - 所有用户可见 */}
           <Tab key="public" title="公共数据">
-            <PublicDataList onFileClick={handleFileClick} />
+            <PublicDataList 
+              onFileClick={handleFileClick} 
+              onCopySuccess={handleCopySuccess}
+            />
           </Tab>
 
           {/* 学生个人数据 - 仅学生可见 */}

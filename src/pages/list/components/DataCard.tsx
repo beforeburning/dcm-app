@@ -10,6 +10,7 @@ interface DataCardProps {
   dcm: DcmList;
   onFileClick: (id: string) => void;
   onDataChange?: () => void; // 数据变化回调，用于刷新列表
+  onCopySuccess?: () => void; // 复制成功回调，用于切换标签页
   showOwnerInfo?: boolean;
 }
 
@@ -17,6 +18,7 @@ function DataCard({
   dcm,
   onFileClick,
   onDataChange,
+  onCopySuccess,
   showOwnerInfo = false,
 }: DataCardProps): React.JSX.Element {
   const navigate = useNavigate();
@@ -67,6 +69,7 @@ function DataCard({
           description: "复制成功！数据已添加到您的账户",
         });
         onDataChange?.();
+        onCopySuccess?.(); // 通知父组件切换标签页
       } else {
         addToast({
           color: "danger",
