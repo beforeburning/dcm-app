@@ -22,12 +22,42 @@ import * as dicomParser from "dicom-parser";
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
 
+// 工具显示名称
+const getToolDisplayName = (toolName: string): string => {
+  switch (toolName) {
+    case "WindowLevel":
+      return "窗位/窗宽";
+    case "Pan":
+      return "平移";
+    case "Zoom":
+      return "缩放";
+    default:
+      return toolName;
+  }
+};
+
+// 工具使用说明
+const getToolInstructions = (toolName: string): string => {
+  switch (toolName) {
+    case "WindowLevel":
+      return "拖动鼠标调节亮度和对比度";
+    case "Pan":
+      return "拖动鼠标移动图像";
+    case "Zoom":
+      return "拖动鼠标缩放图像";
+    default:
+      return "选择工具进行操作";
+  }
+};
+
 function DetailPage() {
   const elementRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [activeTool, setActiveTool] = useState("WindowLevel"); // 当前激活的工具
   const renderingEngineRef = useRef(null);
+  const toolGroupRef = useRef(null); // 保存工具组引用
 
   // 初始化 Cornerstone
   useEffect(() => {
@@ -175,6 +205,15 @@ function DetailPage() {
 
       renderingEngine.enableElement(viewportInput);
 
+      // 等待DOM更新后调整尺寸
+      setTimeout(() => {
+        try {
+          renderingEngine.resize(true);
+        } catch (e) {
+          console.warn("调整渲染引擎尺寸失败:", e);
+        }
+      }, 50);
+
       // 获取视口
       const viewport = renderingEngine.getViewport(viewportId);
 
@@ -196,6 +235,7 @@ function DetailPage() {
 
       // 创建新的工具组
       toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
+      toolGroupRef.current = toolGroup; // 保存工具组引用
 
       // 添加工具到工具组
       toolGroup.addTool(WindowLevelTool.toolName);
@@ -235,56 +275,225 @@ function DetailPage() {
     }
   }, [isInitialized]);
 
+  // 切换工具
+  const switchTool = useCallback((toolName) => {
+    if (!toolGroupRef.current) return;
+
+    try {
+      const toolGroup = toolGroupRef.current;
+
+      // 先将所有工具设为非激活状态
+      toolGroup.setToolPassive(WindowLevelTool.toolName);
+      toolGroup.setToolPassive(PanTool.toolName);
+      toolGroup.setToolPassive(ZoomTool.toolName);
+
+      // 激活选中的工具
+      switch (toolName) {
+        case "WindowLevel":
+          toolGroup.setToolActive(WindowLevelTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Pan":
+          toolGroup.setToolActive(PanTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Zoom":
+          toolGroup.setToolActive(ZoomTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+      }
+
+      setActiveTool(toolName);
+      console.log(`已切换到工具: ${toolName}`);
+    } catch (error) {
+      console.error("切换工具失败:", error);
+    }
+  }, []);
+
+  // 重置视图
+  const resetView = useCallback(() => {
+    if (!renderingEngineRef.current) return;
+
+    try {
+      const renderingEngine = renderingEngineRef.current;
+      const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
+
+      if (viewport && typeof (viewport as any).resetCamera === "function") {
+        (viewport as any).resetCamera();
+        renderingEngine.render();
+        console.log("已重置视图");
+      }
+    } catch (error) {
+      console.error("重置视图失败:", error);
+    }
+  }, []);
+
   // 初始化完成后自动加载
   useEffect(() => {
     if (isInitialized) {
-      loadDicomFile();
+      // 等待DOM元素渲染完成
+      setTimeout(() => {
+        loadDicomFile();
+      }, 100);
     }
   }, [isInitialized, loadDicomFile]);
 
-  return (
-    <div className="flex flex-col items-center">
-      {/* <div className="mb-5">
-        <button
-          onClick={loadDicomFile}
-          disabled={!isInitialized || isLoading}
-          className={`
-            px-5 py-2.5 text-base text-white border-none rounded 
-            transition-colors duration-200
-            ${
-              isInitialized
-                ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                : "bg-gray-500 cursor-not-allowed"
+  // 监听窗口尺寸变化，调整视口大小
+  useEffect(() => {
+    const handleResize = () => {
+      if (renderingEngineRef.current && elementRef.current) {
+        try {
+          setTimeout(() => {
+            const renderingEngine = renderingEngineRef.current;
+            if (renderingEngine) {
+              renderingEngine.resize(true);
+              renderingEngine.render();
             }
-            ${!isInitialized || isLoading ? "opacity-75" : ""}
-          `}
-        >
-          {isLoading ? "加载中..." : "重新加载 DICOM 文件"}
-        </button>
-      </div> */}
+          }, 100);
+        } catch (error) {
+          console.warn("调整视口尺寸失败:", error);
+        }
+      }
+    };
 
+    window.addEventListener("resize", handleResize);
+
+    // 初始化时也调用一次
+    if (isInitialized) {
+      setTimeout(handleResize, 200);
+    }
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isInitialized]);
+
+  return (
+    <div className="h-screen flex flex-col">
+      {/* 顶部控制栏 */}
+      <div className="bg-gray-800 text-white p-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold">DICOM 图像查看器</h1>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={loadDicomFile}
+              disabled={!isInitialized || isLoading}
+              className={`
+                px-4 py-2 text-sm rounded transition-colors duration-200
+                ${
+                  isInitialized
+                    ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                    : "bg-gray-500 cursor-not-allowed"
+                }
+                ${!isInitialized || isLoading ? "opacity-75" : ""}
+              `}
+            >
+              {isLoading ? "加载中..." : "重新加载"}
+            </button>
+
+            <button
+              onClick={resetView}
+              disabled={!isInitialized || isLoading}
+              className={`
+                px-4 py-2 text-sm rounded transition-colors duration-200
+                ${
+                  isInitialized
+                    ? "bg-green-600 hover:bg-green-700 cursor-pointer"
+                    : "bg-gray-500 cursor-not-allowed"
+                }
+                ${!isInitialized || isLoading ? "opacity-75" : ""}
+              `}
+            >
+              重置视图
+            </button>
+          </div>
+        </div>
+
+        {/* 工具栏 */}
+        {isInitialized && (
+          <div className="mt-4 flex items-center gap-4">
+            <span className="text-sm font-medium">工具:</span>
+
+            <button
+              onClick={() => switchTool("WindowLevel")}
+              className={`
+                px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                ${
+                  activeTool === "WindowLevel"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }
+              `}
+            >
+              🌅 窗位/窗宽
+            </button>
+
+            <button
+              onClick={() => switchTool("Pan")}
+              className={`
+                px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                ${
+                  activeTool === "Pan"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }
+              `}
+            >
+              ✋ 平移
+            </button>
+
+            <button
+              onClick={() => switchTool("Zoom")}
+              className={`
+                px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                ${
+                  activeTool === "Zoom"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }
+              `}
+            >
+              🔍 缩放
+            </button>
+
+            <div className="ml-4 text-sm text-gray-300">
+              当前: {getToolDisplayName(activeTool)} -{" "}
+              {getToolInstructions(activeTool)}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 状态显示 */}
       {error && (
-        <div className="p-2.5 bg-red-100 text-red-800 border border-red-300 rounded mb-5">
+        <div className="p-3 bg-red-100 text-red-800 border-b border-red-300">
           错误: {error}
         </div>
       )}
 
       {!isInitialized && (
-        <div className="p-2.5 bg-cyan-100 text-cyan-800 border border-cyan-300 rounded mb-5">
+        <div className="p-3 bg-cyan-100 text-cyan-800 border-b border-cyan-300">
           正在初始化 Cornerstone...
         </div>
       )}
 
       {/* DICOM 显示区域 */}
-      <div
-        ref={elementRef}
-        className="w-screen h-[calc(100vh-64px)] bg-black relative"
-      >
-        {!isLoading && isInitialized && (
-          <div className="absolute left-0 text-gray-400 text-center">
-            图像将自动加载，或点击按钮重新加载
-          </div>
-        )}
+      <div className="flex-1 relative overflow-hidden">
+        <div
+          ref={elementRef}
+          className="w-full h-full bg-black"
+          style={{ minHeight: "400px" }}
+        >
+          {!isLoading && isInitialized && (
+            <div className="absolute top-4 left-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
+              图像将自动加载，或点击按钮重新加载
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
