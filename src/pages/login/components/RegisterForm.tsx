@@ -105,13 +105,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       <div className="flex mb-6">
         <button
           onClick={onSwitchToLogin}
-          className="flex-1 py-2 px-4 text-sm font-medium rounded-l-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+          className="flex-1 py-2 px-4 cursor-pointer text-sm font-medium rounded-l-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
           disabled={loading}
         >
           登录
         </button>
         <button
-          className="flex-1 py-2 px-4 text-sm font-medium rounded-r-lg bg-blue-600 text-white"
+          className="flex-1 py-2 px-4 cursor-pointer text-sm font-medium rounded-r-lg bg-blue-600 text-white"
           disabled={loading}
         >
           注册
