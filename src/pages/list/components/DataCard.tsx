@@ -188,8 +188,8 @@ function DataCard({
           </div>
 
           <div className="flex items-center space-x-2 ml-4">
-            {/* 学生：显示复制按钮 */}
-            {isStudent && (
+            {/* 学生：只在公共数据且不是自己的数据时显示拷贝按钮 */}
+            {isStudent && dcm.isPublic && dcm.ownerId !== userInfo?.userId && (
               <Button
                 size="sm"
                 color="primary"

@@ -157,8 +157,8 @@ function ListPage(): React.JSX.Element {
         >
           {/* 公共数据列表 - 所有用户可见 */}
           <Tab key="public" title="公共数据">
-            <PublicDataList 
-              onFileClick={handleFileClick} 
+            <PublicDataList
+              onFileClick={handleFileClick}
               onCopySuccess={handleCopySuccess}
             />
           </Tab>
