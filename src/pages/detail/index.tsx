@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button, Chip, Card, CardBody, CardHeader } from "@heroui/react";
+import { addToast } from "@heroui/toast";
 import * as cornerstone from "@cornerstonejs/core";
 import {
   RenderingEngine,
@@ -42,6 +45,7 @@ import dicomImageLoader, {
   init as dicomImageLoaderInit,
 } from "@cornerstonejs/dicom-image-loader";
 import * as dicomParser from "dicom-parser";
+import { getDcmDetailRequest, qiniuBaseUrl, type DcmList } from "@/api/dcm";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -175,13 +179,131 @@ const getToolInstructions = (toolName: string): string => {
 };
 
 function DetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const elementRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true); // 数据加载状态
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [activeTool, setActiveTool] = useState("WindowLevel"); // 当前激活的工具
+  const [dcmData, setDcmData] = useState<DcmList | null>(null); // DCM数据
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // 当前图像索引
+  const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
+  const [isImageControlExpanded, setIsImageControlExpanded] = useState(false); // 图像切换控件展开状态
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
+
+  // 分类显示映射
+  const getCategoryLabel = (category?: string): string => {
+    const categoryMap: { [key: string]: string } = {
+      xray: "X光",
+      ct: "CT",
+      mri: "MRI",
+      ultrasound: "超声",
+      pet: "PET",
+      pathology: "病理图像",
+    };
+    return category ? categoryMap[category] || category : "未分类";
+  };
+
+  // 格式化时间
+  const formatTime = (timestamp: number): string => {
+    return new Date(timestamp * 1000).toLocaleDateString("zh-CN");
+  };
+
+  // 切换到上一张图像
+  const goToPreviousImage = useCallback(() => {
+    if (imageIds.length <= 1) return;
+    const newIndex =
+      currentImageIndex > 0 ? currentImageIndex - 1 : imageIds.length - 1;
+    switchToImage(newIndex);
+  }, [currentImageIndex, imageIds.length]);
+
+  // 切换到下一张图像
+  const goToNextImage = useCallback(() => {
+    if (imageIds.length <= 1) return;
+    const newIndex =
+      currentImageIndex < imageIds.length - 1 ? currentImageIndex + 1 : 0;
+    switchToImage(newIndex);
+  }, [currentImageIndex, imageIds.length]);
+
+  // 切换到指定图像
+  const switchToImage = useCallback(
+    async (index: number) => {
+      if (!renderingEngineRef.current || !imageIds[index]) return;
+
+      try {
+        setIsLoading(true);
+        const renderingEngine = renderingEngineRef.current;
+        const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
+
+        if (viewport) {
+          // 设置单个图像
+          await (viewport as any).setStack([imageIds[index]]);
+          renderingEngine.render();
+          setCurrentImageIndex(index);
+          console.log(`已切换到第 ${index + 1} 张图像`);
+        }
+      } catch (error) {
+        console.error("切换图像失败:", error);
+        setError("切换图像失败: " + error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [imageIds]
+  );
+
+  // 加载DCM数据详情
+  useEffect(() => {
+    const loadDcmData = async () => {
+      if (!id) {
+        addToast({
+          color: "danger",
+          description: "数据ID无效",
+        });
+        navigate("/list");
+        return;
+      }
+
+      setDataLoading(true);
+      try {
+        const response = await getDcmDetailRequest(id);
+
+        if (response.code === 200 && response.data) {
+          setDcmData(response.data);
+
+          // 初始化图像 ID 列表
+          if (response.data.files && response.data.files.length > 0) {
+            const ids = response.data.files.map((file) => {
+              const fullPath = `${qiniuBaseUrl}${file.path}`;
+              return `wadouri:${fullPath}`;
+            });
+            setImageIds(ids);
+            setCurrentImageIndex(0); // 重置到第一张图
+          }
+        } else {
+          addToast({
+            color: "danger",
+            description: response.message || "加载数据失败",
+          });
+          navigate("/list");
+        }
+      } catch (err) {
+        console.error("加载数据错误:", err);
+        addToast({
+          color: "danger",
+          description: "加载数据失败",
+        });
+        navigate("/list");
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    loadDcmData();
+  }, [id, navigate]);
 
   // 初始化 Cornerstone
   useEffect(() => {
@@ -317,7 +439,7 @@ function DetailPage() {
 
   // 加载和渲染 DICOM 文件
   const loadDicomFile = useCallback(async () => {
-    if (!isInitialized || !elementRef.current) return;
+    if (!isInitialized || !elementRef.current || !dcmData) return;
 
     setIsLoading(true);
     setError(null);
@@ -428,12 +550,31 @@ function DetailPage() {
       // 将工具组添加到视口
       toolGroup.addViewport(viewportId, renderingEngineId);
 
-      // 加载图像
-      const imageId = "wadouri:/3.dcm";
-      const imageIds = [imageId];
+      // 加载图像 - 使用状态中的imageIds
+      let currentImageIds: string[] = [];
 
-      // 设置图像堆栈
-      await (viewport as any).setStack(imageIds);
+      if (imageIds.length > 0) {
+        // 使用已加载的图像 ID，只显示当前图像
+        currentImageIds = [imageIds[currentImageIndex]];
+      } else if (dcmData.files && dcmData.files.length > 0) {
+        // 如果状态中还没有imageIds，使用dcmData构建
+        const allImageIds = dcmData.files.map((file) => {
+          const fullPath = `${qiniuBaseUrl}${file.path}`;
+          return `wadouri:${fullPath}`;
+        });
+        // 同时更新状态
+        setImageIds(allImageIds);
+        currentImageIds = [allImageIds[0]]; // 只显示第一张
+      } else {
+        // 如果没有文件，使用默认的测试文件
+        const imageId = "wadouri:/3.dcm";
+        currentImageIds = [imageId];
+      }
+
+      console.log("加载图像 ID:", currentImageIds);
+
+      // 设置图像堆栈（只显示当前图像）
+      await (viewport as any).setStack(currentImageIds);
 
       // 渲染
       renderingEngine.render();
@@ -445,7 +586,7 @@ function DetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isInitialized]);
+  }, [isInitialized, dcmData, imageIds, currentImageIndex]);
 
   // 切换工具
   const switchTool = useCallback((toolName) => {
@@ -649,13 +790,37 @@ function DetailPage() {
 
   // 初始化完成后自动加载
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && dcmData && !dataLoading) {
       // 等待DOM元素渲染完成
       setTimeout(() => {
         loadDicomFile();
       }, 100);
     }
-  }, [isInitialized, loadDicomFile]);
+  }, [isInitialized, dcmData, dataLoading, loadDicomFile]);
+
+  // 键盘快捷键支持
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (imageIds.length <= 1) return;
+
+      switch (event.key) {
+        case "ArrowLeft":
+          event.preventDefault();
+          goToPreviousImage();
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          goToNextImage();
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [imageIds.length, goToPreviousImage, goToNextImage]);
 
   // 监听窗口尺寸变化，调整视口大小
   useEffect(() => {
@@ -691,41 +856,54 @@ function DetailPage() {
     <div className="h-screen flex flex-col">
       {/* 顶部控制栏 */}
       <div className="bg-gray-800 text-white p-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">DICOM 图像查看器</h1>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => navigate("/list")}
+              className="bg-gray-600 hover:bg-gray-700 text-white"
+              size="sm"
+            >
+              ← 返回列表
+            </Button>
+            <h1 className="text-xl font-bold">
+              {dataLoading
+                ? "DICOM 图像查看器"
+                : dcmData?.name || "DICOM 图像查看器"}
+            </h1>
+          </div>
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
               onClick={loadDicomFile}
-              disabled={!isInitialized || isLoading}
+              disabled={!isInitialized || isLoading || !dcmData}
               className={`
-                px-4 py-2 text-sm rounded transition-colors duration-200
+                text-sm rounded transition-colors duration-200
                 ${
-                  isInitialized
+                  isInitialized && dcmData
                     ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
                     : "bg-gray-500 cursor-not-allowed"
                 }
-                ${!isInitialized || isLoading ? "opacity-75" : ""}
+                ${!isInitialized || isLoading || !dcmData ? "opacity-75" : ""}
               `}
             >
               {isLoading ? "加载中..." : "重新加载"}
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={resetView}
-              disabled={!isInitialized || isLoading}
+              disabled={!isInitialized || isLoading || !dcmData}
               className={`
-                px-4 py-2 text-sm rounded transition-colors duration-200
+                text-sm rounded transition-colors duration-200
                 ${
-                  isInitialized
+                  isInitialized && dcmData
                     ? "bg-green-600 hover:bg-green-700 cursor-pointer"
                     : "bg-gray-500 cursor-not-allowed"
                 }
-                ${!isInitialized || isLoading ? "opacity-75" : ""}
+                ${!isInitialized || isLoading || !dcmData ? "opacity-75" : ""}
               `}
             >
               重置视图
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -943,6 +1121,12 @@ function DetailPage() {
         </div>
       )}
 
+      {dataLoading && (
+        <div className="p-3 bg-blue-100 text-blue-800 border-b border-blue-300">
+          正在加载数据...
+        </div>
+      )}
+
       {!isInitialized && (
         <div className="p-3 bg-cyan-100 text-cyan-800 border-b border-cyan-300">
           正在初始化 Cornerstone...
@@ -956,13 +1140,129 @@ function DetailPage() {
           className="w-full h-full bg-black"
           style={{ minHeight: "400px" }}
         >
-          {!isLoading && isInitialized && (
-            <div className="absolute top-4 left-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-              图像将自动加载，或点击按钮重新加载
+          {!isLoading && isInitialized && dcmData && (
+            <>
+              <div className="absolute top-4 left-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded z-10">
+                图像将自动加载，或点击按钮重新加载
+              </div>
+              {imageIds.length > 1 && (
+                <div className="absolute top-4 right-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded z-10">
+                  使用 ← → 键切换图像
+                </div>
+              )}
+            </>
+          )}
+          {!dcmData && !dataLoading && (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <div className="text-2xl mb-2">📁</div>
+                <div>数据加载失败</div>
+              </div>
+            </div>
+          )}
+          {dataLoading && (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <div className="text-2xl mb-2">🔄</div>
+                <div>正在加载数据...</div>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* 悬浮图像切换控件 */}
+      {dcmData && imageIds.length > 1 && (
+        <div className="fixed bottom-4 left-4 z-50">
+          {/* 展开/收起按钮 */}
+          <div className="mb-2">
+            <Button
+              size="sm"
+              onClick={() => setIsImageControlExpanded(!isImageControlExpanded)}
+              className="bg-gray-800 bg-opacity-90 backdrop-blur-sm hover:bg-gray-700 text-white border border-gray-600 shadow-lg"
+            >
+              {isImageControlExpanded ? "🔽" : "🖼️"} {currentImageIndex + 1}/
+              {imageIds.length}
+            </Button>
+          </div>
+
+          {/* 展开的控制面板 */}
+          {isImageControlExpanded && (
+            <div className="bg-gray-800 bg-opacity-95 backdrop-blur-sm border border-gray-600 rounded-lg shadow-xl p-4 min-w-72">
+              {/* 控制按钮区域 */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-orange-300">
+                  图像切换:
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={goToPreviousImage}
+                    disabled={imageIds.length <= 1 || isLoading}
+                    className="bg-gray-600 hover:bg-gray-500 text-white min-w-unit-8 h-8"
+                  >
+                    ◀
+                  </Button>
+
+                  <span className="text-sm text-gray-300 px-3 min-w-16 text-center">
+                    {currentImageIndex + 1} / {imageIds.length}
+                  </span>
+
+                  <Button
+                    size="sm"
+                    onClick={goToNextImage}
+                    disabled={imageIds.length <= 1 || isLoading}
+                    className="bg-gray-600 hover:bg-gray-500 text-white min-w-unit-8 h-8"
+                  >
+                    ▶
+                  </Button>
+                </div>
+              </div>
+
+              {/* 当前文件信息 */}
+              <div className="mb-3">
+                <span className="text-xs text-gray-400">
+                  当前文件: {dcmData.files[currentImageIndex]?.name || "未知"}
+                </span>
+              </div>
+
+              {/* 缩略图列表（当图像较多时显示） */}
+              {imageIds.length > 2 && (
+                <div>
+                  <div className="text-xs text-gray-400 mb-2">快速跳转:</div>
+                  <div className="flex gap-1 overflow-x-auto pb-2 max-w-64">
+                    {imageIds.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => switchToImage(index)}
+                        disabled={isLoading}
+                        className={`
+                          flex-shrink-0 w-8 h-6 text-xs rounded transition-all
+                          ${
+                            index === currentImageIndex
+                              ? "bg-orange-600 text-white"
+                              : "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                          }
+                          ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
+                        `}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 键盘快捷键提示 */}
+              <div className="mt-3 pt-3 border-t border-gray-600">
+                <div className="text-xs text-gray-500">
+                  💡 快捷键: ← → 切换图像
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
