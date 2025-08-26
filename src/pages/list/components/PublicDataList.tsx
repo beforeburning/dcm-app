@@ -6,14 +6,10 @@ import DataCard from "./DataCard";
 
 interface PublicDataListProps {
   onFileClick: (id: string) => void;
-  onCopyData?: (dcm: DcmList) => void;
-  canCopyData?: boolean;
 }
 
 function PublicDataList({
   onFileClick,
-  onCopyData,
-  canCopyData = false,
 }: PublicDataListProps): React.JSX.Element {
   const [data, setData] = useState<DcmList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,9 +82,7 @@ function PublicDataList({
                 key={dcm.id}
                 dcm={dcm}
                 onFileClick={onFileClick}
-                onCopyData={onCopyData}
-                showCopyButton={canCopyData}
-                canCopyData={canCopyData}
+                onDataChange={fetchData}
               />
             ))}
           </div>

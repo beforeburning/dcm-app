@@ -124,6 +124,7 @@ function AllStudentDataList({
                     key={dcm.id}
                     dcm={dcm}
                     onFileClick={onFileClick}
+                    onDataChange={fetchData}
                     showOwnerInfo={true}
                   />
                 ))}

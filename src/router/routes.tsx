@@ -5,6 +5,7 @@ import DetailPage from "../pages/detail";
 import LoginPage from "../pages/login";
 import AdminPage from "../pages/admin";
 import UploadPage from "../pages/upload";
+import EditPage from "../pages/edit";
 
 const routes: RouteObject[] = [
   {
@@ -40,6 +41,14 @@ const routes: RouteObject[] = [
     element: (
       <PageLayout>
         <UploadPage />
+      </PageLayout>
+    ),
+  },
+  {
+    path: "/edit/:id",
+    element: (
+      <PageLayout>
+        <EditPage />
       </PageLayout>
     ),
   },

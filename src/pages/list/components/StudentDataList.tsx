@@ -12,8 +12,6 @@ import DataCard from "./DataCard";
 interface StudentDataListProps {
   userId: string;
   onFileClick: (id: string) => void;
-  onEditName?: (dcm: DcmList) => void;
-  canEditOwnData?: boolean;
 }
 
 export interface StudentDataListRef {
@@ -21,7 +19,7 @@ export interface StudentDataListRef {
 }
 
 const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
-  ({ userId, onFileClick, onEditName, canEditOwnData = false }, ref) => {
+  ({ userId, onFileClick }, ref) => {
     const [data, setData] = useState<DcmList[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -113,9 +111,7 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
                       key={dcm.id}
                       dcm={dcm}
                       onFileClick={onFileClick}
-                      onEditName={onEditName}
-                      showEditButton={true}
-                      canEditOwnData={canEditOwnData}
+                      onDataChange={fetchData}
                     />
                   ))}
                 </div>

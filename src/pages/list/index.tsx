@@ -146,11 +146,7 @@ function ListPage(): React.JSX.Element {
         >
           {/* 公共数据列表 - 所有用户可见 */}
           <Tab key="public" title="公共数据">
-            <PublicDataList
-              onFileClick={handleFileClick}
-              onCopyData={handleCopyData}
-              canCopyData={canCopyData}
-            />
+            <PublicDataList onFileClick={handleFileClick} />
           </Tab>
 
           {/* 学生个人数据 - 仅学生可见 */}
@@ -160,8 +156,6 @@ function ListPage(): React.JSX.Element {
                 ref={studentDataListRef}
                 userId={userInfo?.userId || ""}
                 onFileClick={handleFileClick}
-                onEditName={handleEditName}
-                canEditOwnData={canEditOwnData}
               />
             </Tab>
           )}

@@ -44,6 +44,8 @@ const initializePublicData = (): DcmList[] => {
   const folderData = [
     {
       id: "1",
+      category: "ct",
+      tags: ["胸部", "肺部", "疗效评估"],
       files: [
         {
           id: "1-1",
@@ -85,6 +87,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "2",
+      category: "mri",
+      tags: ["头部", "脑部", "神经系统"],
       files: [
         {
           id: "2-1",
@@ -102,6 +106,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "3",
+      category: "xray",
+      tags: ["胸部", "骨科", "骨折"],
       files: [
         {
           id: "3-1",
@@ -167,6 +173,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "4",
+      category: "ultrasound",
+      tags: ["腹部", "肉肾", "超声检查"],
       files: [
         {
           id: "4-1",
@@ -190,6 +198,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "5",
+      category: "ct",
+      tags: ["腹部", "胃肠道", "增强扫描"],
       files: [
         {
           id: "5-1",
@@ -219,6 +229,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "6",
+      category: "mri",
+      tags: ["腿部", "肌肉", "运动损伤"],
       files: [
         {
           id: "6-1",
@@ -254,6 +266,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "7",
+      category: "pet",
+      tags: ["全身", "肿瘤", "代谢显像"],
       files: [
         {
           id: "7-1",
@@ -277,6 +291,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "8",
+      category: "pathology",
+      tags: ["病理", "细胞学", "显微镜"],
       files: [
         {
           id: "8-1",
@@ -306,6 +322,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "9",
+      category: "ct",
+      tags: ["心脏", "心血管", "冠脈CTA"],
       files: [
         {
           id: "9-1",
@@ -341,6 +359,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "10",
+      category: "xray",
+      tags: ["足部", "骨科", "创伤"],
       files: [
         {
           id: "10-1",
@@ -364,6 +384,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "11",
+      category: "ultrasound",
+      tags: ["心脏", "心脉超声", "功能评估"],
       files: [
         {
           id: "11-1",
@@ -393,6 +415,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "12",
+      category: "mri",
+      tags: ["腰椎", "骨科", "椅间盘"],
       files: [
         {
           id: "12-1",
@@ -428,6 +452,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "13",
+      category: "ct",
+      tags: ["肋部", "肺结节", "筛查"],
       files: [
         {
           id: "13-1",
@@ -451,6 +477,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "14",
+      category: "xray",
+      tags: ["手腕", "骨科", "关节"],
       files: [
         {
           id: "14-1",
@@ -480,6 +508,8 @@ const initializePublicData = (): DcmList[] => {
     },
     {
       id: "15",
+      category: "ultrasound",
+      tags: ["甘状腺", "内分泌", "功能检查"],
       files: [
         {
           id: "15-1",
@@ -528,6 +558,8 @@ const initializePublicData = (): DcmList[] => {
       ownerId: "system",
       ownerName: "系统",
       isPublic: true,
+      category: folder.category,
+      tags: folder.tags,
     };
   });
 };
@@ -580,17 +612,6 @@ export const copyDcmToStudentRequest = async (
     return {
       code: 404,
       message: "数据不存在",
-    };
-  }
-
-  // 检查是否已经复制过
-  const existingCopy = mockStudentData.find(
-    (item) => item.originalId === dcmId && item.ownerId === userId
-  );
-  if (existingCopy) {
-    return {
-      code: 400,
-      message: "您已经复制过该数据",
     };
   }
 
@@ -757,5 +778,160 @@ export const searchAllStudentDataRequest = async (
       pageSize,
       totalPages,
     },
+  };
+};
+
+// 获取单个数据详情
+export const getDcmDetailRequest = async (
+  dcmId: string
+): Promise<ApiResponse<DcmList>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // 先从公开数据中查找
+  const publicData = mockDcmData.find((item) => item.id === dcmId);
+  if (publicData) {
+    return {
+      code: 200,
+      message: "success",
+      data: publicData,
+    };
+  }
+
+  // 从学生数据中查找
+  const studentData = mockStudentData.find((item) => item.id === dcmId);
+  if (studentData) {
+    return {
+      code: 200,
+      message: "success",
+      data: studentData,
+    };
+  }
+
+  return {
+    code: 404,
+    message: "数据不存在",
+  };
+};
+
+// 更新数据信息（管理员和教师权限）
+export const updateDcmDataRequest = async (
+  dcmId: string,
+  updateData: {
+    name?: string;
+    category?: string;
+    tags?: string[];
+  },
+  userId: string,
+  userRole: string
+): Promise<ApiResponse<DcmList>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // 检查权限：只有管理员和教师可以更新
+  if (userRole !== "admin" && userRole !== "teacher") {
+    return {
+      code: 403,
+      message: "无权限修改数据",
+    };
+  }
+
+  // 从公开数据中查找并更新
+  const publicDataIndex = mockDcmData.findIndex((item) => item.id === dcmId);
+  if (publicDataIndex !== -1) {
+    mockDcmData[publicDataIndex] = {
+      ...mockDcmData[publicDataIndex],
+      ...updateData,
+      updateTime: Math.floor(Date.now() / 1000),
+    };
+    return {
+      code: 200,
+      message: "更新成功",
+      data: mockDcmData[publicDataIndex],
+    };
+  }
+
+  // 从学生数据中查找并更新
+  const studentDataIndex = mockStudentData.findIndex(
+    (item) => item.id === dcmId
+  );
+  if (studentDataIndex !== -1) {
+    // 如果是教师，只能更新自己上传的数据
+    if (
+      userRole === "teacher" &&
+      mockStudentData[studentDataIndex].ownerId !== userId
+    ) {
+      return {
+        code: 403,
+        message: "无权限修改其他用户的数据",
+      };
+    }
+    mockStudentData[studentDataIndex] = {
+      ...mockStudentData[studentDataIndex],
+      ...updateData,
+      updateTime: Math.floor(Date.now() / 1000),
+    };
+    return {
+      code: 200,
+      message: "更新成功",
+      data: mockStudentData[studentDataIndex],
+    };
+  }
+
+  return {
+    code: 404,
+    message: "数据不存在",
+  };
+};
+
+// 删除数据（管理员和教师权限）
+export const deleteDcmDataRequest = async (
+  dcmId: string,
+  userId: string,
+  userRole: string
+): Promise<ApiResponse<void>> => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // 检查权限：只有管理员和教师可以删除
+  if (userRole !== "admin" && userRole !== "teacher") {
+    return {
+      code: 403,
+      message: "无权限删除数据",
+    };
+  }
+
+  // 从公开数据中查找并删除
+  const publicDataIndex = mockDcmData.findIndex((item) => item.id === dcmId);
+  if (publicDataIndex !== -1) {
+    mockDcmData.splice(publicDataIndex, 1);
+    return {
+      code: 200,
+      message: "删除成功",
+    };
+  }
+
+  // 从学生数据中查找并删除（管理员可以删除所有学生数据）
+  const studentDataIndex = mockStudentData.findIndex(
+    (item) => item.id === dcmId
+  );
+  if (studentDataIndex !== -1) {
+    // 如果是教师，只能删除自己上传的数据
+    if (
+      userRole === "teacher" &&
+      mockStudentData[studentDataIndex].ownerId !== userId
+    ) {
+      return {
+        code: 403,
+        message: "无权限删除其他用户的数据",
+      };
+    }
+    mockStudentData.splice(studentDataIndex, 1);
+    return {
+      code: 200,
+      message: "删除成功",
+    };
+  }
+
+  return {
+    code: 404,
+    message: "数据不存在",
   };
 };
