@@ -3,12 +3,10 @@ import { addToast } from "@heroui/toast";
 import { registerRequest } from "@/api/login";
 
 interface RegisterFormProps {
-  onSwitchToLogin: () => void;
   onRegisterSuccess: () => void;
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({
-  onSwitchToLogin,
   onRegisterSuccess,
 }) => {
   const [username, setUsername] = useState<string>("");
@@ -100,96 +98,75 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      {/* 模式切换标签 */}
-      <div className="flex mb-6">
-        <button
-          onClick={onSwitchToLogin}
-          className="flex-1 py-2 px-4 cursor-pointer text-sm font-medium rounded-l-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+    <div className="space-y-6">
+      {/* 邮箱字段 */}
+      <div>
+        <div className="block text-sm font-medium text-white mb-2">邮箱</div>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="请输入邮箱地址"
           disabled={loading}
-        >
-          登录
-        </button>
-        <button
-          className="flex-1 py-2 px-4 cursor-pointer text-sm font-medium rounded-r-lg bg-blue-600 text-white"
-          disabled={loading}
-        >
-          注册
-        </button>
+        />
       </div>
 
-      <div className="space-y-6">
-        {/* 邮箱字段 */}
-        <div>
-          <div className="block text-sm font-medium text-white mb-2">邮箱</div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="请输入邮箱地址"
-            disabled={loading}
-          />
-        </div>
+      {/* 用户名 */}
+      <div>
+        <div className="block text-sm font-medium text-white mb-2">用户名</div>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="请输入用户名（至少3个字符）"
+          disabled={loading}
+        />
+      </div>
 
-        {/* 用户名 */}
-        <div>
-          <div className="block text-sm font-medium text-white mb-2">
-            用户名
-          </div>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="请输入用户名（至少3个字符）"
-            disabled={loading}
-          />
-        </div>
+      {/* 密码 */}
+      <div>
+        <div className="block text-sm font-medium text-white mb-2">密码</div>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="请输入密码（至少6个字符）"
+          disabled={loading}
+        />
+      </div>
 
-        {/* 密码 */}
-        <div>
-          <div className="block text-sm font-medium text-white mb-2">密码</div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="请输入密码（至少6个字符）"
-            disabled={loading}
-          />
+      {/* 确认密码字段 */}
+      <div>
+        <div className="block text-sm font-medium text-white mb-2">
+          确认密码
         </div>
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="请再次输入密码"
+          disabled={loading}
+        />
+      </div>
 
-        {/* 确认密码字段 */}
-        <div>
-          <div className="block text-sm font-medium text-white mb-2">
-            确认密码
-          </div>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="请再次输入密码"
-            disabled={loading}
-          />
-        </div>
-
-        {/* 注册按钮 */}
-        <div
-          onClick={handleRegister}
-          className={`flex items-center cursor-pointer justify-center w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
-            loading
-              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
-          }`}
-        >
-          {loading ? "注册中..." : "注册"}
-        </div>
+      {/* 注册按钮 */}
+      <div
+        onClick={handleRegister}
+        className={`flex items-center cursor-pointer justify-center w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
+          loading
+            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 text-white"
+        }`}
+      >
+        {loading ? "注册中..." : "注册"}
       </div>
     </div>
   );
