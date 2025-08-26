@@ -37,13 +37,13 @@ function DetailPage() {
         await csRenderInit();
 
         // 确保 dicomImageLoader.external 存在
-        if (!dicomImageLoader.external) {
-          dicomImageLoader.external = {};
+        if (!(dicomImageLoader as any).external) {
+          (dicomImageLoader as any).external = {};
         }
 
         // 配置 DICOM Image Loader
-        dicomImageLoader.external.cornerstone = cornerstone;
-        dicomImageLoader.external.dicomParser = dicomParser;
+        (dicomImageLoader as any).external.cornerstone = cornerstone;
+        (dicomImageLoader as any).external.dicomParser = dicomParser;
 
         // 初始化 dicom image loader
         dicomImageLoaderInit();
@@ -58,29 +58,29 @@ function DetailPage() {
 
         // 可选：增加 XHR 调试日志，便于定位“卡在加载中”
         try {
-          if (dicomImageLoader?.internal?.setOptions) {
-            dicomImageLoader.internal.setOptions({
-              onloadstart: (_e, params) => {
-                console.log("DICOM 请求开始", params?.url);
+          if ((dicomImageLoader as any)?.internal?.setOptions) {
+            (dicomImageLoader as any).internal.setOptions({
+              onloadstart: (_e: any, params: any) => {
+                console.log("请求开始", params?.url);
               },
-              onprogress: (e, params) => {
-                console.log("DICOM 加载进度", params?.url, e?.loaded, e?.total);
+              onprogress: (e: any, params: any) => {
+                console.log("加载进度", params?.url, e?.loaded, e?.total);
               },
-              onreadystatechange: (e, params) => {
+              onreadystatechange: (e: any, params: any) => {
                 const xhr = e?.target;
                 console.log(
-                  "DICOM readyState",
+                  "readyState",
                   params?.url,
-                  xhr?.readyState,
-                  xhr?.status
+                  (xhr as any)?.readyState,
+                  (xhr as any)?.status
                 );
               },
-              onloadend: (_e, params) => {
-                console.log("DICOM 请求结束", params?.url);
+              onloadend: (_e: any, params: any) => {
+                console.log("请求结束", params?.url);
               },
-              beforeProcessing: (xhr) => Promise.resolve(xhr.response),
-              errorInterceptor: (error) => {
-                console.error("DICOM 请求错误", error);
+              beforeProcessing: (xhr: any) => Promise.resolve(xhr.response),
+              errorInterceptor: (error: any) => {
+                console.error("请求错误", error);
               },
             });
           }
@@ -114,8 +114,25 @@ function DetailPage() {
 
     // 清理函数
     return () => {
-      if (renderingEngineRef.current) {
-        renderingEngineRef.current.destroy();
+      try {
+        // 清理渲染引擎
+        if (renderingEngineRef.current) {
+          renderingEngineRef.current.destroy();
+          renderingEngineRef.current = null;
+        }
+
+        // 清理工具组
+        const toolGroupId = "STACK_TOOL_GROUP_ID";
+        try {
+          const toolGroup = ToolGroupManager.getToolGroup(toolGroupId);
+          if (toolGroup) {
+            ToolGroupManager.destroyToolGroup(toolGroupId);
+          }
+        } catch (e) {
+          console.warn("清理工具组时出错（可忽略）:", e);
+        }
+      } catch (e) {
+        console.warn("组件清理时出错（可忽略）:", e);
       }
     };
   }, []);
@@ -130,6 +147,16 @@ function DetailPage() {
     try {
       const element = elementRef.current;
 
+      // 清理之前的渲染引擎
+      if (renderingEngineRef.current) {
+        try {
+          renderingEngineRef.current.destroy();
+        } catch (e) {
+          console.warn("清理渲染引擎时出错（可忽略）:", e);
+        }
+        renderingEngineRef.current = null;
+      }
+
       // 创建渲染引擎
       const renderingEngineId = "myRenderingEngine";
       const renderingEngine = new RenderingEngine(renderingEngineId);
@@ -142,7 +169,7 @@ function DetailPage() {
         type: ViewportType.STACK,
         element,
         defaultOptions: {
-          background: [0, 0, 0],
+          background: [0, 0, 0] as [number, number, number],
         },
       };
 
@@ -151,9 +178,24 @@ function DetailPage() {
       // 获取视口
       const viewport = renderingEngine.getViewport(viewportId);
 
-      // 创建工具组
+      // 创建工具组 - 检查是否已存在
       const toolGroupId = "STACK_TOOL_GROUP_ID";
-      const toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
+      let toolGroup;
+
+      try {
+        // 尝试获取已存在的工具组
+        toolGroup = ToolGroupManager.getToolGroup(toolGroupId);
+        if (toolGroup) {
+          // 如果工具组已存在，先销毁它
+          ToolGroupManager.destroyToolGroup(toolGroupId);
+        }
+      } catch (e) {
+        // 工具组不存在，继续创建新的
+        console.log("工具组不存在，将创建新的");
+      }
+
+      // 创建新的工具组
+      toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
 
       // 添加工具到工具组
       toolGroup.addTool(WindowLevelTool.toolName);
@@ -179,7 +221,7 @@ function DetailPage() {
       const imageIds = [imageId];
 
       // 设置图像堆栈
-      await viewport.setStack(imageIds);
+      await (viewport as any).setStack(imageIds);
 
       // 渲染
       renderingEngine.render();
@@ -201,10 +243,8 @@ function DetailPage() {
   }, [isInitialized, loadDicomFile]);
 
   return (
-    <div className="p-5 flex flex-col items-center">
-      <h1 className="text-2xl font-bold mb-6">DICOM 图像查看器</h1>
-
-      <div className="mb-5">
+    <div className="flex flex-col items-center">
+      {/* <div className="mb-5">
         <button
           onClick={loadDicomFile}
           disabled={!isInitialized || isLoading}
@@ -221,7 +261,7 @@ function DetailPage() {
         >
           {isLoading ? "加载中..." : "重新加载 DICOM 文件"}
         </button>
-      </div>
+      </div> */}
 
       {error && (
         <div className="p-2.5 bg-red-100 text-red-800 border border-red-300 rounded mb-5">
@@ -238,7 +278,7 @@ function DetailPage() {
       {/* DICOM 显示区域 */}
       <div
         ref={elementRef}
-        className="w-[512px] h-[512px] bg-black border border-gray-400 relative"
+        className="w-screen h-[calc(100vh-64px)] bg-black relative"
       >
         {!isLoading && isInitialized && (
           <div className="absolute left-0 text-gray-400 text-center">
