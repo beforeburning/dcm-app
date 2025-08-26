@@ -11,6 +11,15 @@ import {
   PanTool,
   WindowLevelTool,
   ZoomTool,
+  LengthTool,
+  RectangleROITool,
+  EllipticalROITool,
+  CircleROITool,
+  PlanarFreehandROITool,
+  ArrowAnnotateTool,
+  ProbeTool,
+  AngleTool,
+  BidirectionalTool,
   ToolGroupManager,
   Enums as ToolsEnums,
 } from "@cornerstonejs/tools";
@@ -31,6 +40,26 @@ const getToolDisplayName = (toolName: string): string => {
       return "平移";
     case "Zoom":
       return "缩放";
+    case "Length":
+      return "测量长度";
+    case "RectangleROI":
+      return "矩形标注";
+    case "EllipticalROI":
+      return "椭圆标注";
+    case "CircleROI":
+      return "圆形标注";
+    case "FreehandROI":
+      return "自由画线";
+    case "ArrowAnnotate":
+      return "箭头标注";
+    case "Probe":
+      return "探针";
+    case "Angle":
+      return "角度测量";
+    case "Bidirectional":
+      return "双向测量";
+    case "PlanarFreehandROI":
+      return "平面自由绘制";
     default:
       return toolName;
   }
@@ -45,6 +74,26 @@ const getToolInstructions = (toolName: string): string => {
       return "拖动鼠标移动图像";
     case "Zoom":
       return "拖动鼠标缩放图像";
+    case "Length":
+      return "点击两点测量距离";
+    case "RectangleROI":
+      return "拖动画出矩形区域";
+    case "EllipticalROI":
+      return "拖动画出椭圆区域";
+    case "CircleROI":
+      return "拖动画出圆形区域";
+    case "FreehandROI":
+      return "拖动鼠标自由画线";
+    case "ArrowAnnotate":
+      return "点击两点放置箭头标注";
+    case "Probe":
+      return "点击查看像素值";
+    case "Angle":
+      return "点击三点测量角度";
+    case "Bidirectional":
+      return "拖动测量两个方向的距离";
+    case "PlanarFreehandROI":
+      return "拖动鼠标平面自由绘制";
     default:
       return "选择工具进行操作";
   }
@@ -131,6 +180,15 @@ function DetailPage() {
         addTool(PanTool);
         addTool(WindowLevelTool);
         addTool(ZoomTool);
+        addTool(LengthTool);
+        addTool(RectangleROITool);
+        addTool(EllipticalROITool);
+        addTool(CircleROITool);
+        addTool(ArrowAnnotateTool);
+        addTool(ProbeTool);
+        addTool(AngleTool);
+        addTool(BidirectionalTool);
+        addTool(PlanarFreehandROITool);
 
         setIsInitialized(true);
         console.log("Cornerstone 初始化成功");
@@ -241,6 +299,15 @@ function DetailPage() {
       toolGroup.addTool(WindowLevelTool.toolName);
       toolGroup.addTool(PanTool.toolName);
       toolGroup.addTool(ZoomTool.toolName);
+      toolGroup.addTool(LengthTool.toolName);
+      toolGroup.addTool(RectangleROITool.toolName);
+      toolGroup.addTool(EllipticalROITool.toolName);
+      toolGroup.addTool(CircleROITool.toolName);
+      toolGroup.addTool(ArrowAnnotateTool.toolName);
+      toolGroup.addTool(ProbeTool.toolName);
+      toolGroup.addTool(AngleTool.toolName);
+      toolGroup.addTool(BidirectionalTool.toolName);
+      toolGroup.addTool(PlanarFreehandROITool.toolName);
 
       // 设置工具为激活状态
       toolGroup.setToolActive(WindowLevelTool.toolName, {
@@ -286,6 +353,15 @@ function DetailPage() {
       toolGroup.setToolPassive(WindowLevelTool.toolName);
       toolGroup.setToolPassive(PanTool.toolName);
       toolGroup.setToolPassive(ZoomTool.toolName);
+      toolGroup.setToolPassive(LengthTool.toolName);
+      toolGroup.setToolPassive(RectangleROITool.toolName);
+      toolGroup.setToolPassive(EllipticalROITool.toolName);
+      toolGroup.setToolPassive(CircleROITool.toolName);
+      toolGroup.setToolPassive(ArrowAnnotateTool.toolName);
+      toolGroup.setToolPassive(ProbeTool.toolName);
+      toolGroup.setToolPassive(AngleTool.toolName);
+      toolGroup.setToolPassive(BidirectionalTool.toolName);
+      toolGroup.setToolPassive(PlanarFreehandROITool.toolName);
 
       // 激活选中的工具
       switch (toolName) {
@@ -301,6 +377,51 @@ function DetailPage() {
           break;
         case "Zoom":
           toolGroup.setToolActive(ZoomTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Length":
+          toolGroup.setToolActive(LengthTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "RectangleROI":
+          toolGroup.setToolActive(RectangleROITool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "EllipticalROI":
+          toolGroup.setToolActive(EllipticalROITool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "CircleROI":
+          toolGroup.setToolActive(CircleROITool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "ArrowAnnotate":
+          toolGroup.setToolActive(ArrowAnnotateTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Probe":
+          toolGroup.setToolActive(ProbeTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Angle":
+          toolGroup.setToolActive(AngleTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Bidirectional":
+          toolGroup.setToolActive(BidirectionalTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "PlanarFreehandROI":
+          toolGroup.setToolActive(PlanarFreehandROITool.toolName, {
             bindings: [{ mouseButton: MouseBindings.Primary }],
           });
           break;
@@ -415,54 +536,220 @@ function DetailPage() {
 
         {/* 工具栏 */}
         {isInitialized && (
-          <div className="mt-4 flex items-center gap-4">
-            <span className="text-sm font-medium">工具:</span>
+          <div className="mt-4 space-y-3">
+            {/* 基本操作工具 */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-blue-300">
+                基本操作:
+              </span>
 
-            <button
-              onClick={() => switchTool("WindowLevel")}
-              className={`
-                px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                ${
-                  activeTool === "WindowLevel"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }
-              `}
-            >
-              🌅 窗位/窗宽
-            </button>
+              <button
+                onClick={() => switchTool("WindowLevel")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "WindowLevel"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                🌅 窗位/窗宽
+              </button>
 
-            <button
-              onClick={() => switchTool("Pan")}
-              className={`
-                px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                ${
-                  activeTool === "Pan"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }
-              `}
-            >
-              ✋ 平移
-            </button>
+              <button
+                onClick={() => switchTool("Pan")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "Pan"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ✋ 平移
+              </button>
 
-            <button
-              onClick={() => switchTool("Zoom")}
-              className={`
-                px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
-                ${
-                  activeTool === "Zoom"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }
-              `}
-            >
-              🔍 缩放
-            </button>
+              <button
+                onClick={() => switchTool("Zoom")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "Zoom"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                🔍 缩放
+              </button>
 
-            <div className="ml-4 text-sm text-gray-300">
-              当前: {getToolDisplayName(activeTool)} -{" "}
-              {getToolInstructions(activeTool)}
+              <button
+                onClick={() => switchTool("Probe")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "Probe"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                🔎 探针
+              </button>
+            </div>
+
+            {/* 测量工具 */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-green-300">
+                测量工具:
+              </span>
+
+              <button
+                onClick={() => switchTool("Length")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "Length"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                📏 长度测量
+              </button>
+
+              <button
+                onClick={() => switchTool("Angle")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "Angle"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                📐 角度测量
+              </button>
+
+              <button
+                onClick={() => switchTool("Bidirectional")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "Bidirectional"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ↔️ 双向测量
+              </button>
+            </div>
+
+            {/* 标注工具 */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-sm font-medium text-purple-300">
+                标注工具:
+              </span>
+
+              <button
+                onClick={() => switchTool("RectangleROI")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "RectangleROI"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ▭ 矩形标注
+              </button>
+
+              <button
+                onClick={() => switchTool("EllipticalROI")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "EllipticalROI"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ⚬ 椭圆标注
+              </button>
+
+              <button
+                onClick={() => switchTool("CircleROI")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "CircleROI"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ◯ 圆形标注
+              </button>
+
+              <button
+                onClick={() => switchTool("FreehandROI")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "FreehandROI"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ✍️ 自由画线
+              </button>
+
+              <button
+                onClick={() => switchTool("PlanarFreehandROI")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "PlanarFreehandROI"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                🎨 平面绘制
+              </button>
+
+              <button
+                onClick={() => switchTool("ArrowAnnotate")}
+                className={`
+                  px-3 py-1.5 text-sm rounded transition-all duration-200 flex items-center gap-2
+                  ${
+                    activeTool === "ArrowAnnotate"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                  }
+                `}
+              >
+                ➡️ 箭头标注
+              </button>
+            </div>
+
+            {/* 当前工具信息 */}
+            <div className="text-sm text-gray-300 bg-gray-700 bg-opacity-50 px-3 py-2 rounded">
+              <span className="text-yellow-300">当前工具:</span>{" "}
+              <span className="font-medium">
+                {getToolDisplayName(activeTool)}
+              </span>
+              <span className="mx-2 text-gray-500">|</span>
+              <span className="text-blue-300">
+                {getToolInstructions(activeTool)}
+              </span>
             </div>
           </div>
         )}
