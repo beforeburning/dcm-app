@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { addToast } from "@heroui/toast";
-import { registerRequest } from "@/api/login";
+import {
+  sendVerificationCodeRequest,
+  verifyEmailCodeRequest,
+  completeRegisterRequest,
+} from "@/api/login";
 
 interface RegisterFormProps {
   onRegisterSuccess: () => void;
@@ -9,25 +13,44 @@ interface RegisterFormProps {
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   onRegisterSuccess,
 }) => {
-  const [username, setUsername] = useState<string>("");
+  // 注册步骤：1-邮箱验证，2-设置用户信息
+  const [step, setStep] = useState<1 | 2>(1);
+
+  // 第一步：邮箱验证相关状态
   const [email, setEmail] = useState<string>("");
+  const [verificationCode, setVerificationCode] = useState<string>("");
+  const [codeSent, setCodeSent] = useState<boolean>(false);
+  const [sendingCode, setSendingCode] = useState<boolean>(false);
+  const [verifyingCode, setVerifyingCode] = useState<boolean>(false);
+  const [tempToken, setTempToken] = useState<string>("");
+  const [countdown, setCountdown] = useState<number>(0); // 倒计时状态
+
+  // 第二步：用户信息相关状态
+  const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [completing, setCompleting] = useState<boolean>(false);
+
+  // 倒计时效果
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [countdown]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent): void => {
-    if (e.key === "Enter" && !loading) {
-      handleRegister();
-    }
-  };
-
-  const handleRegister = async (): Promise<void> => {
-    // 验证邮箱格式
+  // 发送验证码
+  const handleSendCode = async (): Promise<void> => {
     if (!validateEmail(email)) {
       addToast({
         color: "danger",
@@ -36,6 +59,75 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       return;
     }
 
+    setSendingCode(true);
+    try {
+      const res = await sendVerificationCodeRequest({ email });
+
+      if (res.code === 200) {
+        addToast({
+          color: "success",
+          description: res.data?.message || "验证码已发送",
+        });
+        setCodeSent(true);
+        setCountdown(60); // 启动60秒倒计时
+      } else {
+        addToast({
+          color: "danger",
+          description: res.message || "发送验证码失败",
+        });
+      }
+    } catch {
+      addToast({
+        color: "danger",
+        description: "发送验证码失败，请重试",
+      });
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  // 验证邮箱验证码
+  const handleVerifyCode = async (): Promise<void> => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      addToast({
+        color: "danger",
+        description: "请输入6位验证码",
+      });
+      return;
+    }
+
+    setVerifyingCode(true);
+    try {
+      const res = await verifyEmailCodeRequest({
+        email,
+        code: verificationCode,
+      });
+
+      if (res.code === 200 && res.data?.token) {
+        addToast({
+          color: "success",
+          description: "邮箱验证成功",
+        });
+        setTempToken(res.data.token);
+        setStep(2);
+      } else {
+        addToast({
+          color: "danger",
+          description: res.message || "验证码错误",
+        });
+      }
+    } catch {
+      addToast({
+        color: "danger",
+        description: "验证失败，请重试",
+      });
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  // 完成注册
+  const handleCompleteRegister = async (): Promise<void> => {
     // 验证用户名
     if (!username || username.length < 3) {
       addToast({
@@ -63,9 +155,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       return;
     }
 
-    setLoading(true);
+    setCompleting(true);
     try {
-      const res = await registerRequest({ username, email, password });
+      const res = await completeRegisterRequest({
+        token: tempToken,
+        username,
+        password,
+      });
 
       if (res.code === 200) {
         addToast({
@@ -74,8 +170,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         });
 
         // 清空表单
-        setUsername("");
+        setStep(1);
         setEmail("");
+        setVerificationCode("");
+        setCodeSent(false);
+        setCountdown(0); // 重置倒计时
+        setTempToken("");
+        setUsername("");
         setPassword("");
         setConfirmPassword("");
 
@@ -93,81 +194,229 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         description: "注册失败，请重试",
       });
     } finally {
-      setLoading(false);
+      setCompleting(false);
     }
+  };
+
+  // 键盘事件处理
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
+    if (e.key === "Enter") {
+      if (step === 1) {
+        if (!codeSent) {
+          handleSendCode();
+        } else {
+          handleVerifyCode();
+        }
+      } else {
+        handleCompleteRegister();
+      }
+    }
+  };
+
+  // 返回上一步
+  const handleGoBack = (): void => {
+    setStep(1);
+    setCodeSent(false);
+    setVerificationCode("");
+    setCountdown(0); // 重置倒计时
+    setTempToken("");
   };
 
   return (
     <div className="space-y-6">
-      {/* 邮箱字段 */}
-      <div>
-        <div className="block text-sm font-medium text-white mb-2">邮箱</div>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="请输入邮箱地址"
-          disabled={loading}
-        />
-      </div>
-
-      {/* 用户名 */}
-      <div>
-        <div className="block text-sm font-medium text-white mb-2">用户名</div>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="请输入用户名（至少3个字符）"
-          disabled={loading}
-        />
-      </div>
-
-      {/* 密码 */}
-      <div>
-        <div className="block text-sm font-medium text-white mb-2">密码</div>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="请输入密码（至少6个字符）"
-          disabled={loading}
-        />
-      </div>
-
-      {/* 确认密码字段 */}
-      <div>
-        <div className="block text-sm font-medium text-white mb-2">
-          确认密码
+      {/* 步骤指示器 */}
+      <div className="flex items-center justify-center mb-6">
+        <div className="flex items-center space-x-4">
+          <div
+            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+              step === 1 ? "bg-blue-600 text-white" : "bg-green-600 text-white"
+            }`}
+          >
+            1
+          </div>
+          <div className="w-16 h-0.5 bg-gray-600"></div>
+          <div
+            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+              step === 2
+                ? "bg-blue-600 text-white"
+                : "bg-gray-600 text-gray-400"
+            }`}
+          >
+            2
+          </div>
         </div>
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="请再次输入密码"
-          disabled={loading}
-        />
       </div>
 
-      {/* 注册按钮 */}
-      <div
-        onClick={handleRegister}
-        className={`flex items-center cursor-pointer justify-center w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
-          loading
-            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700 text-white"
-        }`}
-      >
-        {loading ? "注册中..." : "注册"}
+      {/* 步骤标题 */}
+      <div className="text-center">
+        <h3 className="text-lg font-medium text-white">
+          {step === 1 ? "邮箱验证" : "设置用户信息"}
+        </h3>
+        <p className="text-sm text-gray-400 mt-1">
+          {step === 1 ? "请输入邮箱地址并验证" : "请设置您的用户名和密码"}
+        </p>
       </div>
+
+      {step === 1 ? (
+        // 第一步：邮箱验证
+        <>
+          {/* 邮箱输入 */}
+          <div>
+            <div className="block text-sm font-medium text-white mb-2">
+              邮箱
+            </div>
+            <div className="flex space-x-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="请输入邮箱地址"
+                disabled={sendingCode || codeSent}
+              />
+              <div
+                onClick={codeSent ? undefined : handleSendCode}
+                className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
+                  sendingCode
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : codeSent
+                    ? "bg-green-600 text-white cursor-default"
+                    : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                }`}
+              >
+                {sendingCode ? "发送中..." : codeSent ? "已发送" : "获取验证码"}
+              </div>
+            </div>
+          </div>
+
+          {/* 验证码输入 */}
+          {codeSent && (
+            <div>
+              <div className="block text-sm font-medium text-white mb-2">
+                验证码
+              </div>
+              <input
+                type="text"
+                value={verificationCode}
+                onChange={(e) =>
+                  setVerificationCode(
+                    e.target.value.replace(/\D/g, "").slice(0, 6)
+                  )
+                }
+                onKeyPress={handleKeyPress}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
+                placeholder="请输入6位验证码"
+                maxLength={6}
+                disabled={verifyingCode}
+              />
+            </div>
+          )}
+
+          {/* 操作按钮 */}
+          {codeSent && (
+            <div className="flex space-x-3">
+              <div
+                onClick={() => {
+                  if (countdown === 0) {
+                    setCodeSent(false);
+                    setVerificationCode("");
+                    handleSendCode();
+                  }
+                }}
+                className={`flex-1 flex items-center justify-center py-3 px-4 font-medium rounded-lg transition-colors duration-200 ${
+                  countdown > 0
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-600 hover:bg-gray-700 text-white cursor-pointer"
+                }`}
+              >
+                {countdown > 0 ? `重新发送(${countdown}s)` : "重新发送"}
+              </div>
+              <div
+                onClick={handleVerifyCode}
+                className={`flex-1 flex items-center justify-center font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
+                  verifyingCode
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                }`}
+              >
+                {verifyingCode ? "验证中..." : "验证"}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        // 第二步：设置用户信息
+        <>
+          {/* 用户名 */}
+          <div>
+            <div className="block text-sm font-medium text-white mb-2">
+              用户名
+            </div>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="请输入用户名（至少3个字符）"
+              disabled={completing}
+            />
+          </div>
+
+          {/* 密码 */}
+          <div>
+            <div className="block text-sm font-medium text-white mb-2">
+              密码
+            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="请输入密码（至少6个字符）"
+              disabled={completing}
+            />
+          </div>
+
+          {/* 确认密码 */}
+          <div>
+            <div className="block text-sm font-medium text-white mb-2">
+              确认密码
+            </div>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="请再次输入密码"
+              disabled={completing}
+            />
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="flex space-x-3">
+            <div
+              onClick={handleGoBack}
+              className="flex-1 flex items-center justify-center py-3 px-4 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg cursor-pointer transition-colors duration-200"
+            >
+              返回上一步
+            </div>
+            <div
+              onClick={handleCompleteRegister}
+              className={`flex-1 flex items-center justify-center font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
+                completing
+                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+              }`}
+            >
+              {completing ? "注册中..." : "完成注册"}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
