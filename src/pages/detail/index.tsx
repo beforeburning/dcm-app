@@ -38,6 +38,7 @@ import {
   RectangleScissorsTool,
   CircleScissorsTool,
   SphereScissorsTool,
+  LabelTool,
   ToolGroupManager,
   Enums as ToolsEnums,
 } from "@cornerstonejs/tools";
@@ -109,6 +110,8 @@ const getToolDisplayName = (toolName: string): string => {
       return "圆形剪切";
     case "SphereScissors":
       return "球形剪切";
+    case "Label":
+      return "文字标注";
     default:
       return toolName;
   }
@@ -173,6 +176,8 @@ const getToolInstructions = (toolName: string): string => {
       return "圆形区域剪切工具";
     case "SphereScissors":
       return "球形区域剪切工具";
+    case "Label":
+      return "点击插入文字标注";
     default:
       return "选择工具进行操作";
   }
@@ -401,6 +406,7 @@ function DetailPage() {
         addTool(RectangleScissorsTool);
         addTool(CircleScissorsTool);
         addTool(SphereScissorsTool);
+        addTool(LabelTool);
 
         setIsInitialized(true);
         console.log("Cornerstone 初始化成功");
@@ -535,6 +541,7 @@ function DetailPage() {
       toolGroup.addTool(RectangleScissorsTool.toolName);
       toolGroup.addTool(CircleScissorsTool.toolName);
       toolGroup.addTool(SphereScissorsTool.toolName);
+      toolGroup.addTool(LabelTool.toolName);
 
       // 设置工具为激活状态
       toolGroup.setToolActive(WindowLevelTool.toolName, {
@@ -623,6 +630,7 @@ function DetailPage() {
       toolGroup.setToolPassive(RectangleScissorsTool.toolName);
       toolGroup.setToolPassive(CircleScissorsTool.toolName);
       toolGroup.setToolPassive(SphereScissorsTool.toolName);
+      toolGroup.setToolPassive(LabelTool.toolName);
 
       // 激活选中的工具
       switch (toolName) {
@@ -758,6 +766,11 @@ function DetailPage() {
           break;
         case "SphereScissors":
           toolGroup.setToolActive(SphereScissorsTool.toolName, {
+            bindings: [{ mouseButton: MouseBindings.Primary }],
+          });
+          break;
+        case "Label":
+          toolGroup.setToolActive(LabelTool.toolName, {
             bindings: [{ mouseButton: MouseBindings.Primary }],
           });
           break;
@@ -1045,6 +1058,16 @@ function DetailPage() {
                 }`}
               >
                 ➡️ 箭头
+              </button>
+              <button
+                onClick={() => switchTool("Label")}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  activeTool === "Label"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                }`}
+              >
+                📝 文字
               </button>
             </div>
 
