@@ -29,9 +29,7 @@ import {
   SplineROITool,
   LivewireContourTool,
   MagnifyTool,
-  ReferenceLinesTool,
   OverlayGridTool,
-  CrosshairsTool,
   ScaleOverlayTool,
   AdvancedMagnifyTool,
   UltrasoundDirectionalTool,
@@ -41,147 +39,23 @@ import {
   LabelTool,
   ToolGroupManager,
   Enums as ToolsEnums,
+  annotation as csToolsAnnotation,
 } from "@cornerstonejs/tools";
 import dicomImageLoader, {
   init as dicomImageLoaderInit,
 } from "@cornerstonejs/dicom-image-loader";
 import * as dicomParser from "dicom-parser";
 import { getDcmDetailRequest, qiniuBaseUrl, type DcmList } from "@/api/dcm";
+import TopBar from "./components/TopBar";
+import ToolBar from "./components/ToolBar";
+import StatusBanners from "./components/StatusBanners";
+import ViewerCanvas from "./components/ViewerCanvas";
+import ImageSwitcher from "./components/ImageSwitcher";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
 
-// 工具显示名称
-const getToolDisplayName = (toolName: string): string => {
-  switch (toolName) {
-    case "WindowLevel":
-      return "窗位/窗宽";
-    case "Pan":
-      return "平移";
-    case "Zoom":
-      return "缩放";
-    case "Length":
-      return "测量长度";
-    case "RectangleROI":
-      return "矩形标注";
-    case "EllipticalROI":
-      return "椭圆标注";
-    case "CircleROI":
-      return "圆形标注";
-    case "FreehandROI":
-      return "自由画线";
-    case "ArrowAnnotate":
-      return "箭头标注";
-    case "Probe":
-      return "探针";
-    case "Angle":
-      return "角度测量";
-    case "Bidirectional":
-      return "双向测量";
-    case "PlanarFreehandROI":
-      return "平面自由绘制";
-    case "CobbAngle":
-      return "Cobb角度测量";
-    case "RectangleROIStartEndThreshold":
-      return "矩形阈值标注";
-    case "RectangleROIThreshold":
-      return "矩形阈值工具";
-    case "SplineROI":
-      return "样条线标注";
-    case "LivewireContour":
-      return "活线轮廓";
-    case "Magnify":
-      return "放大镜";
-    case "ReferenceLines":
-      return "参考线";
-    case "OverlayGrid":
-      return "网格覆盖";
-    case "Crosshairs":
-      return "十字线";
-    case "ScaleOverlay":
-      return "比例尺";
-    case "AdvancedMagnify":
-      return "高级放大镜";
-    case "UltrasoundDirectional":
-      return "超声方向工具";
-    case "RectangleScissors":
-      return "矩形剪切";
-    case "CircleScissors":
-      return "圆形剪切";
-    case "SphereScissors":
-      return "球形剪切";
-    case "Label":
-      return "文字标注";
-    default:
-      return toolName;
-  }
-};
-
-// 工具使用说明
-const getToolInstructions = (toolName: string): string => {
-  switch (toolName) {
-    case "WindowLevel":
-      return "拖动鼠标调节亮度和对比度";
-    case "Pan":
-      return "拖动鼠标移动图像";
-    case "Zoom":
-      return "拖动鼠标缩放图像";
-    case "Length":
-      return "点击两点测量距离";
-    case "RectangleROI":
-      return "拖动画出矩形区域";
-    case "EllipticalROI":
-      return "拖动画出椭圆区域";
-    case "CircleROI":
-      return "拖动画出圆形区域";
-    case "FreehandROI":
-      return "拖动鼠标自由画线";
-    case "ArrowAnnotate":
-      return "点击两点放置箭头标注";
-    case "Probe":
-      return "点击查看像素值";
-    case "Angle":
-      return "点击三点测量角度";
-    case "Bidirectional":
-      return "拖动测量两个方向的距离";
-    case "PlanarFreehandROI":
-      return "拖动鼠标平面自由绘制";
-    case "CobbAngle":
-      return "测量Cobb角，常用于脊柱弯曲分析";
-    case "RectangleROIStartEndThreshold":
-      return "画矩形区域并设置阈值范围";
-    case "RectangleROIThreshold":
-      return "矩形阈值分割工具";
-    case "SplineROI":
-      return "绘制样条曲线区域";
-    case "LivewireContour":
-      return "智能边缘检测轮廓绘制";
-    case "Magnify":
-      return "点击显示局部放大镜";
-    case "ReferenceLines":
-      return "显示切面参考线";
-    case "OverlayGrid":
-      return "显示网格覆盖层";
-    case "Crosshairs":
-      return "显示十字线定位";
-    case "ScaleOverlay":
-      return "显示比例尺标记";
-    case "AdvancedMagnify":
-      return "高级放大镜功能";
-    case "UltrasoundDirectional":
-      return "超声图像方向标注";
-    case "RectangleScissors":
-      return "矩形区域剪切工具";
-    case "CircleScissors":
-      return "圆形区域剪切工具";
-    case "SphereScissors":
-      return "球形区域剪切工具";
-    case "Label":
-      return "点击插入文字标注";
-    default:
-      return "选择工具进行操作";
-  }
-};
+// 工具显示与说明已拆分到组件内部
 
 function DetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -198,6 +72,26 @@ function DetailPage() {
   const [isImageControlExpanded, setIsImageControlExpanded] = useState(false); // 图像切换控件展开状态
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
+  const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
+
+  // 打印当前注释/测量数据为简化 JSON
+  const printAnnotations = useCallback(() => {
+    try {
+      const all =
+        (csToolsAnnotation as any)?.state?.getAllAnnotations?.() || [];
+      const simplified = all.map((a: any) => ({
+        annotationUID: a?.annotationUID,
+        toolName: a?.metadata?.toolName || a?.toolName,
+        referencedImageId: a?.metadata?.referencedImageId,
+        frameOfReferenceUID: a?.metadata?.frameOfReferenceUID,
+        cachedStats: a?.cachedStats,
+        data: a?.data,
+      }));
+      console.log("[DetailPage] 注释JSON:", simplified);
+    } catch (e: any) {
+      console.warn("无法获取注释数据", e);
+    }
+  }, []);
 
   // 分类显示映射
   const getCategoryLabel = (category?: string): string => {
@@ -217,35 +111,24 @@ function DetailPage() {
     return new Date(timestamp * 1000).toLocaleDateString("zh-CN");
   };
 
-  // 切换到上一张图像
-  const goToPreviousImage = useCallback(() => {
-    if (imageIds.length <= 1) return;
-    const newIndex =
-      currentImageIndex > 0 ? currentImageIndex - 1 : imageIds.length - 1;
-    switchToImage(newIndex);
-  }, [currentImageIndex, imageIds.length]);
-
-  // 切换到下一张图像
-  const goToNextImage = useCallback(() => {
-    if (imageIds.length <= 1) return;
-    const newIndex =
-      currentImageIndex < imageIds.length - 1 ? currentImageIndex + 1 : 0;
-    switchToImage(newIndex);
-  }, [currentImageIndex, imageIds.length]);
+  // 切换到上一张/下一张图像在 switchToImage 下方定义，避免依赖顺序问题
 
   // 切换到指定图像
   const switchToImage = useCallback(
     async (index: number) => {
-      if (!renderingEngineRef.current || !imageIds[index]) return;
+      if (isLoading || !renderingEngineRef.current || !imageIds[index]) return;
 
       try {
         setIsLoading(true);
         const renderingEngine = renderingEngineRef.current;
         const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
 
-        if (viewport) {
+        if (viewport && typeof (viewport as any).setStack === "function") {
           // 设置单个图像
           await (viewport as any).setStack([imageIds[index]]);
+          if (typeof (viewport as any).resetCamera === "function") {
+            (viewport as any).resetCamera();
+          }
           renderingEngine.render();
           setCurrentImageIndex(index);
           console.log(`已切换到第 ${index + 1} 张图像`);
@@ -257,8 +140,24 @@ function DetailPage() {
         setIsLoading(false);
       }
     },
-    [imageIds]
+    [imageIds, isLoading]
   );
+
+  // 切换到上一张图像
+  const goToPreviousImage = useCallback(() => {
+    if (isLoading || imageIds.length <= 1) return;
+    const newIndex =
+      currentImageIndex > 0 ? currentImageIndex - 1 : imageIds.length - 1;
+    switchToImage(newIndex);
+  }, [currentImageIndex, imageIds.length, isLoading, switchToImage]);
+
+  // 切换到下一张图像
+  const goToNextImage = useCallback(() => {
+    if (isLoading || imageIds.length <= 1) return;
+    const newIndex =
+      currentImageIndex < imageIds.length - 1 ? currentImageIndex + 1 : 0;
+    switchToImage(newIndex);
+  }, [currentImageIndex, imageIds.length, isLoading, switchToImage]);
 
   // 加载DCM数据详情
   useEffect(() => {
@@ -370,10 +269,12 @@ function DetailPage() {
         }
 
         console.log(dicomImageLoader);
-        // 配置 Web Workers
-        // dicomImageLoader.configure({
-        //   useWebWorkers: false, // 简化配置
-        // });
+        // 配置 Web Workers（禁用以避免在深路径刷新时的 worker 404 问题）
+        try {
+          (dicomImageLoader as any).configure({ useWebWorkers: false });
+        } catch (e) {
+          console.warn("配置 dicomImageLoader 失败（可忽略）", e);
+        }
 
         // 初始化工具
         await csToolsInit();
@@ -397,9 +298,7 @@ function DetailPage() {
         addTool(SplineROITool);
         addTool(LivewireContourTool);
         addTool(MagnifyTool);
-        addTool(ReferenceLinesTool);
         addTool(OverlayGridTool);
-        addTool(CrosshairsTool);
         addTool(ScaleOverlayTool);
         addTool(AdvancedMagnifyTool);
         addTool(UltrasoundDirectionalTool);
@@ -449,6 +348,7 @@ function DetailPage() {
 
     setIsLoading(true);
     setError(null);
+    const seq = ++loadSeqRef.current;
 
     try {
       const element = elementRef.current;
@@ -484,7 +384,13 @@ function DetailPage() {
       // 等待DOM更新后调整尺寸
       setTimeout(() => {
         try {
+          if (seq !== loadSeqRef.current) return;
           renderingEngine.resize(true);
+          const vp = renderingEngine.getViewport(viewportId);
+          if (vp && typeof (vp as any).resetCamera === "function") {
+            (vp as any).resetCamera();
+          }
+          renderingEngine.render();
         } catch (e) {
           console.warn("调整渲染引擎尺寸失败:", e);
         }
@@ -532,9 +438,7 @@ function DetailPage() {
       toolGroup.addTool(SplineROITool.toolName);
       toolGroup.addTool(LivewireContourTool.toolName);
       toolGroup.addTool(MagnifyTool.toolName);
-      toolGroup.addTool(ReferenceLinesTool.toolName);
       toolGroup.addTool(OverlayGridTool.toolName);
-      toolGroup.addTool(CrosshairsTool.toolName);
       toolGroup.addTool(ScaleOverlayTool.toolName);
       toolGroup.addTool(AdvancedMagnifyTool.toolName);
       toolGroup.addTool(UltrasoundDirectionalTool.toolName);
@@ -581,9 +485,14 @@ function DetailPage() {
       console.log("加载图像 ID:", currentImageIds);
 
       // 设置图像堆栈（只显示当前图像）
+      if (seq !== loadSeqRef.current) return;
       await (viewport as any).setStack(currentImageIds);
+      if (typeof (viewport as any).resetCamera === "function") {
+        (viewport as any).resetCamera();
+      }
 
       // 渲染
+      if (seq !== loadSeqRef.current) return;
       renderingEngine.render();
 
       console.log("DICOM 文件加载成功");
@@ -591,7 +500,7 @@ function DetailPage() {
       console.error("加载 DICOM 文件失败:", err);
       setError("加载失败: " + err.message);
     } finally {
-      setIsLoading(false);
+      if (seq === loadSeqRef.current) setIsLoading(false);
     }
   }, [isInitialized, dcmData, imageIds, currentImageIndex]);
 
@@ -621,9 +530,7 @@ function DetailPage() {
       toolGroup.setToolPassive(SplineROITool.toolName);
       toolGroup.setToolPassive(LivewireContourTool.toolName);
       toolGroup.setToolPassive(MagnifyTool.toolName);
-      toolGroup.setToolPassive(ReferenceLinesTool.toolName);
       toolGroup.setToolPassive(OverlayGridTool.toolName);
-      toolGroup.setToolPassive(CrosshairsTool.toolName);
       toolGroup.setToolPassive(ScaleOverlayTool.toolName);
       toolGroup.setToolPassive(AdvancedMagnifyTool.toolName);
       toolGroup.setToolPassive(UltrasoundDirectionalTool.toolName);
@@ -724,18 +631,8 @@ function DetailPage() {
             bindings: [{ mouseButton: MouseBindings.Primary }],
           });
           break;
-        case "ReferenceLines":
-          toolGroup.setToolActive(ReferenceLinesTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
-          break;
         case "OverlayGrid":
           toolGroup.setToolActive(OverlayGridTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
-          break;
-        case "Crosshairs":
-          toolGroup.setToolActive(CrosshairsTool.toolName, {
             bindings: [{ mouseButton: MouseBindings.Primary }],
           });
           break;
@@ -801,11 +698,12 @@ function DetailPage() {
     }
   }, []);
 
-  // 初始化完成后自动加载
+  // 初始化完成后自动加载（取消上一次未完成的加载）
   useEffect(() => {
     if (isInitialized && dcmData && !dataLoading) {
       // 等待DOM元素渲染完成
       setTimeout(() => {
+        loadSeqRef.current++;
         loadDicomFile();
       }, 100);
     }
@@ -814,7 +712,7 @@ function DetailPage() {
   // 键盘快捷键支持
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (imageIds.length <= 1) return;
+      if (isLoading || imageIds.length <= 1) return;
 
       switch (event.key) {
         case "ArrowLeft":
@@ -867,374 +765,52 @@ function DetailPage() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* 顶部控制栏 */}
-      <div className="bg-gray-800 text-white p-4 flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => navigate("/list")}
-              className="bg-gray-600 hover:bg-gray-700 text-white"
-              size="sm"
-            >
-              ← 返回列表
-            </Button>
-            <h1 className="text-xl font-bold">
-              {dataLoading
-                ? "DICOM 图像查看器"
-                : dcmData?.name || "DICOM 图像查看器"}
-            </h1>
-          </div>
+      <TopBar
+        title={
+          dataLoading ? "DICOM 图像查看器" : dcmData?.name || "DICOM 图像查看器"
+        }
+        isInitialized={!!isInitialized}
+        isLoading={!!isLoading}
+        hasData={!!dcmData}
+        onBack={() => navigate("/list")}
+        onReload={loadDicomFile}
+        onReset={resetView}
+        onConsoleEditData={printAnnotations}
+      />
+      <ToolBar
+        isInitialized={!!isInitialized}
+        activeTool={activeTool}
+        onSwitch={switchTool}
+      />
 
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={loadDicomFile}
-              disabled={!isInitialized || isLoading || !dcmData}
-              className={`
-                text-sm rounded transition-colors duration-200
-                ${
-                  isInitialized && dcmData
-                    ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                    : "bg-gray-500 cursor-not-allowed"
-                }
-                ${!isInitialized || isLoading || !dcmData ? "opacity-75" : ""}
-              `}
-            >
-              {isLoading ? "加载中..." : "重新加载"}
-            </Button>
+      <StatusBanners
+        error={error}
+        dataLoading={dataLoading}
+        isInitialized={isInitialized}
+      />
 
-            <Button
-              onClick={resetView}
-              disabled={!isInitialized || isLoading || !dcmData}
-              className={`
-                text-sm rounded transition-colors duration-200
-                ${
-                  isInitialized && dcmData
-                    ? "bg-green-600 hover:bg-green-700 cursor-pointer"
-                    : "bg-gray-500 cursor-not-allowed"
-                }
-                ${!isInitialized || isLoading || !dcmData ? "opacity-75" : ""}
-              `}
-            >
-              重置视图
-            </Button>
-          </div>
-        </div>
+      <ViewerCanvas
+        elementRef={elementRef}
+        isLoading={isLoading}
+        isInitialized={isInitialized}
+        hasData={!!dcmData}
+        showSwitchHint={imageIds.length > 1}
+      />
 
-        {/* 工具栏 */}
-        {isInitialized && (
-          <div className="mt-2 space-y-2">
-            {/* 紧凑工具栏 */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* 基本操作 */}
-              <span className="text-xs font-medium text-blue-300 mr-1">
-                基本:
-              </span>
-              <button
-                onClick={() => switchTool("WindowLevel")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "WindowLevel"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                🌅 窗位
-              </button>
-              <button
-                onClick={() => switchTool("Pan")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Pan"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                ✋ 平移
-              </button>
-              <button
-                onClick={() => switchTool("Zoom")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Zoom"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                🔍 缩放
-              </button>
-              <button
-                onClick={() => switchTool("Probe")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Probe"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                🔎 探针
-              </button>
-
-              {/* 测量工具 */}
-              <span className="text-xs font-medium text-green-300 mr-1 ml-3">
-                测量:
-              </span>
-              <button
-                onClick={() => switchTool("Length")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Length"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                📏 长度
-              </button>
-              <button
-                onClick={() => switchTool("Angle")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Angle"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                📐 角度
-              </button>
-              <button
-                onClick={() => switchTool("Bidirectional")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Bidirectional"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                ↔️ 双向
-              </button>
-
-              {/* 标注工具 */}
-              <span className="text-xs font-medium text-purple-300 mr-1 ml-3">
-                标注:
-              </span>
-              <button
-                onClick={() => switchTool("RectangleROI")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "RectangleROI"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                ▭ 矩形
-              </button>
-              <button
-                onClick={() => switchTool("EllipticalROI")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "EllipticalROI"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                ⚬ 椭圆
-              </button>
-              <button
-                onClick={() => switchTool("CircleROI")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "CircleROI"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                ◯ 圆形
-              </button>
-              <button
-                onClick={() => switchTool("PlanarFreehandROI")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "PlanarFreehandROI"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                🎨 绘制
-              </button>
-              <button
-                onClick={() => switchTool("ArrowAnnotate")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "ArrowAnnotate"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                ➡️ 箭头
-              </button>
-              <button
-                onClick={() => switchTool("Label")}
-                className={`px-2 py-1 text-xs rounded transition-all ${
-                  activeTool === "Label"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-                }`}
-              >
-                📝 文字
-              </button>
-            </div>
-
-            {/* 当前工具信息 - 更紧凑 */}
-            <div className="text-xs text-gray-300 bg-gray-700 bg-opacity-50 px-2 py-1 rounded">
-              <span className="text-yellow-300">当前:</span>{" "}
-              <span className="font-medium">
-                {getToolDisplayName(activeTool)}
-              </span>
-              <span className="mx-1 text-gray-500">|</span>
-              <span className="text-blue-300">
-                {getToolInstructions(activeTool)}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 状态显示 */}
-      {error && (
-        <div className="p-3 bg-red-100 text-red-800 border-b border-red-300">
-          错误: {error}
-        </div>
-      )}
-
-      {dataLoading && (
-        <div className="p-3 bg-blue-100 text-blue-800 border-b border-blue-300">
-          正在加载数据...
-        </div>
-      )}
-
-      {!isInitialized && (
-        <div className="p-3 bg-cyan-100 text-cyan-800 border-b border-cyan-300">
-          正在初始化 Cornerstone...
-        </div>
-      )}
-
-      {/* DICOM 显示区域 */}
-      <div className="flex-1 relative overflow-hidden">
-        <div
-          ref={elementRef}
-          className="w-full h-full bg-black"
-          style={{ minHeight: "400px" }}
-        >
-          {!isLoading && isInitialized && dcmData && (
-            <>
-              <div className="absolute top-4 left-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded z-10">
-                图像将自动加载，或点击按钮重新加载
-              </div>
-              {imageIds.length > 1 && (
-                <div className="absolute top-4 right-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded z-10">
-                  使用 ← → 键切换图像
-                </div>
-              )}
-            </>
-          )}
-          {!dcmData && !dataLoading && (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <div className="text-2xl mb-2">📁</div>
-                <div>数据加载失败</div>
-              </div>
-            </div>
-          )}
-          {dataLoading && (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <div className="text-2xl mb-2">🔄</div>
-                <div>正在加载数据...</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 悬浮图像切换控件 */}
-      {dcmData && imageIds.length > 1 && (
-        <div className="fixed bottom-4 left-4 z-50">
-          {/* 展开/收起按钮 */}
-          <div className="mb-2">
-            <Button
-              size="sm"
-              onClick={() => setIsImageControlExpanded(!isImageControlExpanded)}
-              className="bg-gray-800 bg-opacity-90 backdrop-blur-sm hover:bg-gray-700 text-white border border-gray-600 shadow-lg"
-            >
-              {isImageControlExpanded ? "🔽" : "🖼️"} {currentImageIndex + 1}/
-              {imageIds.length}
-            </Button>
-          </div>
-
-          {/* 展开的控制面板 */}
-          {isImageControlExpanded && (
-            <div className="bg-gray-800 bg-opacity-95 backdrop-blur-sm border border-gray-600 rounded-lg shadow-xl p-4 min-w-72">
-              {/* 控制按钮区域 */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-orange-300">
-                  图像切换:
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={goToPreviousImage}
-                    disabled={imageIds.length <= 1 || isLoading}
-                    className="bg-gray-600 hover:bg-gray-500 text-white min-w-unit-8 h-8"
-                  >
-                    ◀
-                  </Button>
-
-                  <span className="text-sm text-gray-300 px-3 min-w-16 text-center">
-                    {currentImageIndex + 1} / {imageIds.length}
-                  </span>
-
-                  <Button
-                    size="sm"
-                    onClick={goToNextImage}
-                    disabled={imageIds.length <= 1 || isLoading}
-                    className="bg-gray-600 hover:bg-gray-500 text-white min-w-unit-8 h-8"
-                  >
-                    ▶
-                  </Button>
-                </div>
-              </div>
-
-              {/* 当前文件信息 */}
-              <div className="mb-3">
-                <span className="text-xs text-gray-400">
-                  当前文件: {dcmData.files[currentImageIndex]?.name || "未知"}
-                </span>
-              </div>
-
-              {/* 缩略图列表（当图像较多时显示） */}
-              {imageIds.length > 2 && (
-                <div>
-                  <div className="text-xs text-gray-400 mb-2">快速跳转:</div>
-                  <div className="flex gap-1 overflow-x-auto pb-2 max-w-64">
-                    {imageIds.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => switchToImage(index)}
-                        disabled={isLoading}
-                        className={`
-                          flex-shrink-0 w-8 h-6 text-xs rounded transition-all
-                          ${
-                            index === currentImageIndex
-                              ? "bg-orange-600 text-white"
-                              : "bg-gray-600 text-gray-300 hover:bg-gray-500"
-                          }
-                          ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                        `}
-                      >
-                        {index + 1}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 键盘快捷键提示 */}
-              <div className="mt-3 pt-3 border-t border-gray-600">
-                <div className="text-xs text-gray-500">
-                  💡 快捷键: ← → 切换图像
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <ImageSwitcher
+        visible={!!dcmData && imageIds.length > 1}
+        isLoading={isLoading}
+        imageCount={imageIds.length}
+        currentIndex={currentImageIndex}
+        expanded={isImageControlExpanded}
+        onToggleExpanded={() =>
+          setIsImageControlExpanded(!isImageControlExpanded)
+        }
+        onPrev={goToPreviousImage}
+        onNext={goToNextImage}
+        onJump={(index) => switchToImage(index)}
+        currentFileName={dcmData?.files[currentImageIndex]?.name}
+      />
     </div>
   );
 }
