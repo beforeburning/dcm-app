@@ -37,7 +37,7 @@ export default function ToolBar({
   );
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className="space-y-2 bg-gray-800 px-2">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs font-medium text-blue-300 mr-1">基本:</span>
         <ToolButton name="WindowLevel" label="🌅 窗位" />
@@ -63,7 +63,7 @@ export default function ToolBar({
         <ToolButton name="Label" label="📝 文字" />
       </div>
 
-      <div className="text-xs text-gray-300 bg-gray-700 bg-opacity-50 px-2 py-1 rounded">
+      <div className="text-xs text-gray-300 py-1 rounded">
         <span className="text-yellow-300">当前:</span>{" "}
         <span className="font-medium">{getToolDisplayName(activeTool)}</span>
         <span className="mx-1 text-gray-500">|</span>

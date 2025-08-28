@@ -45,7 +45,12 @@ import dicomImageLoader, {
   init as dicomImageLoaderInit,
 } from "@cornerstonejs/dicom-image-loader";
 import * as dicomParser from "dicom-parser";
-import { getDcmDetailRequest, qiniuBaseUrl, type DcmList } from "@/api/dcm";
+import {
+  getDcmDetailRequest,
+  qiniuBaseUrl,
+  type DcmList,
+  saveDcmAnnotationsRequest,
+} from "@/api/dcm";
 import TopBar from "./components/TopBar";
 import ToolBar from "./components/ToolBar";
 import StatusBanners from "./components/StatusBanners";
@@ -74,11 +79,13 @@ function DetailPage() {
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
 
-  // 打印当前注释/测量数据为简化 JSON
-  const printAnnotations = useCallback(() => {
+  // 打印并保存当前注释/测量 JSON
+  const printAnnotations = useCallback(async () => {
     try {
       const all =
         (csToolsAnnotation as any)?.state?.getAllAnnotations?.() || [];
+      console.log("🚀 ~ printAnnotations ~ all:", all);
+
       const simplified = all.map((a: any) => ({
         annotationUID: a?.annotationUID,
         toolName: a?.metadata?.toolName || a?.toolName,
@@ -88,10 +95,23 @@ function DetailPage() {
         data: a?.data,
       }));
       console.log("[DetailPage] 注释JSON:", simplified);
+
+      if (!id) {
+        addToast({ color: "danger", description: "无效的数据ID，无法保存" });
+        return;
+      }
+
+      const res = await saveDcmAnnotationsRequest(id, simplified);
+      if (res.code === 200) {
+        addToast({ color: "success", description: "注释已保存" });
+      } else {
+        addToast({ color: "warning", description: res.message || "保存失败" });
+      }
     } catch (e: any) {
-      console.warn("无法获取注释数据", e);
+      console.warn("无法获取或保存注释数据", e);
+      addToast({ color: "danger", description: "保存失败" });
     }
-  }, []);
+  }, [id]);
 
   // 分类显示映射
   const getCategoryLabel = (category?: string): string => {

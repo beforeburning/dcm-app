@@ -22,7 +22,7 @@ export default function TopBar({
   onConsoleEditData,
 }: Props) {
   return (
-    <div className="bg-gray-800 text-white p-4 flex-shrink-0">
+    <div className="bg-gray-800 text-white px-4 pt-4 flex-shrink-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <Button
@@ -49,7 +49,7 @@ export default function TopBar({
                 }
               `}
             >
-              🧪 打印数据
+              💾 保存数据
             </Button>
           )}
           <Button

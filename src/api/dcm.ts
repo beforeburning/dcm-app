@@ -37,6 +37,14 @@ export interface PaginatedDcmResponse {
 let mockDcmData: DcmList[] = [];
 let mockStudentData: DcmList[] = []; // 学生复制的数据
 let dataIdCounter = 100; // 新数据 ID 计数器
+// 注释/测量 JSON 存储（内存模拟）: key 为 dcmId
+const mockDcmAnnotations: Record<
+  string,
+  {
+    updatedAt: number;
+    data: unknown;
+  }
+> = {};
 
 // 初始化公开数据（为所有用户可见）
 const initializePublicData = (): DcmList[] => {
@@ -810,6 +818,60 @@ export const getDcmDetailRequest = async (
   return {
     code: 404,
     message: "数据不存在",
+  };
+};
+
+// 保存（覆盖）某个 dcmId 的注释/测量 JSON（内存模拟）
+export const saveDcmAnnotationsRequest = async (
+  dcmId: string,
+  annotationJson: unknown
+): Promise<ApiResponse<{ dcmId: string; updatedAt: number }>> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // 校验 dcm 是否存在于公开或学生数据中
+  const exists =
+    mockDcmData.some((d) => d.id === dcmId) ||
+    mockStudentData.some((d) => d.id === dcmId);
+  if (!exists) {
+    return {
+      code: 404,
+      message: "数据不存在，无法保存注释",
+    };
+  }
+
+  const ts = Math.floor(Date.now() / 1000);
+  mockDcmAnnotations[dcmId] = {
+    updatedAt: ts,
+    data: annotationJson,
+  };
+
+  return {
+    code: 200,
+    message: "保存成功",
+    data: { dcmId, updatedAt: ts },
+  };
+};
+
+// 获取某个 dcmId 的注释/测量 JSON（内存模拟）
+export const getDcmAnnotationsRequest = async (
+  dcmId: string
+): Promise<
+  ApiResponse<{ dcmId: string; updatedAt: number; data: unknown }>
+> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const record = mockDcmAnnotations[dcmId];
+  if (!record) {
+    return {
+      code: 404,
+      message: "暂无注释数据",
+    };
+  }
+
+  return {
+    code: 200,
+    message: "success",
+    data: { dcmId, updatedAt: record.updatedAt, data: record.data },
   };
 };
 
