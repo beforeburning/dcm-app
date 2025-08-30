@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCM前端API集成测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        input, select {
+            padding: 5px 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DCM 前端 API 集成测试</h1>
+        <p class="info">
+            测试前端对接后端 dcm.test 域名的 JWT API 系统<br>
+            确保后端服务运行在 dcm.test:9000，前端运行在 dcm.test:3000
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🔑 认证测试</h3>
+            <div>
+                <input type="email" id="email" placeholder="邮箱" value="admin@dcm.test">
+                <input type="password" id="password" placeholder="密码" value="admin123">
+                <button onclick="testLogin()">登录测试</button>
+                <button onclick="testGetUserInfo()">获取用户信息</button>
+                <button onclick="testLogout()">登出测试</button>
+            </div>
+            <div class="result" id="authResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>👥 用户管理测试</h3>
+            <div>
+                <button onclick="testGetAllUsers()">获取所有用户</button>
+                <button onclick="testSearchUsers()">搜索用户</button>
+            </div>
+            <div class="result" id="userResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📁 原始数据测试</h3>
+            <div>
+                <button onclick="testGetOriginalData()">获取原始数据列表</button>
+                <button onclick="testGetUserAccessibleData()">获取用户可访问数据</button>
+                <button onclick="testOssConnection()">测试OSS连接</button>
+            </div>
+            <div class="result" id="dataResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 用户复制数据测试</h3>
+            <div>
+                <button onclick="testGetUserCopyData()">获取用户复制数据</button>
+                <button onclick="testGetUserDataCenter()">获取用户数据中心</button>
+            </div>
+            <div class="result" id="copyResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📧 注册流程测试</h3>
+            <div>
+                <input type="email" id="regEmail" placeholder="注册邮箱" value="test@example.com">
+                <button onclick="testCheckEmail()">检查邮箱</button>
+                <button onclick="testSendCode()">发送验证码</button>
+                <input type="text" id="verifyCode" placeholder="验证码" value="123456">
+                <button onclick="testVerifyCode()">验证码验证</button>
+            </div>
+            <div class="result" id="registerResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局存储Token和用户信息
+        let currentToken = '';
+        let currentUser = null;
+
+        // 通用API调用函数
+        async function apiCall(url, options = {}) {
+            const defaultHeaders = {
+                'Content-Type': 'application/json',
+            };
+
+            if (currentToken) {
+                defaultHeaders.Authorization = `Bearer ${currentToken}`;
+            }
+
+            const config = {
+                method: 'GET',
+                headers: defaultHeaders,
+                ...options,
+                headers: {
+                    ...defaultHeaders,
+                    ...options.headers
+                }
+            };
+
+            try {
+                const response = await fetch(`http://dcm.test:9000/api${url}`, config);
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        // 显示结果的通用函数
+        function showResult(elementId, result, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const formattedResult = typeof result === 'object' ? JSON.stringify(result, null, 2) : result;
+            element.innerHTML = `[${timestamp}] ${formattedResult}`;
+            element.className = `result ${type}`;
+        }
+
+        // 认证相关测试
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const result = await apiCall('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            if (result.data?.success) {
+                currentToken = result.data.data.access_token;
+                currentUser = result.data.data.user;
+                localStorage.setItem('access_token', currentToken);
+                showResult('authResult', '登录成功：' + JSON.stringify(result.data, null, 2), 'success');
+            } else {
+                showResult('authResult', '登录失败：' + JSON.stringify(result, null, 2), 'error');
+            }
+        }
+
+        async function testGetUserInfo() {
+            if (!currentToken) {
+                currentToken = localStorage.getItem('access_token');
+            }
+
+            const result = await apiCall('/auth/me');
+            
+            if (result.data?.success) {
+                currentUser = result.data.data;
+                showResult('authResult', '获取用户信息成功：' + JSON.stringify(result.data, null, 2), 'success');
+            } else {
+                showResult('authResult', '获取用户信息失败：' + JSON.stringify(result, null, 2), 'error');
+            }
+        }
+
+        async function testLogout() {
+            const result = await apiCall('/auth/logout', { method: 'POST' });
+            
+            currentToken = '';
+            currentUser = null;
+            localStorage.removeItem('access_token');
+            
+            showResult('authResult', '登出结果：' + JSON.stringify(result, null, 2), 'info');
+        }
+
+        // 用户管理测试
+        async function testGetAllUsers() {
+            const result = await apiCall('/admin/users?page=1&per_page=5');
+            showResult('userResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        async function testSearchUsers() {
+            const result = await apiCall('/admin/users?search=admin&page=1&per_page=5');
+            showResult('userResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        // 原始数据测试
+        async function testGetOriginalData() {
+            const result = await apiCall('/admin/original-data?page=1&per_page=5');
+            showResult('dataResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        async function testGetUserAccessibleData() {
+            const result = await apiCall('/user/original-data?page=1&per_page=5');
+            showResult('dataResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        async function testOssConnection() {
+            const result = await apiCall('/admin/original-data/test-oss/connection');
+            showResult('dataResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        // 用户复制数据测试
+        async function testGetUserCopyData() {
+            const result = await apiCall('/user/copy?page=1&per_page=5');
+            showResult('copyResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        async function testGetUserDataCenter() {
+            const result = await apiCall('/user/data?page=1&per_page=5');
+            showResult('copyResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        // 注册流程测试
+        async function testCheckEmail() {
+            const email = document.getElementById('regEmail').value;
+            const result = await apiCall('/register/check-email', {
+                method: 'POST',
+                body: JSON.stringify({ email })
+            });
+            showResult('registerResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        async function testSendCode() {
+            const email = document.getElementById('regEmail').value;
+            const result = await apiCall('/register/send-code', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email,
+                    name: 'Test User',
+                    password: 'test123456'
+                })
+            });
+            showResult('registerResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        async function testVerifyCode() {
+            const email = document.getElementById('regEmail').value;
+            const code = document.getElementById('verifyCode').value;
+            const result = await apiCall('/register/verify-code', {
+                method: 'POST',
+                body: JSON.stringify({ email, code })
+            });
+            showResult('registerResult', JSON.stringify(result, null, 2), result.data?.success ? 'success' : 'error');
+        }
+
+        // 页面加载时尝试从localStorage恢复token
+        window.onload = function() {
+            const savedToken = localStorage.getItem('access_token');
+            if (savedToken) {
+                currentToken = savedToken;
+                showResult('authResult', '从本地存储恢复Token: ' + savedToken.substring(0, 50) + '...', 'info');
+            }
+        };
+    </script>
+</body>
+</html>

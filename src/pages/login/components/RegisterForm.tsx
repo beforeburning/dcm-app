@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { addToast } from "@heroui/toast";
 import {
+  checkEmailRequest,
   sendVerificationCodeRequest,
-  verifyEmailCodeRequest,
-  completeRegisterRequest,
+  verifyCodeRequest,
+  submitRegisterRequest,
 } from "@/api/login";
 
 interface RegisterFormProps {
@@ -61,9 +62,26 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
     setSendingCode(true);
     try {
-      const res = await sendVerificationCodeRequest({ email });
+      // 先检查邮箱是否已存在
+      const checkRes = await checkEmailRequest({ email });
+      
+      if (checkRes.success && checkRes.data?.exists) {
+        addToast({
+          color: "danger",
+          description: "该邮箱已被注册，请使用其他邮箱",
+        });
+        setSendingCode(false);
+        return;
+      }
+      
+      // 发送验证码
+      const res = await sendVerificationCodeRequest({ 
+        email, 
+        name: username || 'User', 
+        password: password || 'temp123' 
+      });
 
-      if (res.code === 200) {
+      if (res.success) {
         addToast({
           color: "success",
           description: res.data?.message || "验证码已发送",
@@ -98,17 +116,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
     setVerifyingCode(true);
     try {
-      const res = await verifyEmailCodeRequest({
+      const res = await verifyCodeRequest({
         email,
         code: verificationCode,
       });
 
-      if (res.code === 200 && res.data?.token) {
+      // 根据实际API响应格式判断验证是否成功
+      if (res.success && (res.data?.verification_token || res.data?.verified)) {
         addToast({
           color: "success",
-          description: "邮箱验证成功",
+          description: res.message || "邮箱验证成功",
         });
-        setTempToken(res.data.token);
+        // 如果有verification_token则使用，否则使用email作为临时标识
+        setTempToken(res.data?.verification_token || `verified_${email}`);
         setStep(2);
       } else {
         addToast({
@@ -157,13 +177,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
     setCompleting(true);
     try {
-      const res = await completeRegisterRequest({
-        token: tempToken,
+      // 传递所有需要的字段，包括验证码
+      const res = await submitRegisterRequest({
+        email,
         username,
         password,
+        password_confirmation: confirmPassword,
+        code: verificationCode, // 保留步骤1的验证码
       });
 
-      if (res.code === 200) {
+      if (res.success) {
         addToast({
           color: "success",
           description: "注册成功，请登录",

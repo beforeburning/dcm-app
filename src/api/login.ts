@@ -1,310 +1,143 @@
-import { ApiResponse } from ".";
+import { ApiResponse, apiClient } from ".";
 
-const mockAdminJwtToken = "jwt-admin-1234567890";
-const mockTeacherJwtToken = "jwt-teacher-1234567890";
-const mockStudentJwtToken = "jwt-student-1234567890";
+// 类型定义
+export type UserRole = "admin" | "teacher" | "student";
 
-// Mock 用户数据
-const mockUsers = {
-  admin: {
-    password: "123456",
-    userInfo: {
-      userName: "系统管理员",
-      userId: "admin_001",
-      email: "admin@hospital.com",
-      role: "admin" as UserRole,
-      createTime: "2020-01-01",
-      updateTime: "2024-01-15",
-    },
-  },
-  teacher: {
-    password: "123456",
-    userInfo: {
-      userName: "张老师",
-      userId: "teacher_001",
-      email: "zhangdoctor@hospital.com",
-      role: "teacher" as UserRole,
-      createTime: "2021-03-15",
-      updateTime: "2024-01-15",
-    },
-  },
-  student: {
-    password: "123456",
-    userInfo: {
-      userName: "李同学",
-      userId: "student_001",
-      email: "listudent@medical.edu",
-      role: "student" as UserRole,
-      createTime: "2023-09-01",
-      updateTime: "2024-01-15",
-    },
-  },
+export type UserInfo = {
+  id: number;
+  name: string;
+  username?: string;  // 添加username字段，兼容后端可能返回的两种字段
+  email: string;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
 };
 
-export type loginParams = {
-  username: string;
+export type LoginParams = {
+  email: string;
   password: string;
 };
 
 export type LoginResponse = {
-  token: string;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  user: UserInfo;
 };
 
 export type RegisterParams = {
-  username: string;
+  name: string;
   email: string;
+  password: string;
+  password_confirmation: string;
+};
+
+// 邮箱检查参数
+export type CheckEmailParams = {
+  email: string;
+};
+
+// 发送验证码参数
+export type SendCodeParams = {
+  email: string;
+  name: string;
   password: string;
 };
 
-export type RegisterResponse = {
-  userId: string;
-  username: string;
-  email: string;
-};
-
-// 发送验证码请求参数
-export type SendVerificationCodeParams = {
-  email: string;
-};
-
-// 发送验证码响应
-export type SendVerificationCodeResponse = {
-  message: string;
-};
-
-// 验证邮箱验证码参数
-export type VerifyEmailCodeParams = {
+// 验证验证码参数
+export type VerifyCodeParams = {
   email: string;
   code: string;
 };
 
-// 验证邮箱验证码响应
-export type VerifyEmailCodeResponse = {
-  token: string; // 临时token，用于下一步注册
-};
-
-// 完成注册参数
-export type CompleteRegisterParams = {
-  token: string; // 临时token
+// 提交注册参数
+export type SubmitRegisterParams = {
+  email: string;
   username: string;
   password: string;
+  password_confirmation: string;
+  code: string;
+  verification_token?: string;
 };
 
-// 完成注册响应
-export type CompleteRegisterResponse = {
-  userId: string;
-  username: string;
-  email: string;
-};
-
-// 用户名到 token 的映射关系
-const userTokenMap = {
-  admin: mockAdminJwtToken,
-  teacher: mockTeacherJwtToken,
-  student: mockStudentJwtToken,
-};
-
-// 默认验证码（用于演示和测试）
-const DEFAULT_VERIFICATION_CODE = "123456";
-
-// 模拟临时token存储
-const temporaryTokens: {
-  [token: string]: { email: string; timestamp: number };
-} = {};
-
+// 登录接口
 export const loginRequest = async (
-  params: loginParams
+  params: LoginParams
 ): Promise<ApiResponse<LoginResponse>> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // 检查用户是否存在
-  const user = mockUsers[params.username as keyof typeof mockUsers];
-
-  if (!user || user.password !== params.password) {
-    return {
-      code: 401,
-      message: "用户名或密码错误",
-    };
+  const response = await apiClient.post('/auth/login', params);
+  
+  // 如果登录成功，存储 token
+  if (response.data.success && response.data.data?.access_token) {
+    localStorage.setItem('access_token', response.data.data.access_token);
   }
-
-  // 获取对应的 token
-  const token = userTokenMap[params.username as keyof typeof userTokenMap];
-
-  return {
-    code: 200,
-    message: "success",
-    data: {
-      token,
-    },
-  };
+  
+  return response.data;
 };
 
-export const registerRequest = async (
-  params: RegisterParams
-): Promise<ApiResponse<RegisterResponse>> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // 模拟邮箱已存在检查
-  if (params.email === "admin@example.com") {
-    return {
-      code: 400,
-      message: "该邮箱已被注册",
-    };
-  }
-
-  // 模拟用户名已存在检查
-  if (params.username === "admin") {
-    return {
-      code: 400,
-      message: "该用户名已被占用",
-    };
-  }
-
-  // 模拟注册成功
-  return {
-    code: 200,
-    message: "注册成功",
-    data: {
-      userId: `user_${Date.now()}`,
-      username: params.username,
-      email: params.email,
-    },
-  };
+// 获取当前用户信息
+export const getUserInfoRequest = async (): Promise<ApiResponse<UserInfo>> => {
+  const response = await apiClient.get('/auth/me');
+  return response.data;
 };
 
-// 发送邮箱验证码接口
+// 刷新 Token
+export const refreshTokenRequest = async (): Promise<ApiResponse<{ access_token: string; token_type: string; expires_in: number }>> => {
+  const response = await apiClient.post('/auth/refresh');
+  
+  // 更新本地存储的 token
+  if (response.data.success && response.data.data?.access_token) {
+    localStorage.setItem('access_token', response.data.data.access_token);
+  }
+  
+  return response.data;
+};
+
+// 登出接口
+export const logoutRequest = async (): Promise<ApiResponse<null>> => {
+  const response = await apiClient.post('/auth/logout');
+  
+  // 清除本地 token
+  localStorage.removeItem('access_token');
+  
+  return response.data;
+};
+
+// 检查邮箱是否已注册
+export const checkEmailRequest = async (
+  params: CheckEmailParams
+): Promise<ApiResponse<{ exists: boolean }>> => {
+  const response = await apiClient.post('/register/check-email', params);
+  return response.data;
+};
+
+// 发送注册验证码
 export const sendVerificationCodeRequest = async (
-  params: SendVerificationCodeParams
-): Promise<ApiResponse<SendVerificationCodeResponse>> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // 使用默认验证码，简化测试流程
-  const code = DEFAULT_VERIFICATION_CODE;
-
-  console.log(`模拟发送验证码到 ${params.email}: ${code}`);
-
-  return {
-    code: 200,
-    message: "验证码已发送到您的邮箱",
-    data: {
-      message: `验证码已发送到 ${params.email}，请查收（演示环境：验证码为 ${code}）`,
-    },
-  };
+  params: SendCodeParams
+): Promise<ApiResponse<{ message: string }>> => {
+  const response = await apiClient.post('/register/send-code', params);
+  return response.data;
 };
 
-// 验证邮箱验证码接口
-export const verifyEmailCodeRequest = async (
-  params: VerifyEmailCodeParams
-): Promise<ApiResponse<VerifyEmailCodeResponse>> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // 验证验证码
-  if (params.code !== "123456") {
-    return {
-      code: 400,
-      message: "验证码错误",
-    };
-  }
-
-  // 生成临时token
-  const tempToken = `temp_${Date.now()}_${Math.random()}`;
-  temporaryTokens[tempToken] = {
-    email: params.email,
-    timestamp: Date.now(),
-  };
-
-  return {
-    code: 200,
-    message: "邮箱验证成功",
-    data: {
-      token: tempToken,
-    },
-  };
+// 验证注册验证码
+export const verifyCodeRequest = async (
+  params: VerifyCodeParams
+): Promise<ApiResponse<{ verification_token?: string; verified?: boolean; remaining_time?: number }>> => {
+  const response = await apiClient.post('/register/verify-code', params);
+  return response.data;
 };
 
-// 完成注册接口
-export const completeRegisterRequest = async (
-  params: CompleteRegisterParams
-): Promise<ApiResponse<CompleteRegisterResponse>> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const tempTokenData = temporaryTokens[params.token];
-
-  if (!tempTokenData) {
-    return {
-      code: 400,
-      message: "临时token无效或已过期",
-    };
-  }
-
-  // 检查临时token是否过期（10分钟）
-  if (Date.now() - tempTokenData.timestamp > 10 * 60 * 1000) {
-    delete temporaryTokens[params.token];
-    return {
-      code: 400,
-      message: "临时token已过期，请重新验证邮箱",
-    };
-  }
-
-  // 模拟用户名已存在检查
-  if (params.username === "admin") {
-    return {
-      code: 400,
-      message: "该用户名已被占用",
-    };
-  }
-
-  // 清除临时token
-  delete temporaryTokens[params.token];
-
-  // 模拟注册成功
-  return {
-    code: 200,
-    message: "注册成功",
-    data: {
-      userId: `user_${Date.now()}`,
-      username: params.username,
-      email: tempTokenData.email,
-    },
-  };
-};
-
-export type UserRole = "admin" | "teacher" | "student";
-
-export type UserInfo = {
-  userName: string;
-  userId: string;
-  email: string;
-  role: UserRole;
-  createTime: string;
-  updateTime: string;
-};
-
-// Token 到用户的映射关系
-const tokenUserMap = {
-  [mockAdminJwtToken]: mockUsers.admin.userInfo,
-  [mockTeacherJwtToken]: mockUsers.teacher.userInfo,
-  [mockStudentJwtToken]: mockUsers.student.userInfo,
-};
-
-export const getUserInfoRequest = async (
-  token: string
+// 提交注册
+export const submitRegisterRequest = async (
+  params: SubmitRegisterParams
 ): Promise<ApiResponse<UserInfo>> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const response = await apiClient.post('/register/submit', params);
+  return response.data;
+};
 
-  // 检查 token 是否有效
-  const userInfo = tokenUserMap[token];
-
-  if (!userInfo) {
-    return {
-      code: 401,
-      message: "token 无效",
-    };
-  }
-
-  return {
-    code: 200,
-    message: "success",
-    data: userInfo,
-  };
+// 获取验证码状态
+export const getVerificationStatusRequest = async (
+  email: string
+): Promise<ApiResponse<{ status: string; expires_at?: string }>> => {
+  const response = await apiClient.get(`/register/verification-status?email=${encodeURIComponent(email)}`);
+  return response.data;
 };

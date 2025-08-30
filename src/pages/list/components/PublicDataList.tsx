@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { getDcmListRequest, type DcmList } from "@/api/dcm";
+import { getOriginalDataListRequest, type DcmData } from "@/api/dcm_new";
+import { type DcmList } from "@/api/dcm";
 import DataCard from "./DataCard";
 
 interface PublicDataListProps {
@@ -13,24 +14,43 @@ function PublicDataList({
   onFileClick,
   onCopySuccess,
 }: PublicDataListProps): React.JSX.Element {
-  const [data, setData] = useState<DcmList[]>([]);
+  const [data, setData] = useState<DcmData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [lastPage, setLastPage] = useState(0);
+  const [perPage, setPerPage] = useState(10);
 
-  const pageSize = 10;
+  // 将 DcmData 转换为 DcmList 格式
+  const convertDcmDataToDcmList = (dcmData: DcmData): DcmList => {
+    return {
+      id: dcmData.original_id.toString(),
+      name: dcmData.name,
+      createTime: new Date(dcmData.created_at).getTime() / 1000, // 转换为秒级时间戳
+      updateTime: new Date(dcmData.updated_at).getTime() / 1000, // 转换为秒级时间戳
+      files: dcmData.files || [],
+      totalFiles: dcmData.file_count,
+      totalSize: dcmData.total_size,
+      category: dcmData.category,
+      tags: dcmData.tags,
+      isPublic: dcmData.status === 'active',
+      ownerId: undefined, // 公共数据不需要所有者ID
+      ownerName: undefined, // 公共数据不需要所有者名称
+      originalId: dcmData.original_id.toString(),
+    };
+  };
 
   // 获取公共数据列表
-  const fetchData = async (currentPage: number = page) => {
+  const fetchData = async (page: number = currentPage) => {
     setLoading(true);
     try {
-      const response = await getDcmListRequest(currentPage, pageSize);
-      if (response.code === 200 && response.data) {
-        setData(response.data.data);
+      const response = await getOriginalDataListRequest(page, perPage);
+      if (response.success && response.data) {
+        setData(response.data.list);
         setTotal(response.data.total);
-        setTotalPages(response.data.totalPages);
-        setPage(response.data.page);
+        setLastPage(response.data.last_page);
+        setCurrentPage(response.data.current_page);
+        setPerPage(response.data.per_page);
       } else {
         addToast({
           color: "danger",
@@ -52,7 +72,7 @@ function PublicDataList({
   }, []);
 
   const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+    setCurrentPage(newPage);
     fetchData(newPage);
   };
 
@@ -81,8 +101,8 @@ function PublicDataList({
           <div className="space-y-4">
             {data.map((dcm) => (
               <DataCard
-                key={dcm.id}
-                dcm={dcm}
+                key={dcm.original_id}
+                dcm={convertDcmDataToDcmList(dcm)}
                 onFileClick={onFileClick}
                 onDataChange={fetchData}
                 onCopySuccess={onCopySuccess}
@@ -90,11 +110,11 @@ function PublicDataList({
             ))}
           </div>
 
-          {totalPages > 1 && (
+          {lastPage > 1 && (
             <div className="flex flex-col sm:flex-row justify-center items-center px-6 py-5">
               <Pagination
-                total={totalPages}
-                page={page}
+                total={lastPage}
+                page={currentPage}
                 onChange={handlePageChange}
                 showControls
                 size="md"

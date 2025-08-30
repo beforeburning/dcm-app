@@ -90,14 +90,14 @@ const HeaderComponents = (): React.JSX.Element => {
               {/* 用户头像 */}
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-semibold">
-                  {userInfo?.userName?.charAt(0) || "U"}
+                  {(userInfo?.user?.username || userInfo?.user?.name )?.charAt(0) || "U"}
                 </span>
               </div>
 
               {/* 用户信息 */}
               <div className="flex flex-col">
                 <span className="text-white font-medium text-sm">
-                  {userInfo?.userName || "Loading..."}
+                  {userInfo?.user?.username || userInfo?.user?.name || "未登录"}
                 </span>
                 <span className="text-gray-400 text-xs">
                   {userInfo?.role === "admin"
@@ -114,7 +114,8 @@ const HeaderComponents = (): React.JSX.Element => {
             {/* 操作按钮组 */}
             <div className="flex items-center space-x-2">
               {/* 教师/管理员专用：上传按钮 */}
-              {canUpload && !isUploadPage && (
+              {/*{canUpload && !isUploadPage && (*/}
+              {true && (
                 <button
                   onClick={handleUpload}
                   className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"

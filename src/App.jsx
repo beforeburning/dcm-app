@@ -290,20 +290,35 @@
 // export default App;
 
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, useRoutes } from 'react-router-dom'
 import routes from './router/routes'
 import { NavigationProvider } from './components/NavigationProvider'
+import { useAppStore } from './stores/app'
 
 function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <NavigationProvider>
-        <AppRoutes />
+        <AppInitializer />
       </NavigationProvider>
     </BrowserRouter>
   )
 }
+
+const AppInitializer = () => {
+  const { getUserInfo, accessToken } = useAppStore();
+
+  useEffect(() => {
+    // 在应用启动时，如果有token则获取用户信息
+    const token = accessToken || localStorage.getItem('access_token');
+    if (token) {
+      getUserInfo();
+    }
+  }, [getUserInfo, accessToken]);
+
+  return <AppRoutes />;
+};
 
 const AppRoutes = () => {
   return useRoutes(routes)

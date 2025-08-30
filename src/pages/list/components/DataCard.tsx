@@ -166,24 +166,24 @@ function DataCard({
                 </div>
               )}
               {/* 标签显示 */}
-              {dcm.tags && dcm.tags.length > 0 && (
-                <div className="flex items-center space-x-2 flex-wrap">
-                  <span className="text-gray-500">标签:</span>
-                  <div className="flex space-x-1">
-                    {dcm.tags.map((tag, index) => (
-                      <Chip
-                        key={index}
-                        size="sm"
-                        color="secondary"
-                        variant="flat"
-                        className="text-xs"
-                      >
-                        {tag}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/*{dcm.tags && dcm.tags.length > 0 && (*/}
+              {/*  <div className="flex items-center space-x-2 flex-wrap">*/}
+              {/*    <span className="text-gray-500">标签:</span>*/}
+              {/*    <div className="flex space-x-1">*/}
+              {/*      {dcm.tags.map((tag, index) => (*/}
+              {/*        <Chip*/}
+              {/*          key={index}*/}
+              {/*          size="sm"*/}
+              {/*          color="secondary"*/}
+              {/*          variant="flat"*/}
+              {/*          className="text-xs"*/}
+              {/*        >*/}
+              {/*          {tag}*/}
+              {/*        </Chip>*/}
+              {/*      ))}*/}
+              {/*    </div>*/}
+              {/*  </div>*/}
+              {/*)}*/}
             </div>
           </div>
 

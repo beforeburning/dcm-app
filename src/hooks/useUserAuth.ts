@@ -2,7 +2,7 @@ import { useAppStore } from "@/stores/app";
 import type { UserRole } from "@/api/login";
 
 export const useUserAuth = () => {
-  const { userInfo } = useAppStore();
+  const { userInfo, isAuthenticated } = useAppStore();
 
   const isAdmin = userInfo?.role === "admin";
   const isTeacher = userInfo?.role === "teacher";
@@ -15,7 +15,7 @@ export const useUserAuth = () => {
   const hasTeacherPermission = isAdmin || isTeacher;
 
   // 检查是否有学生权限（所有用户都有）
-  const hasStudentPermission = Boolean(userInfo);
+  const hasStudentPermission = isAuthenticated();
 
   // 检查是否可以上传数据
   const canUpload = hasTeacherPermission;
@@ -32,6 +32,7 @@ export const useUserAuth = () => {
   return {
     userInfo,
     role: userInfo?.role as UserRole,
+    isAuthenticated: isAuthenticated(),
     isAdmin,
     isTeacher,
     isStudent,

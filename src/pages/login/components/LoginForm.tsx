@@ -6,10 +6,10 @@ import { useAppStore } from "@/stores/app";
 
 export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
-  const { setJwtToken } = useAppStore();
+  const { setAccessToken } = useAppStore();
 
-  const [username, setUsername] = useState<string>("admin");
-  const [password, setPassword] = useState<string>("123456");
+  const [email, setEmail] = useState<string>("admin@dcm.test");
+  const [password, setPassword] = useState<string>("admin123");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleKeyPress = (e: React.KeyboardEvent): void => {
@@ -19,23 +19,23 @@ export const LoginForm: React.FC = () => {
   };
 
   const handleLogin = async (): Promise<void> => {
-    if (!username || !password) {
+    if (!email || !password) {
       addToast({
         color: "danger",
-        description: "请输入用户名和密码",
+        description: "请输入邮箱和密码",
       });
       return;
     }
 
     setLoading(true);
     try {
-      const res = await loginRequest({ username, password });
-      if (res.code === 200 && res.data?.token) {
+      const res = await loginRequest({ email, password });
+      if (res.success && res.data?.access_token) {
         addToast({
           color: "success",
           description: "登录成功",
         });
-        setJwtToken(res.data.token);
+        setAccessToken(res.data.access_token);
         navigate("/list");
       } else {
         addToast({
@@ -55,20 +55,20 @@ export const LoginForm: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* 用户名 */}
+      {/* 邮箱 */}
       <div>
-        <div className="block text-sm font-medium text-white mb-2">账号</div>
+        <div className="block text-sm font-medium text-white mb-2">邮箱</div>
         <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           onKeyPress={handleKeyPress}
           className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="请输入用户名"
+          placeholder="请输入邮箱"
           disabled={loading}
         />
         <div className="text-xs text-gray-400 mt-1">
-          测试账号：admin(管理员) / teacher(老师) / student(学生)
+          测试账号：admin@dcm.test(管理员) / user@dcm.test(用户)
         </div>
       </div>
 

@@ -11,7 +11,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   assetsInclude: ["**/*.wasm"],
   server: {
+    host: "0.0.0.0",
     port: 3000,
+    allowedHosts: ["dcm.test", "localhost", "127.0.0.1"],
+    proxy: {
+      "/api": {
+        target: "http://dcm.test",
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   plugins: [
     react(),

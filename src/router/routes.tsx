@@ -6,6 +6,7 @@ import LoginPage from "../pages/login";
 import AdminPage from "../pages/admin";
 import UploadPage from "../pages/upload";
 import EditPage from "../pages/edit";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 const routes: RouteObject[] = [
   {
@@ -15,41 +16,51 @@ const routes: RouteObject[] = [
   {
     path: "/list",
     element: (
-      <PageLayout>
-        <ListPage />
-      </PageLayout>
+      <ProtectedRoute>
+        <PageLayout>
+          <ListPage />
+        </PageLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/detail/:id",
     element: (
-      <PageLayout>
-        <DetailPage />
-      </PageLayout>
+      <ProtectedRoute>
+        <PageLayout>
+          <DetailPage />
+        </PageLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/admin",
     element: (
-      <PageLayout>
-        <AdminPage />
-      </PageLayout>
+      <ProtectedRoute>
+        <PageLayout>
+          <AdminPage />
+        </PageLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/upload",
     element: (
-      <PageLayout>
-        <UploadPage />
-      </PageLayout>
+      <ProtectedRoute>
+        <PageLayout>
+          <UploadPage />
+        </PageLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/edit/:id",
     element: (
-      <PageLayout>
-        <EditPage />
-      </PageLayout>
+      <ProtectedRoute>
+        <PageLayout>
+          <EditPage />
+        </PageLayout>
+      </ProtectedRoute>
     ),
   },
 ];
