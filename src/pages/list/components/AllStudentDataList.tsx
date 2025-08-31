@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Input, Button, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { searchAllStudentDataRequest, type DcmList } from "@/api/dcm";
+import {
+  // searchAllStudentDataRequest,
+  type DcmData,
+} from "@/api/dcm_new";
 import DataCard from "./DataCard";
 
 interface AllStudentDataListProps {
@@ -11,7 +14,7 @@ interface AllStudentDataListProps {
 function AllStudentDataList({
   onFileClick,
 }: AllStudentDataListProps): React.JSX.Element {
-  const [data, setData] = useState<DcmList[]>([]);
+  const [data, setData] = useState<DcmData[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -26,31 +29,31 @@ function AllStudentDataList({
     search: string = searchTerm
   ) => {
     setLoading(true);
-    try {
-      const response = await searchAllStudentDataRequest(
-        search,
-        currentPage,
-        pageSize
-      );
-      if (response.code === 200 && response.data) {
-        setData(response.data.data);
-        setTotal(response.data.total);
-        setTotalPages(response.data.totalPages);
-        setPage(response.data.page);
-      } else {
-        addToast({
-          color: "danger",
-          description: response.message || "获取数据失败",
-        });
-      }
-    } catch {
-      addToast({
-        color: "danger",
-        description: "网络错误，请稍后重试",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // try {
+    //   const response = await searchAllStudentDataRequest(
+    //     search,
+    //     currentPage,
+    //     pageSize
+    //   );
+    //   if (response.code === 200 && response.data) {
+    //     setData(response.data.data);
+    //     setTotal(response.data.total);
+    //     setTotalPages(response.data.totalPages);
+    //     setPage(response.data.page);
+    //   } else {
+    //     addToast({
+    //       color: "danger",
+    //       description: response.message || "获取数据失败",
+    //     });
+    //   }
+    // } catch {
+    //   addToast({
+    //     color: "danger",
+    //     description: "网络错误，请稍后重试",
+    //   });
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   // 搜索处理

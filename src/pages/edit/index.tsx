@@ -11,8 +11,8 @@ import {
   Chip,
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import type { DcmList } from "@/api/dcm";
-import { getDcmDetailRequest, updateDcmDataRequest } from "@/api/dcm";
+import type { DcmData } from "@/api/dcm_new";
+import { getDcmDetailRequest } from "@/api/dcm_new";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAppStore } from "@/stores/app";
 
@@ -22,7 +22,7 @@ function EditPage(): React.JSX.Element {
   const { hasTeacherPermission, userInfo } = useUserAuth();
   const { userInfo: storeUserInfo } = useAppStore();
 
-  const [dcmData, setDcmData] = useState<DcmList | null>(null);
+  const [dcmData, setDcmData] = useState<DcmData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -138,39 +138,39 @@ function EditPage(): React.JSX.Element {
     }
 
     setSaving(true);
-    try {
-      const response = await updateDcmDataRequest(
-        id,
-        {
-          name: name.trim(),
-          category,
-          tags,
-        },
-        storeUserInfo.userId,
-        storeUserInfo.role
-      );
+    // try {
+    //   const response = await updateDcmDataRequest(
+    //     id,
+    //     {
+    //       name: name.trim(),
+    //       category,
+    //       tags,
+    //     },
+    //     storeUserInfo.user_id,
+    //     storeUserInfo.role
+    //   );
 
-      if (response.code === 200) {
-        addToast({
-          color: "success",
-          description: "保存成功",
-        });
-        navigate("/list");
-      } else {
-        addToast({
-          color: "danger",
-          description: response.message || "保存失败",
-        });
-      }
-    } catch (error) {
-      console.error("保存错误:", error);
-      addToast({
-        color: "danger",
-        description: "保存失败，请重试",
-      });
-    } finally {
-      setSaving(false);
-    }
+    //   if (response.code === 200) {
+    //     addToast({
+    //       color: "success",
+    //       description: "保存成功",
+    //     });
+    //     navigate("/list");
+    //   } else {
+    //     addToast({
+    //       color: "danger",
+    //       description: response.message || "保存失败",
+    //     });
+    //   }
+    // } catch (error) {
+    //   console.error("保存错误:", error);
+    //   addToast({
+    //     color: "danger",
+    //     description: "保存失败，请重试",
+    //   });
+    // } finally {
+    //   setSaving(false);
+    // }
   };
 
   if (loading) {

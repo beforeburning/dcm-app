@@ -1,14 +1,15 @@
 import { ApiResponse, apiClient } from ".";
 
 // 类型定义
-export type UserRole = "admin" | "teacher" | "student";
+export type UserRole = 1 | 2 | 3; // 1: 超级管理员, 2: 教师, 3: 学生
 
 export type UserInfo = {
-  id: number;
-  name: string;
-  username?: string; // 添加username字段，兼容后端可能返回的两种字段
+  user_id: number;
+  username: string;
   email: string;
   role: UserRole;
+  role_name: string;
+  active_flag: number;
   created_at: string;
   updated_at: string;
 };
@@ -75,7 +76,9 @@ export const loginRequest = async (
 };
 
 // 获取当前用户信息
-export const getUserInfoRequest = async (): Promise<ApiResponse<UserInfo>> => {
+export const getUserInfoRequest = async (): Promise<
+  ApiResponse<{ user: UserInfo }>
+> => {
   const response = await apiClient.get("/auth/me");
   return response.data;
 };

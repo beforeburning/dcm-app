@@ -48,9 +48,9 @@ import * as dicomParser from "dicom-parser";
 import {
   getDcmDetailRequest,
   qiniuBaseUrl,
-  type DcmList,
+  type DcmData,
   saveDcmAnnotationsRequest,
-} from "@/api/dcm";
+} from "@/api/dcm_new";
 import TopBar from "./components/TopBar";
 import ToolBar from "./components/ToolBar";
 import StatusBanners from "./components/StatusBanners";
@@ -71,7 +71,7 @@ function DetailPage() {
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [activeTool, setActiveTool] = useState("WindowLevel"); // 当前激活的工具
-  const [dcmData, setDcmData] = useState<DcmList | null>(null); // DCM数据
+  const [dcmData, setDcmData] = useState<DcmData | null>(null); // DCM数据
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 当前图像索引
   const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
   const [isImageControlExpanded, setIsImageControlExpanded] = useState(false); // 图像切换控件展开状态

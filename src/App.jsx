@@ -307,15 +307,15 @@ function App() {
 }
 
 const AppInitializer = () => {
-  const { getUserInfo, accessToken } = useAppStore();
+  const { getUserInfo, accessToken, userInfo } = useAppStore();
 
   useEffect(() => {
-    // 在应用启动时，如果有token则获取用户信息
+    // 在应用启动时，如果有token但没有用户信息则获取用户信息
     const token = accessToken || localStorage.getItem('access_token');
-    if (token) {
+    if (token && !userInfo) {
       getUserInfo();
     }
-  }, [getUserInfo, accessToken]);
+  }, [getUserInfo, accessToken, userInfo]);
 
   return <AppRoutes />;
 };

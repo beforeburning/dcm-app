@@ -1,23 +1,8 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Tabs,
-  Tab,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  useDisclosure,
-} from "@heroui/react";
+import { Tabs, Tab } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import {
-  copyDcmToStudentRequest,
-  updateStudentDcmNameRequest,
-  type DcmList,
-} from "../../api/dcm";
+import { copyPublicDataToPrivateRequest, type DcmData } from "@/api/dcm_new";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import {
   PublicDataList,
@@ -39,29 +24,18 @@ function ListPage(): React.JSX.Element {
   // 当前选中的标签页
   const [selectedTab, setSelectedTab] = useState("public");
 
-  // 编辑名称Modal
-  const {
-    isOpen: isEditOpen,
-    onOpen: onEditOpen,
-    onOpenChange: onEditOpenChange,
-  } = useDisclosure();
-  const [editingItem, setEditingItem] = useState<DcmList | null>(null);
-  const [editName, setEditName] = useState("");
-
   // 学生数据列表引用，用于刷新
   const studentDataListRef = useRef<StudentDataListRef>(null);
 
   // 复制数据到学生账户
-  const handleCopyData = async (dcm: DcmList) => {
-    if (!userInfo?.userId || !userInfo?.userName) return;
+  const handleCopyData = async (dcm: DcmData) => {
+    if (!userInfo?.user_id || !userInfo?.username) return;
 
     try {
-      const response = await copyDcmToStudentRequest(
-        dcm.id,
-        userInfo.userId,
-        userInfo.userName
-      );
-      if (response.code === 200) {
+      const response = await copyPublicDataToPrivateRequest({
+        original_data_id: dcm.id,
+      });
+      if (response.success) {
         addToast({
           color: "success",
           description: "复制成功！您可以在“我的数据”中查看",
@@ -74,47 +48,6 @@ function ListPage(): React.JSX.Element {
         addToast({
           color: "danger",
           description: response.message || "复制失败",
-        });
-      }
-    } catch {
-      addToast({
-        color: "danger",
-        description: "网络错误，请重试",
-      });
-    }
-  };
-
-  // 打开编辑名称模态框
-  const handleEditName = (dcm: DcmList) => {
-    setEditingItem(dcm);
-    setEditName(dcm.name);
-    onEditOpen();
-  };
-
-  // 保存编辑名称
-  const handleSaveEdit = async () => {
-    if (!editingItem || !userInfo?.userId) return;
-
-    try {
-      const response = await updateStudentDcmNameRequest(
-        editingItem.id,
-        userInfo.userId,
-        editName
-      );
-      if (response.code === 200) {
-        addToast({
-          color: "success",
-          description: "修改成功",
-        });
-        // 刷新学生数据
-        if (studentDataListRef.current) {
-          studentDataListRef.current.refresh();
-        }
-        onEditOpenChange();
-      } else {
-        addToast({
-          color: "danger",
-          description: response.message || "修改失败",
         });
       }
     } catch {
@@ -168,7 +101,7 @@ function ListPage(): React.JSX.Element {
             <Tab key="student" title="我的数据">
               <StudentDataList
                 ref={studentDataListRef}
-                userId={userInfo?.userId || ""}
+                userId={userInfo?.user_id?.toString() || ""}
                 onFileClick={handleFileClick}
               />
             </Tab>
@@ -181,35 +114,6 @@ function ListPage(): React.JSX.Element {
             </Tab>
           )}
         </Tabs>
-
-        {/* 编辑名称模态框 */}
-        <Modal isOpen={isEditOpen} onOpenChange={onEditOpenChange}>
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader className="flex flex-col gap-1">
-                  编辑数据名称
-                </ModalHeader>
-                <ModalBody>
-                  <Input
-                    label="数据名称"
-                    placeholder="请输入新的数据名称"
-                    value={editName}
-                    onValueChange={setEditName}
-                  />
-                </ModalBody>
-                <ModalFooter>
-                  <Button color="danger" variant="light" onPress={onClose}>
-                    取消
-                  </Button>
-                  <Button color="primary" onPress={handleSaveEdit}>
-                    保存
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
       </div>
     </div>
   );

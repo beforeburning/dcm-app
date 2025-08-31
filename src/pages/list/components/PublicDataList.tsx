@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Card, CardBody, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { getOriginalDataListRequest, type DcmData } from "@/api/dcm_new";
-import { type DcmList } from "@/api/dcm";
 import DataCard from "./DataCard";
 
 interface PublicDataListProps {
@@ -21,25 +20,6 @@ function PublicDataList({
   const [lastPage, setLastPage] = useState(0);
   const [perPage, setPerPage] = useState(10);
 
-  // 将 DcmData 转换为 DcmList 格式
-  const convertDcmDataToDcmList = (dcmData: DcmData): DcmList => {
-    return {
-      id: dcmData.original_id.toString(),
-      name: dcmData.name,
-      createTime: new Date(dcmData.created_at).getTime() / 1000, // 转换为秒级时间戳
-      updateTime: new Date(dcmData.updated_at).getTime() / 1000, // 转换为秒级时间戳
-      files: dcmData.files || [],
-      totalFiles: dcmData.file_count,
-      totalSize: dcmData.total_size,
-      category: dcmData.category,
-      tags: dcmData.tags,
-      isPublic: dcmData.status === 'active',
-      ownerId: undefined, // 公共数据不需要所有者ID
-      ownerName: undefined, // 公共数据不需要所有者名称
-      originalId: dcmData.original_id.toString(),
-    };
-  };
-
   // 获取公共数据列表
   const fetchData = async (page: number = currentPage) => {
     setLoading(true);
@@ -57,7 +37,8 @@ function PublicDataList({
           description: response.message || "获取数据失败",
         });
       }
-    } catch {
+    } catch (error) {
+      console.error("获取公共数据失败:", error);
       addToast({
         color: "danger",
         description: "网络错误，请稍后重试",
@@ -79,12 +60,15 @@ function PublicDataList({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">加载中...</div>
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <div className="text-gray-500">加载中...</div>
+        </div>
       </div>
     );
   }
 
-  if (data.length === 0) {
+  if (data && data.length === 0) {
     return <div className="text-center py-8 text-gray-500">暂无数据</div>;
   }
 
@@ -94,6 +78,12 @@ function PublicDataList({
         <h2 className="text-lg font-semibold text-gray-800">
           公共数据列表 ({total})
         </h2>
+        <button
+          onClick={() => fetchData(1)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          刷新
+        </button>
       </div>
 
       <Card>
@@ -101,8 +91,8 @@ function PublicDataList({
           <div className="space-y-4">
             {data.map((dcm) => (
               <DataCard
-                key={dcm.original_id}
-                dcm={convertDcmDataToDcmList(dcm)}
+                key={dcm.id}
+                dcm={dcm}
                 onFileClick={onFileClick}
                 onDataChange={fetchData}
                 onCopySuccess={onCopySuccess}

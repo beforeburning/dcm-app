@@ -14,7 +14,7 @@ export const useAdminAuth = () => {
     }
 
     // 检查是否为管理员
-    if (userInfo.role !== "admin") {
+    if (userInfo.role !== 1) {
       addToast({
         color: "danger",
         description: "您没有权限访问管理端",
@@ -24,7 +24,7 @@ export const useAdminAuth = () => {
   }, [userInfo, navigate]);
 
   return {
-    isAdmin: userInfo?.role === "admin",
+    isAdmin: userInfo?.role === 1,
     userInfo,
   };
 };

@@ -12,9 +12,11 @@ const HeaderComponents = (): React.JSX.Element => {
   const isAdminPage = location.pathname === "/admin";
   const isUploadPage = location.pathname === "/upload";
   const isEditPage = location.pathname.startsWith("/edit/");
-  const isAdmin = userInfo?.role === "admin";
-  const isTeacher = userInfo?.role === "teacher";
+  const isAdmin = userInfo?.role === 1;
+  const isTeacher = userInfo?.role === 2;
+  const isStudent = userInfo?.role === 3;
   const canUpload = isAdmin || isTeacher;
+  const isLoggedIn = !!userInfo?.user_id;
 
   const handleLogout = (): void => {
     addToast({
@@ -86,42 +88,94 @@ const HeaderComponents = (): React.JSX.Element => {
           {/* 右侧：用户信息和操作 */}
           <div className="flex items-center space-x-6">
             {/* 用户信息区域 */}
-            <div className="flex items-center space-x-3">
-              {/* 用户头像 */}
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">
-                  {(userInfo?.user?.username || userInfo?.user?.name)?.charAt(
-                    0
-                  ) || "U"}
-                </span>
-              </div>
+            {isLoggedIn ? (
+              <div className="flex items-center space-x-3">
+                {/* 用户头像 */}
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-semibold">
+                    {userInfo?.username?.charAt(0) || "U"}
+                  </span>
+                </div>
 
-              {/* 用户信息 */}
-              <div className="flex flex-col">
-                <span className="text-white font-medium text-sm">
-                  {userInfo?.user?.username || userInfo?.user?.name || "未登录"}
-                </span>
-                <span className="text-gray-400 text-xs">
-                  {userInfo?.role === "admin"
-                    ? "管理员"
-                    : userInfo?.role === "teacher"
-                    ? "老师"
-                    : userInfo?.role === "student"
-                    ? "学生"
-                    : ""}
-                </span>
+                {/* 用户信息 */}
+                <div className="flex flex-col">
+                  <span className="text-white font-medium text-sm">
+                    {userInfo?.username || "用户"}
+                  </span>
+                  <span className="text-gray-400 text-xs">
+                    {userInfo?.role_name || ""}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-semibold">?</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-300 font-medium text-sm">
+                    未登录
+                  </span>
+                  <span className="text-gray-500 text-xs">请先登录</span>
+                </div>
+              </div>
+            )}
 
             {/* 操作按钮组 */}
-            <div className="flex items-center space-x-2">
-              {/* 教师/管理员专用：上传按钮 */}
-              {/*{canUpload && !isUploadPage && (*/}
-              {true && (
+            {isLoggedIn && (
+              <div className="flex items-center space-x-2">
+                {/* 教师/管理员专用：上传按钮 */}
+                {canUpload && !isUploadPage && (
+                  <button
+                    onClick={handleUpload}
+                    className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                  >
+                    <svg
+                      className="w-4 h-4 transition-transform duration-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">上传</span>
+                  </button>
+                )}
+
+                {/* 管理员专用：管理端按钮 */}
+                {isAdmin && !isAdminPage && (
+                  <button
+                    onClick={handleAdmin}
+                    className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                  >
+                    <svg
+                      className="w-4 h-4 transition-transform duration-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">管理端</span>
+                  </button>
+                )}
+
+                {/* 退出按钮 */}
                 <button
-                  onClick={handleUpload}
-                  className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                  onClick={handleLogout}
+                  className="group relative flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
                 >
+                  {/* 退出图标 */}
                   <svg
                     className="w-4 h-4 transition-transform duration-200"
                     fill="none"
@@ -132,58 +186,13 @@ const HeaderComponents = (): React.JSX.Element => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  <span className="text-sm font-medium">上传</span>
+                  <span className="text-sm font-medium">退出</span>
                 </button>
-              )}
-
-              {/* 管理员专用：管理端按钮 */}
-              {isAdmin && !isAdminPage && (
-                <button
-                  onClick={handleAdmin}
-                  className="group cursor-pointer flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
-                >
-                  <svg
-                    className="w-4 h-4 transition-transform duration-200"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium">管理端</span>
-                </button>
-              )}
-
-              {/* 退出按钮 */}
-              <button
-                onClick={handleLogout}
-                className="group relative flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
-              >
-                {/* 退出图标 */}
-                <svg
-                  className="w-4 h-4 transition-transform duration-200"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                <span className="text-sm font-medium">退出</span>
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ interface AppState {
   userInfo: UserInfo | undefined;
   setUserInfo: (userInfo: UserInfo) => void;
   getUserInfo: () => Promise<void>;
+  isGettingUserInfo: boolean;
 
   logout: () => Promise<void>;
   isAuthenticated: () => boolean;
@@ -30,10 +31,10 @@ export const useAppStore = create<AppState>()(
           set({ accessToken });
           // 存储到 localStorage
           if (accessToken) {
-            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem("access_token", accessToken);
             getUserInfo();
           } else {
-            localStorage.removeItem('access_token');
+            localStorage.removeItem("access_token");
           }
         },
 
@@ -41,19 +42,29 @@ export const useAppStore = create<AppState>()(
         setUserInfo: (userInfo: UserInfo) => {
           set({ userInfo });
         },
-        
+
+        isGettingUserInfo: false,
+
         getUserInfo: async () => {
-          const { accessToken, logout } = get();
-          
-          // 如果没有token，直接返回
-          if (!accessToken && !localStorage.getItem('access_token')) {
+          const { accessToken, logout, isGettingUserInfo } = get();
+
+          // 如果正在获取用户信息，直接返回
+          if (isGettingUserInfo) {
             return;
           }
-          
+
+          // 如果没有token，直接返回
+          if (!accessToken && !localStorage.getItem("access_token")) {
+            return;
+          }
+
+          // 设置正在获取用户信息状态
+          set({ isGettingUserInfo: true });
+
           try {
             const res = await getUserInfoRequest();
             console.log("🚀 ~ getUserInfo: ~ res:", res);
-            
+
             if (!res.success) {
               addToast({
                 color: "danger",
@@ -62,13 +73,16 @@ export const useAppStore = create<AppState>()(
               await logout();
               return;
             }
-            
-            if (res.data) {
-              set({ userInfo: res.data });
+
+            if (res.data?.user) {
+              set({ userInfo: res.data.user });
             }
           } catch (error) {
-            console.error('Get user info failed:', error);
+            console.error("Get user info failed:", error);
             await logout();
+          } finally {
+            // 无论成功失败，都要重置状态
+            set({ isGettingUserInfo: false });
           }
         },
 
@@ -77,18 +91,25 @@ export const useAppStore = create<AppState>()(
             // 调用后端登出接口
             await logoutRequest();
           } catch (error) {
-            console.error('Logout API failed:', error);
+            console.error("Logout API failed:", error);
           } finally {
             // 无论API调用是否成功，都清除本地状态
-            set({ accessToken: "", userInfo: undefined });
-            localStorage.removeItem('access_token');
+            set({
+              accessToken: "",
+              userInfo: undefined,
+              isGettingUserInfo: false,
+            });
+            localStorage.removeItem("access_token");
             navigationService.navigate("/");
           }
         },
-        
+
         isAuthenticated: () => {
           const { accessToken, userInfo } = get();
-          return !!(accessToken || localStorage.getItem('access_token')) && !!userInfo;
+          return (
+            !!(accessToken || localStorage.getItem("access_token")) &&
+            !!userInfo
+          );
         },
       }),
       {

@@ -7,22 +7,22 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, getUserInfo, accessToken } = useAppStore();
+  const { isAuthenticated, getUserInfo, accessToken, userInfo } = useAppStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     // 检查是否有token但没有用户信息，如果有则尝试获取用户信息
-    const token = accessToken || localStorage.getItem('access_token');
-    if (token && !isAuthenticated()) {
+    const token = accessToken || localStorage.getItem("access_token");
+    if (token && !userInfo) {
       getUserInfo();
     }
-    
+
     // 如果没有token，直接跳转到登录页
     if (!token) {
       navigate("/", { replace: true });
       return;
     }
-  }, [accessToken, isAuthenticated, getUserInfo, navigate]);
+  }, [accessToken, userInfo, getUserInfo, navigate]);
 
   // 如果没有认证，返回null（正在跳转中）
   if (!isAuthenticated()) {
