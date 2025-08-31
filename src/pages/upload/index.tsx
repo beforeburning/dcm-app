@@ -54,10 +54,6 @@ function UploadPage(): React.JSX.Element {
       const response = await testOssConnectionRequest();
       if (response.success) {
         setOssConnected(true);
-        addToast({
-          color: "success",
-          description: "OSS连接正常",
-        });
       } else {
         setOssConnected(false);
         addToast({

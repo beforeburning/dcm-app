@@ -27,10 +27,10 @@ function PublicDataList({
       const response = await getOriginalDataListRequest(page, perPage);
       if (response.success && response.data) {
         setData(response.data.list);
-        setTotal(response.data.total);
-        setLastPage(response.data.last_page);
-        setCurrentPage(response.data.current_page);
-        setPerPage(response.data.per_page);
+        setTotal(response.data.pagination.total);
+        setLastPage(response.data.pagination.last_page);
+        setCurrentPage(response.data.pagination.current_page);
+        setPerPage(response.data.pagination.per_page);
       } else {
         addToast({
           color: "danger",

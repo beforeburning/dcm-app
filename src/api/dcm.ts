@@ -42,12 +42,14 @@ export type DcmData = {
 // 分页响应接口
 export interface PaginatedDcmResponse {
   list: DcmData[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
+  pagination: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+  };
 }
 
 // 获取原始数据列表 - 已对接
