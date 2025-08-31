@@ -50,7 +50,7 @@ import {
   qiniuBaseUrl,
   type DcmData,
   saveDcmAnnotationsRequest,
-} from "@/api/dcm_new";
+} from "@/api/dcm";
 import TopBar from "./components/TopBar";
 import ToolBar from "./components/ToolBar";
 import StatusBanners from "./components/StatusBanners";

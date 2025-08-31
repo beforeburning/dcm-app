@@ -10,7 +10,7 @@ import {
   getStudentDataListRequest,
   type StudentDataItem,
   type DcmData,
-} from "@/api/dcm_new";
+} from "@/api/dcm";
 import DataCard from "./DataCard";
 
 interface StudentDataListProps {

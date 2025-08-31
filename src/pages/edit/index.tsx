@@ -11,8 +11,8 @@ import {
   Chip,
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import type { DcmData } from "@/api/dcm_new";
-import { getDcmDetailRequest } from "@/api/dcm_new";
+import type { DcmData } from "@/api/dcm";
+import { getDcmDetailRequest } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAppStore } from "@/stores/app";
 

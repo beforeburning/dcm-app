@@ -37,7 +37,7 @@ export interface PaginatedDcmResponse {
   to: number;
 }
 
-// 获取原始数据列表
+// 获取原始数据列表 - 已对接
 export const getOriginalDataListRequest = async (
   page: number = 1,
   per_page: number = 10,
@@ -55,30 +55,48 @@ export const getOriginalDataListRequest = async (
   return response.data;
 };
 
-// 管理员 - 创建原始数据
+// 管理员 - 创建原始数据 -已对接
 export const createOriginalDataRequest = async (data: {
   name: string;
-  description?: string;
-  category?: string;
-  tags?: string[];
-  files: File[];
-}): Promise<ApiResponse<DcmData>> => {
-  const formData = new FormData();
-  formData.append("name", data.name);
-
-  if (data.description) formData.append("description", data.description);
-  if (data.category) formData.append("category", data.category);
-  if (data.tags) formData.append("tags", JSON.stringify(data.tags));
-
-  data.files.forEach((file, index) => {
-    formData.append(`files[${index}]`, file);
-  });
-
-  const response = await apiClient.post("/admin/original-data", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  category: number;
+  file_path: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  original_annotation?: string;
+  tag_ids?: number[];
+}): Promise<
+  ApiResponse<{
+    original_id: number;
+    name: string;
+    category: number;
+    file_path: string;
+    file_url: string;
+    file_name: string;
+    file_size: number;
+    original_annotation: string;
+    active_flag: number;
+    created_at: string;
+    created_user_id: number;
+    updated_at: string;
+    updated_user_id: number;
+    tags: any[];
+    creator: {
+      user_id: number;
+      email: string;
+      email_verified_at: string | null;
+      username: string;
+      autoFillUserId: string;
+      role: number;
+      active_flag: number;
+      created_at: string;
+      created_user_id: number;
+      updated_at: string;
+      updated_user_id: number;
+    };
+  }>
+> => {
+  const response = await apiClient.post("/admin/original-data/store", data);
   return response.data;
 };
 
@@ -126,33 +144,6 @@ export const getUserAccessibleDataRequest = async (
   if (category) params.category = category;
 
   const response = await apiClient.get("/user/original-data", { params });
-  return response.data;
-};
-
-// OSS 连接测试
-export const testOssConnectionRequest = async (): Promise<
-  ApiResponse<{
-    status: string;
-    message: string;
-    config?: any;
-  }>
-> => {
-  const response = await apiClient.get(
-    "/admin/original-data/test-oss/connection"
-  );
-  return response.data;
-};
-
-// OSS 配置诊断
-export const diagnoseOssConfigRequest = async (): Promise<
-  ApiResponse<{
-    config: any;
-    issues: string[];
-  }>
-> => {
-  const response = await apiClient.get(
-    "/admin/original-data/diagnose-oss/config"
-  );
   return response.data;
 };
 

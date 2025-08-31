@@ -6,7 +6,6 @@ import {
   CardHeader,
   Button,
   Input,
-  Progress,
   Chip,
   Select,
   SelectItem,
@@ -15,17 +14,23 @@ import {
   Divider,
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import {
-  createOriginalDataRequest,
-  testOssConnectionRequest,
-} from "@/api/dcm_new";
+import { createOriginalDataRequest } from "@/api/dcm";
+import { testOssConnectionRequest, uploadFileToOssRequest } from "@/api/oss";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface FileInfo {
   file: File;
   id: string;
   status: "pending" | "uploading" | "success" | "error";
-  progress: number;
+  uploadedUrl?: string; // 上传成功后的文件URL
+  uploadedData?: {
+    file_name: string;
+    file_path: string;
+    file_url: string;
+    file_size: number;
+    mime_type: string;
+    original_name: string;
+  };
 }
 
 function UploadPage(): React.JSX.Element {
@@ -95,29 +100,29 @@ function UploadPage(): React.JSX.Element {
       return;
     }
 
-    // 检查文件大小限制（单个文件不超过50MB）
-    const oversizedFiles = validFiles.filter(
-      (file) => file.size > 50 * 1024 * 1024
-    );
-    if (oversizedFiles.length > 0) {
+    // 只取第一个文件，因为接口只支持单个文件
+    const file = validFiles[0];
+
+    // 检查文件大小限制（单个文件不超过1MB）
+    if (file.size > 1 * 1024 * 1024) {
       addToast({
         color: "danger",
-        description: `以下文件超过50MB限制：${oversizedFiles
-          .map((f) => f.name)
-          .join(", ")}`,
+        description: `文件 ${file.name} 超过1MB限制`,
       });
       return;
     }
 
-    // 创建文件信息但不直接上传
-    const newFiles: FileInfo[] = validFiles.map((file) => ({
+    // 清空之前的文件，只保留新选择的文件
+    const newFile: FileInfo = {
       file,
       id: `${Date.now()}-${Math.random()}`,
       status: "pending" as const,
-      progress: 0,
-    }));
+    };
 
-    setFiles((prev) => [...prev, ...newFiles]);
+    setFiles([newFile]);
+
+    // 开始上传文件
+    uploadFile(newFile);
   };
 
   // 拖拽处理
@@ -152,7 +157,7 @@ function UploadPage(): React.JSX.Element {
 
   // 添加标签
   const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim()) && tags.length < 5) {
+    if (newTag.trim() && !tags.includes(newTag.trim()) && tags.length < 3) {
       setTags([...tags, newTag.trim()]);
       setNewTag("");
     }
@@ -163,7 +168,56 @@ function UploadPage(): React.JSX.Element {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  // 手动提交上传
+  // 上传单个文件
+  const uploadFile = async (fileInfo: FileInfo) => {
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileInfo.id ? { ...f, status: "uploading" as const } : f
+      )
+    );
+
+    try {
+      // 调用真实的OSS上传API
+      const response = await uploadFileToOssRequest(fileInfo.file);
+
+      if (response.success) {
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileInfo.id
+              ? {
+                  ...f,
+                  status: "success" as const,
+                  uploadedUrl: response.file_url,
+                  uploadedData: response,
+                }
+              : f
+          )
+        );
+
+        addToast({
+          color: "success",
+          description: `文件 ${fileInfo.file.name} 上传成功`,
+        });
+      } else {
+        throw new Error("上传失败");
+      }
+    } catch (error) {
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileInfo.id ? { ...f, status: "error" as const } : f
+        )
+      );
+
+      addToast({
+        color: "danger",
+        description: `文件 ${fileInfo.file.name} 上传失败: ${
+          error instanceof Error ? error.message : "未知错误"
+        }`,
+      });
+    }
+  };
+
+  // 提交
   const handleSubmit = async () => {
     // 验证必填字段
     if (!datasetName.trim()) {
@@ -190,6 +244,24 @@ function UploadPage(): React.JSX.Element {
       return;
     }
 
+    // 检查文件是否还在上传中
+    if (files.length > 0 && files[0].status === "uploading") {
+      addToast({
+        color: "warning",
+        description: "文件正在上传中，请等待上传完成",
+      });
+      return;
+    }
+
+    // 检查文件是否上传失败
+    if (files.length > 0 && files[0].status === "error") {
+      addToast({
+        color: "danger",
+        description: "文件上传失败，请重新上传或删除失败的文件",
+      });
+      return;
+    }
+
     if (!userInfo?.user_id) {
       addToast({
         color: "danger",
@@ -202,52 +274,59 @@ function UploadPage(): React.JSX.Element {
     if (ossConnected === false) {
       addToast({
         color: "warning",
-        description: "OSS连接异常，但仍可尝试上传",
+        description: "OSS连接异常，但仍可尝试提交",
       });
     }
 
     setUploading(true);
 
     try {
-      // 更新文件状态为上传中
-      setFiles((prev) =>
-        prev.map((f) => ({ ...f, status: "uploading" as const }))
-      );
+      // 获取已上传成功的文件
+      const uploadedFile = files.find((f) => f.status === "success");
 
-      // 模拟上传进度
-      const progressInterval = setInterval(() => {
-        setFiles((prev) =>
-          prev.map((f) => {
-            if (f.status === "uploading" && f.progress < 90) {
-              return {
-                ...f,
-                progress: Math.min(90, f.progress + Math.random() * 20),
-              };
-            }
-            return f;
-          })
-        );
-      }, 500);
+      if (!uploadedFile) {
+        addToast({
+          color: "danger",
+          description: "没有成功上传的文件",
+        });
+        return;
+      }
 
-      const fileList = files.map((f) => f.file);
+      // 检查上传数据是否完整
+      if (!uploadedFile.uploadedData) {
+        addToast({
+          color: "danger",
+          description: "文件上传数据不完整，请重新上传",
+        });
+        return;
+      }
+
+      // 将分类字符串转换为数字
+      const categoryMap: { [key: string]: number } = {
+        xray: 1,
+        ct: 2,
+        mri: 3,
+        ultrasound: 4,
+        pet: 5,
+      };
+
+      const categoryNumber = categoryMap[category] || 0;
+
       const response = await createOriginalDataRequest({
         name: datasetName,
-        description: description.trim() || undefined,
-        category,
-        tags,
-        files: fileList,
+        category: categoryNumber,
+        file_path: uploadedFile.uploadedData.file_path,
+        file_url: uploadedFile.uploadedData.file_url,
+        file_name: uploadedFile.uploadedData.file_name,
+        file_size: uploadedFile.uploadedData.file_size,
+        original_annotation: description.trim() || "",
+        tag_ids: tags.length > 0 ? [1, 2, 3] : undefined, // 这里需要实际的标签ID
       });
 
-      clearInterval(progressInterval);
-
       if (response.success) {
-        setFiles((prev) =>
-          prev.map((f) => ({ ...f, status: "success" as const, progress: 100 }))
-        );
-
         addToast({
           color: "success",
-          description: "数据集上传成功！已可供学生使用",
+          description: "数据集创建成功！已可供学生使用",
         });
 
         // 延迟2秒后跳转到列表页
@@ -255,19 +334,13 @@ function UploadPage(): React.JSX.Element {
           navigate("/list");
         }, 2000);
       } else {
-        setFiles((prev) =>
-          prev.map((f) => ({ ...f, status: "error" as const }))
-        );
-
         addToast({
           color: "danger",
-          description: response.message || "上传失败",
+          description: response.message || "数据集创建失败",
         });
       }
     } catch (error) {
-      console.error("上传错误:", error);
-      setFiles((prev) => prev.map((f) => ({ ...f, status: "error" as const })));
-
+      console.error("提交错误:", error);
       addToast({
         color: "danger",
         description: "网络错误，请重试",
@@ -329,8 +402,6 @@ function UploadPage(): React.JSX.Element {
         return "未知状态";
     }
   };
-
-  const totalSize = files.reduce((sum, file) => sum + file.file.size, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 sm:p-6">
@@ -515,7 +586,7 @@ function UploadPage(): React.JSX.Element {
                       className="text-sm font-medium text-gray-700"
                       htmlFor="tag-input"
                     >
-                      添加标签
+                      添加标签 <span className="text-gray-400">(可选)</span>
                     </label>
                     <div className="flex items-center space-x-2">
                       <Input
@@ -538,14 +609,14 @@ function UploadPage(): React.JSX.Element {
                         color="primary"
                         variant="flat"
                         onClick={addTag}
-                        isDisabled={!newTag.trim() || tags.length >= 5}
+                        isDisabled={!newTag.trim() || tags.length >= 3}
                         aria-label="添加标签到列表"
                       >
                         添加
                       </Button>
                     </div>
                     <p className="text-xs text-gray-500">
-                      最多可添加5个标签，当前已添加{tags.length}个
+                      最多可添加3个标签，当前已添加{tags.length}个 (可选)
                     </p>
                   </div>
                 </div>
@@ -601,9 +672,9 @@ function UploadPage(): React.JSX.Element {
                       onClick={clearAllFiles}
                       isDisabled={uploading}
                       className="shadow-md hover:shadow-lg transition-all duration-200"
-                      aria-label="清空所有已选择的文件"
+                      aria-label="清空已选择的文件"
                     >
-                      清空所有文件
+                      清空文件
                     </Button>
                   )}
                 </div>
@@ -663,10 +734,7 @@ function UploadPage(): React.JSX.Element {
                         </span>{" "}
                         格式
                         <br />
-                        可选择多个文件，单个文件不超过{" "}
-                        <span className="font-semibold text-orange-600">
-                          50MB
-                        </span>
+                        选择单个文件，文件大小不超过 1MB
                       </p>
 
                       <Button
@@ -734,11 +802,14 @@ function UploadPage(): React.JSX.Element {
                           </svg>
                         </div>
                         <h3 className="text-lg font-bold text-gray-800">
-                          已选择的文件 ({files.length})
+                          已选择的文件
                         </h3>
                       </div>
                       <div className="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                        总大小: {formatFileSize(totalSize)}
+                        文件大小:{" "}
+                        {files.length > 0
+                          ? formatFileSize(files[0].file.size)
+                          : "0 Bytes"}
                       </div>
                     </div>
 
@@ -779,12 +850,12 @@ function UploadPage(): React.JSX.Element {
 
                                 {fileInfo.status === "uploading" && (
                                   <div className="mt-2">
-                                    <Progress
-                                      value={fileInfo.progress}
-                                      color="primary"
-                                      size="sm"
-                                      showValueLabel={true}
-                                    />
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                      <span className="text-xs text-blue-600">
+                                        上传中...
+                                      </span>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -824,6 +895,58 @@ function UploadPage(): React.JSX.Element {
                                     </svg>
                                   </Button>
                                 )}
+                                {fileInfo.status === "error" && (
+                                  <div className="flex space-x-1">
+                                    <Button
+                                      size="sm"
+                                      color="primary"
+                                      variant="flat"
+                                      onClick={() => uploadFile(fileInfo)}
+                                      isDisabled={uploading}
+                                      isIconOnly
+                                      aria-label={`重新上传文件 ${fileInfo.file.name}`}
+                                    >
+                                      <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                        />
+                                      </svg>
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      color="danger"
+                                      variant="light"
+                                      onClick={() => removeFile(fileInfo.id)}
+                                      isDisabled={uploading}
+                                      isIconOnly
+                                      aria-label={`删除文件 ${fileInfo.file.name}`}
+                                    >
+                                      <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                        />
+                                      </svg>
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </CardBody>
@@ -841,17 +964,17 @@ function UploadPage(): React.JSX.Element {
         <Card className="mt-8 shadow-xl border-0 bg-white/90 backdrop-blur-sm">
           <CardBody className="p-6">
             <div className="flex flex-col space-y-6">
-              {/* 上传状态提示 */}
+              {/* 创建状态提示 */}
               {uploading && (
                 <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl shadow-lg">
                   <div className="flex items-center space-x-4">
                     <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     <div>
                       <p className="text-sm font-bold text-blue-800">
-                        🚀 正在上传数据集到阿里云OSS，请不要关闭页面...
+                        🚀 正在创建数据集，请不要关闭页面...
                       </p>
                       <p className="text-xs text-blue-600 mt-2">
-                        上传完成后您可以在列表中查看，学生也可以访问此数据集
+                        创建完成后您可以在列表中查看，学生也可以访问此数据集
                       </p>
                     </div>
                   </div>
@@ -879,7 +1002,7 @@ function UploadPage(): React.JSX.Element {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-yellow-800">
-                        ⚠️ OSS连接异常，但仍可尝试上传
+                        ⚠️ OSS连接异常，但仍可尝试创建数据集
                       </p>
                       <p className="text-xs text-yellow-600 mt-2">
                         请检查网络连接或联系管理员
@@ -910,12 +1033,12 @@ function UploadPage(): React.JSX.Element {
                     !datasetName.trim() ||
                     !category ||
                     files.length === 0 ||
-                    uploading
+                    uploading ||
+                    (files.length > 0 && files[0].status === "uploading") ||
+                    (files.length > 0 && files[0].status === "error")
                   }
                   className="shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600"
-                  aria-label={
-                    uploading ? "正在上传数据集" : "提交上传DICOM数据集"
-                  }
+                  aria-label={uploading ? "正在创建数据集" : "创建数据集"}
                   startContent={
                     !uploading && (
                       <svg
@@ -929,13 +1052,13 @@ function UploadPage(): React.JSX.Element {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          d="M5 13l4 4L19 7"
                         />
                       </svg>
                     )
                   }
                 >
-                  {uploading ? "🚀 上传中..." : "✨ 提交上传"}
+                  {uploading ? "🚀 创建中..." : "✨ 创建数据集"}
                 </Button>
               </div>
             </div>

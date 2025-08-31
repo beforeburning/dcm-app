@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, Tab } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { copyPublicDataToPrivateRequest, type DcmData } from "@/api/dcm_new";
+import { copyPublicDataToPrivateRequest, type DcmData } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import {
   PublicDataList,

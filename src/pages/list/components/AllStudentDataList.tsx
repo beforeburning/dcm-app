@@ -4,7 +4,7 @@ import { addToast } from "@heroui/toast";
 import {
   // searchAllStudentDataRequest,
   type DcmData,
-} from "@/api/dcm_new";
+} from "@/api/dcm";
 import DataCard from "./DataCard";
 
 interface AllStudentDataListProps {

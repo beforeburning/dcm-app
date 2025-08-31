@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Button, Chip } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import type { DcmData } from "@/api/dcm_new";
+import type { DcmData } from "@/api/dcm";
 import {
   copyPublicDataToPrivateRequest,
   deletePersonalDataRequest,
-} from "@/api/dcm_new";
+} from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface DataCardProps {

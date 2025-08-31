@@ -4,9 +4,9 @@ import type { UserRole } from "@/api/login";
 export const useUserAuth = () => {
   const { userInfo, isAuthenticated } = useAppStore();
 
-  const isAdmin = userInfo?.role === "admin";
-  const isTeacher = userInfo?.role === "teacher";
-  const isStudent = userInfo?.role === "student";
+  const isAdmin = userInfo?.role === 1;
+  const isTeacher = userInfo?.role === 2;
+  const isStudent = userInfo?.role === 3;
 
   // 检查是否有管理员权限
   const hasAdminPermission = isAdmin;

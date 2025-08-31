@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { getOriginalDataListRequest, type DcmData } from "@/api/dcm_new";
+import { getOriginalDataListRequest, type DcmData } from "@/api/dcm";
 import DataCard from "./DataCard";
 
 interface PublicDataListProps {
