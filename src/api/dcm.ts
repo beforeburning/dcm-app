@@ -1,5 +1,4 @@
 import { ApiResponse, apiClient } from ".";
-import type { UserRole } from "./login";
 
 export type DcmFile = {
   id: number;
@@ -115,21 +114,13 @@ export const createOriginalDataRequest = async (data: {
   return response.data;
 };
 
-// 管理员 - 删除原始数据 - 已对接
+// 删除原始数据
 export const deleteOriginalDataRequest = async (
   userCopyId: number
 ): Promise<ApiResponse<any[]>> => {
   const response = await apiClient.post("/student/del", {
     user_copy_id: userCopyId,
   });
-  return response.data;
-};
-
-// 管理员 - 删除公共数据
-export const deletePublicDataRequest = async (
-  originalId: number
-): Promise<ApiResponse<any>> => {
-  const response = await apiClient.delete(`/admin/original-data/${originalId}`);
   return response.data;
 };
 

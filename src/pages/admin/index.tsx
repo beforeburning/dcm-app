@@ -186,7 +186,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               <select
                 value={selectedRole}
                 onChange={(e) => handleRoleFilterChange(e.target.value)}
-                className="w-full px-4 py-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-2 pr-4 py-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">所有权限</option>
                 <option value="admin">管理员</option>
