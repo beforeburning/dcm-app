@@ -125,6 +125,7 @@ function DataCard({
 
     setLoading((prev) => ({ ...prev, delete: true }));
     try {
+      //@ts-ignore
       const res = await deleteOriginalDataRequest(dcm?.user_copy_id || 0);
 
       if (res.success) {
