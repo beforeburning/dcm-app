@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 // 后端统一响应格式
 export type ApiResponse<T> = {
@@ -9,17 +9,17 @@ export type ApiResponse<T> = {
 
 // 创建 axios 实例
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: "http://dcm-p.test/api",
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // 请求拦截器 - 自动添加 JWT Token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,8 +38,8 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token 过期或无效，清除本地存储并跳转到登录页
-      localStorage.removeItem('access_token');
-      window.location.href = '/login';
+      localStorage.removeItem("access_token");
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

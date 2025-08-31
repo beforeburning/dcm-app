@@ -84,24 +84,14 @@ function DetailPage() {
     try {
       const all =
         (csToolsAnnotation as any)?.state?.getAllAnnotations?.() || [];
-      console.log("🚀 ~ printAnnotations ~ all:", all);
-
-      const simplified = all.map((a: any) => ({
-        annotationUID: a?.annotationUID,
-        toolName: a?.metadata?.toolName || a?.toolName,
-        referencedImageId: a?.metadata?.referencedImageId,
-        frameOfReferenceUID: a?.metadata?.frameOfReferenceUID,
-        cachedStats: a?.cachedStats,
-        data: a?.data,
-      }));
-      console.log("[DetailPage] 注释JSON:", simplified);
+      console.log("🚀 ~ printAnnotations ~ all:", JSON.stringify(all));
 
       if (!id) {
         addToast({ color: "danger", description: "无效的数据ID，无法保存" });
         return;
       }
 
-      const res = await saveDcmAnnotationsRequest(id, simplified);
+      const res = await saveDcmAnnotationsRequest(id, all);
       if (res.code === 200) {
         addToast({ color: "success", description: "注释已保存" });
       } else {

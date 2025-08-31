@@ -6,7 +6,7 @@ export type UserRole = "admin" | "teacher" | "student";
 export type UserInfo = {
   id: number;
   name: string;
-  username?: string;  // 添加username字段，兼容后端可能返回的两种字段
+  username?: string; // 添加username字段，兼容后端可能返回的两种字段
   email: string;
   role: UserRole;
   created_at: string;
@@ -64,41 +64,43 @@ export type SubmitRegisterParams = {
 export const loginRequest = async (
   params: LoginParams
 ): Promise<ApiResponse<LoginResponse>> => {
-  const response = await apiClient.post('/auth/login', params);
-  
+  const response = await apiClient.post("/auth/login", params);
+
   // 如果登录成功，存储 token
   if (response.data.success && response.data.data?.access_token) {
-    localStorage.setItem('access_token', response.data.data.access_token);
+    localStorage.setItem("access_token", response.data.data.access_token);
   }
-  
+
   return response.data;
 };
 
 // 获取当前用户信息
 export const getUserInfoRequest = async (): Promise<ApiResponse<UserInfo>> => {
-  const response = await apiClient.get('/auth/me');
+  const response = await apiClient.get("/auth/me");
   return response.data;
 };
 
 // 刷新 Token
-export const refreshTokenRequest = async (): Promise<ApiResponse<{ access_token: string; token_type: string; expires_in: number }>> => {
-  const response = await apiClient.post('/auth/refresh');
-  
+export const refreshTokenRequest = async (): Promise<
+  ApiResponse<{ access_token: string; token_type: string; expires_in: number }>
+> => {
+  const response = await apiClient.post("/auth/refresh");
+
   // 更新本地存储的 token
   if (response.data.success && response.data.data?.access_token) {
-    localStorage.setItem('access_token', response.data.data.access_token);
+    localStorage.setItem("access_token", response.data.data.access_token);
   }
-  
+
   return response.data;
 };
 
 // 登出接口
 export const logoutRequest = async (): Promise<ApiResponse<null>> => {
-  const response = await apiClient.post('/auth/logout');
-  
+  const response = await apiClient.post("/auth/logout");
+
   // 清除本地 token
-  localStorage.removeItem('access_token');
-  
+  localStorage.removeItem("access_token");
+
   return response.data;
 };
 
@@ -106,7 +108,7 @@ export const logoutRequest = async (): Promise<ApiResponse<null>> => {
 export const checkEmailRequest = async (
   params: CheckEmailParams
 ): Promise<ApiResponse<{ exists: boolean }>> => {
-  const response = await apiClient.post('/register/check-email', params);
+  const response = await apiClient.post("/register/check-email", params);
   return response.data;
 };
 
@@ -114,15 +116,21 @@ export const checkEmailRequest = async (
 export const sendVerificationCodeRequest = async (
   params: SendCodeParams
 ): Promise<ApiResponse<{ message: string }>> => {
-  const response = await apiClient.post('/register/send-code', params);
+  const response = await apiClient.post("/register/send-code", params);
   return response.data;
 };
 
 // 验证注册验证码
 export const verifyCodeRequest = async (
   params: VerifyCodeParams
-): Promise<ApiResponse<{ verification_token?: string; verified?: boolean; remaining_time?: number }>> => {
-  const response = await apiClient.post('/register/verify-code', params);
+): Promise<
+  ApiResponse<{
+    verification_token?: string;
+    verified?: boolean;
+    remaining_time?: number;
+  }>
+> => {
+  const response = await apiClient.post("/register/verify-code", params);
   return response.data;
 };
 
@@ -130,7 +138,7 @@ export const verifyCodeRequest = async (
 export const submitRegisterRequest = async (
   params: SubmitRegisterParams
 ): Promise<ApiResponse<UserInfo>> => {
-  const response = await apiClient.post('/register/submit', params);
+  const response = await apiClient.post("/register/submit", params);
   return response.data;
 };
 
@@ -138,6 +146,8 @@ export const submitRegisterRequest = async (
 export const getVerificationStatusRequest = async (
   email: string
 ): Promise<ApiResponse<{ status: string; expires_at?: string }>> => {
-  const response = await apiClient.get(`/register/verification-status?email=${encodeURIComponent(email)}`);
+  const response = await apiClient.get(
+    `/register/verification-status?email=${encodeURIComponent(email)}`
+  );
   return response.data;
 };

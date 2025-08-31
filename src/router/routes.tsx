@@ -26,11 +26,9 @@ const routes: RouteObject[] = [
   {
     path: "/detail/:id",
     element: (
-      <ProtectedRoute>
-        <PageLayout>
-          <DetailPage />
-        </PageLayout>
-      </ProtectedRoute>
+      <PageLayout>
+        <DetailPage />
+      </PageLayout>
     ),
   },
   {
