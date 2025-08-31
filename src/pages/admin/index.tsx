@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import { addToast } from "@heroui/toast";
 import { Pagination } from "@heroui/react";
 import {
-  searchUsersRequest,
+  getStudentsDataRequest,
   updateUserRoleRequest,
-  type AdminUser,
-  type PaginatedResponse,
+  type StudentUser,
 } from "@/api/admin";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
@@ -13,7 +12,7 @@ interface AdminPageProps {}
 
 const AdminPage: React.FC<AdminPageProps> = () => {
   const { isAdmin } = useAdminAuth();
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [students, setStudents] = useState<StudentUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
@@ -35,66 +34,54 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     );
   }
 
-  // 获取用户列表（使用搜索接口）
-  const fetchUsers = async (
+  // 获取学生用户列表（使用搜索接口）
+  const fetchStudents = async (
     search: string = searchTerm,
     role: string = selectedRole,
     page: number = currentPage
   ) => {
     setLoading(true);
     try {
-      const res = await searchUsersRequest(
-        search,
-        role === "all" ? undefined : (role as "admin" | "teacher" | "student"),
+      const params: any = {
         page,
-        pageSize
-      );
-      if (res.code === 200 && res.data) {
-        setUsers(res.data.data);
-        setTotal(res.data.total);
-        setTotalPages(res.data.totalPages);
-        setCurrentPage(res.data.page);
+        per_page: pageSize,
+      };
+
+      // 根据搜索词判断搜索类型
+      if (search) {
+        if (search.includes("@")) {
+          params.email = search;
+        } else {
+          params.username = search;
+        }
+      }
+
+      const res = await getStudentsDataRequest(params);
+      console.log("API Response:", res); // 添加调试日志
+      if (res.success && res.data) {
+        setStudents(res.data.list || []);
+        setTotal(res.data.pagination.total || 0);
+        setTotalPages(res.data.pagination.last_page || 0);
+        setCurrentPage(res.data.pagination.current_page || 1);
       } else {
+        setStudents([]);
+        setTotal(0);
+        setTotalPages(0);
         addToast({
           color: "danger",
-          description: res.message || "获取用户列表失败",
+          description: res.message || "获取学生用户列表失败",
         });
       }
     } catch {
+      setStudents([]);
+      setTotal(0);
+      setTotalPages(0);
       addToast({
         color: "danger",
         description: "网络错误，请重试",
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  // 更新用户权限
-  const handleRoleChange = async (
-    userId: string,
-    newRole: "admin" | "teacher" | "student"
-  ) => {
-    try {
-      const res = await updateUserRoleRequest(userId, newRole);
-      if (res.code === 200) {
-        addToast({
-          color: "success",
-          description: "权限更新成功",
-        });
-        // 重新获取当前页数据
-        fetchUsers();
-      } else {
-        addToast({
-          color: "danger",
-          description: res.message || "权限更新失败",
-        });
-      }
-    } catch {
-      addToast({
-        color: "danger",
-        description: "网络错误，请重试",
-      });
     }
   };
 
@@ -116,7 +103,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
   // 监听搜索和筛选变化
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchUsers(searchTerm, selectedRole, currentPage);
+      fetchStudents(searchTerm, selectedRole, currentPage);
     }, 300); // 防抖动处理
 
     return () => clearTimeout(timeoutId);
@@ -124,34 +111,34 @@ const AdminPage: React.FC<AdminPageProps> = () => {
 
   // 监听分页变化
   useEffect(() => {
-    fetchUsers(searchTerm, selectedRole, currentPage);
+    fetchStudents(searchTerm, selectedRole, currentPage);
   }, [currentPage]);
 
   // 初始化加载数据
   useEffect(() => {
-    fetchUsers();
+    fetchStudents();
   }, []);
 
-  const getRoleColor = (role: string) => {
+  const getRoleColor = (role: number) => {
     switch (role) {
-      case "admin":
+      case 1:
         return "bg-red-500 text-white";
-      case "teacher":
+      case 2:
         return "bg-blue-500 text-white";
-      case "student":
+      case 3:
         return "bg-green-500 text-white";
       default:
         return "bg-gray-500 text-white";
     }
   };
 
-  const getRoleText = (role: string) => {
+  const getRoleText = (role: number) => {
     switch (role) {
-      case "admin":
+      case 1:
         return "管理员";
-      case "teacher":
+      case 2:
         return "老师";
-      case "student":
+      case 3:
         return "学生";
       default:
         return "未知";
@@ -178,20 +165,20 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               />
             </div>
 
-            {/* 权限过滤 */}
+            {/* 角色过滤 */}
             <div className="w-full md:w-48">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                权限筛选
+                角色筛选
               </label>
               <select
                 value={selectedRole}
                 onChange={(e) => handleRoleFilterChange(e.target.value)}
                 className="w-full pl-2 pr-4 py-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">所有权限</option>
-                <option value="admin">管理员</option>
-                <option value="teacher">老师</option>
-                <option value="student">学生</option>
+                <option value="all">所有角色</option>
+                <option value="1">管理员</option>
+                <option value="2">老师</option>
+                <option value="3">学生</option>
               </select>
             </div>
           </div>
@@ -201,7 +188,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800">
-              用户列表 ({total})
+              学生用户列表 ({total})
             </h2>
           </div>
 
@@ -221,76 +208,60 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                       邮箱
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      当前权限
+                      角色
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      操作
+                      创建时间
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.userId} className="hover:bg-gray-50">
+                  {students?.map((student) => (
+                    <tr key={student.user_id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                             <span className="text-white text-sm font-semibold">
-                              {user.userName.charAt(0)}
+                              {student.username.charAt(0)}
                             </span>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {user.userName}
+                              {student.username}
                             </div>
                             <div className="text-sm text-gray-500">
-                              ID: {user.userId}
+                              ID: {student.user_id}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {user.email}
+                          {student.email}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(
-                            user.role
+                            student.role
                           )}`}
                         >
-                          {getRoleText(user.role)}
+                          {getRoleText(student.role)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <select
-                          value={user.role}
-                          onChange={(e) =>
-                            handleRoleChange(
-                              user.userId,
-                              e.target.value as "admin" | "teacher" | "student"
-                            )
-                          }
-                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          disabled={
-                            user.role === "admin" && user.userId === "admin_001"
-                          } // 防止删除主管理员
-                        >
-                          <option value="admin">管理员</option>
-                          <option value="teacher">老师</option>
-                          <option value="student">学生</option>
-                        </select>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(student.created_at).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              {users.length === 0 && !loading && (
+              {(!students || students.length === 0) && !loading && (
                 <div className="p-6 text-center text-gray-500">
                   {searchTerm || selectedRole !== "all"
-                    ? "没有找到匹配的用户"
-                    : "暂无用户数据"}
+                    ? "没有找到匹配的学生用户"
+                    : "暂无学生用户"}
                 </div>
               )}
             </div>

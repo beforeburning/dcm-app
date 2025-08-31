@@ -12,7 +12,10 @@ import {
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import type { DcmData } from "@/api/dcm";
-import { getOriginalDataDetailRequest } from "@/api/dcm";
+import {
+  getOriginalDataDetailRequest,
+  updateOriginalDataRequest,
+} from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAppStore } from "@/stores/app";
 
@@ -46,12 +49,11 @@ function EditPage(): React.JSX.Element {
 
   // 分类选项
   const categoryOptions = [
-    { key: "xray", label: "X光" },
-    { key: "ct", label: "CT" },
-    { key: "mri", label: "MRI" },
-    { key: "ultrasound", label: "超声" },
-    { key: "pet", label: "PET" },
-    { key: "pathology", label: "病理图像" },
+    { key: "1", label: "X光" },
+    { key: "2", label: "CT" },
+    { key: "3", label: "MRI" },
+    { key: "4", label: "超声" },
+    { key: "5", label: "PET" },
   ];
 
   // 加载数据
@@ -68,14 +70,18 @@ function EditPage(): React.JSX.Element {
 
       setLoading(true);
       try {
-        const response = await getOriginalDataDetailRequest(id);
+        const response = await getOriginalDataDetailRequest(Number(id));
 
-        if (response.code === 200 && response.data) {
+        if (response.success && response.data) {
           const data = response.data;
           setDcmData(data);
           setName(data.name);
-          setCategory(data.category || "");
-          setTags(data.tags || []);
+          setCategory(data.category?.toString() || "1");
+          // 从 remark 字段解析标签，用逗号分割
+          const tagArray = data.remark
+            ? data.remark.split(",").filter((tag) => tag.trim())
+            : [];
+          setTags(tagArray);
         } else {
           addToast({
             color: "danger",
@@ -138,39 +144,36 @@ function EditPage(): React.JSX.Element {
     }
 
     setSaving(true);
-    // try {
-    //   const response = await updateDcmDataRequest(
-    //     id,
-    //     {
-    //       name: name.trim(),
-    //       category,
-    //       tags,
-    //     },
-    //     storeUserInfo.user_id,
-    //     storeUserInfo.role
-    //   );
+    try {
+      const categoryNumber = Number(category);
 
-    //   if (response.code === 200) {
-    //     addToast({
-    //       color: "success",
-    //       description: "保存成功",
-    //     });
-    //     navigate("/list");
-    //   } else {
-    //     addToast({
-    //       color: "danger",
-    //       description: response.message || "保存失败",
-    //     });
-    //   }
-    // } catch (error) {
-    //   console.error("保存错误:", error);
-    //   addToast({
-    //     color: "danger",
-    //     description: "保存失败，请重试",
-    //   });
-    // } finally {
-    //   setSaving(false);
-    // }
+      const response = await updateOriginalDataRequest(Number(id), {
+        name: name.trim(),
+        category: categoryNumber,
+        remark: tags.join(","),
+      });
+
+      if (response.success) {
+        addToast({
+          color: "success",
+          description: "保存成功",
+        });
+        navigate("/list");
+      } else {
+        addToast({
+          color: "danger",
+          description: response.message || "保存失败",
+        });
+      }
+    } catch (error) {
+      console.error("保存错误:", error);
+      addToast({
+        color: "danger",
+        description: "保存失败，请重试",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -239,7 +242,7 @@ function EditPage(): React.JSX.Element {
                   <span className="text-gray-700">
                     包含{" "}
                     <span className="font-semibold text-blue-600">
-                      {dcmData.totalFiles}
+                      {dcmData.files?.length || 0}
                     </span>{" "}
                     个文件
                   </span>

@@ -24,7 +24,7 @@ export const uploadFileToOssRequest = async (
   file_url: string;
   file_size: number;
   mime_type: string;
-  original_name: string;
+  original_annotation: string;
 }> => {
   const formData = new FormData();
   formData.append("file", file);

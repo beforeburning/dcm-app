@@ -1,41 +1,59 @@
 import { ApiResponse, apiClient } from ".";
 
-export type DcmFile = {
-  id: number;
-  name: string;
-  size: number;
-  path: string;
-  original_data_id: number;
-};
-
-export type DcmData = {
-  original_id: number;
-  name: string;
-  category: number;
-  file_path: string;
-  file_url: string;
-  file_name: string;
-  file_size: number;
-  original_annotation: string;
+// 通用类型定义
+export type Tag = {
+  tag_id: number;
+  tag_name: string;
   active_flag: number;
   created_at: string;
   created_user_id: number;
   updated_at: string;
   updated_user_id: number;
-  tags: any[];
-  creator: {
-    user_id: number;
-    email: string;
-    email_verified_at: string | null;
-    username: string;
-    autoFillUserId: string;
-    role: number;
-    active_flag: number;
-    created_at: string;
-    created_user_id: number;
-    updated_at: string;
-    updated_user_id: number;
+  pivot: {
+    relate_id: number;
+    tag_id: number;
   };
+};
+
+export type User = {
+  user_id: number;
+  email: string;
+  email_verified_at: string | null;
+  username: string;
+  autoFillUserId: string;
+  role: number;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
+};
+
+export type DcmFile = {
+  file_id: number;
+  original_id: number;
+  file_path: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  original_annotation: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DcmData = {
+  original_id: number;
+  name: string;
+  remark: string;
+  category: number;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
+  tags: Tag[];
+  creator: User;
+  files: DcmFile[];
 };
 
 // 分页响应接口
@@ -73,44 +91,61 @@ export const getOriginalDataListRequest = async (
 export const createOriginalDataRequest = async (data: {
   name: string;
   category: number;
-  file_path: string;
-  file_url: string;
-  file_name: string;
-  file_size: number;
-  original_annotation?: string;
-  tag_ids?: number[];
-}): Promise<
-  ApiResponse<{
-    original_id: number;
-    name: string;
-    category: number;
+  remark: string;
+  files: Array<{
+    file_name: string;
     file_path: string;
     file_url: string;
-    file_name: string;
     file_size: number;
-    original_annotation: string;
+  }>;
+}): Promise<ApiResponse<DcmData>> => {
+  const response = await apiClient.post("/admin/original-data/store", data);
+  return response.data;
+};
+
+// 学生 - 获取列表
+export type StudentListItem = {
+  user_copy_id: number;
+  original_id: number;
+  user_id: number;
+  copy_name: string;
+  last_annotation_id: number;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
+  user: User;
+  original_data: {
+    original_id: number;
+    name: string;
+    remark: string;
+    category: number;
     active_flag: number;
     created_at: string;
     created_user_id: number;
     updated_at: string;
     updated_user_id: number;
-    tags: any[];
-    creator: {
-      user_id: number;
-      email: string;
-      email_verified_at: string | null;
-      username: string;
-      autoFillUserId: string;
-      role: number;
-      active_flag: number;
-      created_at: string;
-      created_user_id: number;
-      updated_at: string;
-      updated_user_id: number;
+  };
+};
+export const getUserCopyListRequest = async (data: {
+  original_id: number;
+}): Promise<
+  ApiResponse<{
+    list: Array<StudentListItem>;
+    pagination: {
+      current_page: number;
+      last_page: number;
+      per_page: number;
+      total: number;
+      from: number;
+      to: number;
     };
   }>
 > => {
-  const response = await apiClient.post("/admin/original-data/store", data);
+  const response = await apiClient.get("/student/userCopy", {
+    params: data,
+  });
   return response.data;
 };
 
@@ -124,26 +159,29 @@ export const deleteOriginalDataRequest = async (
   return response.data;
 };
 
-// 获取单个原始数据
+// 获取单个原始数据  - 已对接
 export const getOriginalDataDetailRequest = async (
   id: number
 ): Promise<ApiResponse<DcmData>> => {
-  const response = await apiClient.get(`/admin/original-data/${id}`);
+  const response = await apiClient.get(
+    `/admin/original-data/detail?original_id=${id}`
+  );
   return response.data;
 };
 
-// 管理员 - 更新原始数据
+// 管理员 - 更新原始数据  - 已对接
 export const updateOriginalDataRequest = async (
   id: number,
   data: {
     name?: string;
-    description?: string;
-    category?: string;
-    tags?: string[];
-    status?: "active" | "inactive";
+    remark?: string;
+    category?: number;
   }
 ): Promise<ApiResponse<DcmData>> => {
-  const response = await apiClient.put(`/admin/original-data/${id}`, data);
+  const response = await apiClient.post(`/admin/original-data/update`, {
+    original_id: id,
+    ...data,
+  });
   return response.data;
 };
 
@@ -213,77 +251,11 @@ export const uploadDcmRequest = createOriginalDataRequest;
 
 // 学生 - 复制公共数据到私有
 export const copyPublicDataToPrivateRequest = async (data: {
-  original_data_id: number;
+  original_id: number;
+  copy_name: string;
 }): Promise<ApiResponse<DcmData>> => {
   const response = await apiClient.post("/student/copy", data);
   return response.data;
-};
-
-// 学生数据项类型定义
-export type StudentDataItem = {
-  original_id: number;
-  name: string;
-  category: number;
-  file_path: string;
-  file_url: string;
-  file_name: string;
-  file_size: number;
-  original_annotation: string;
-  active_flag: number;
-  created_at: string;
-  created_user_id: number | null;
-  updated_at: string;
-  updated_user_id: number | null;
-  tags: Array<{
-    tag_id: number;
-    tag_name: string;
-    active_flag: number;
-    created_at: string;
-    created_user_id: number;
-    updated_at: string;
-    updated_user_id: number;
-    pivot: {
-      relate_id: number;
-      tag_id: number;
-    };
-  }>;
-  creator: {
-    user_id: number;
-    email: string;
-    email_verified_at: string | null;
-    username: string;
-    autoFillUserId: string;
-    role: number;
-    active_flag: number;
-    created_at: string;
-    created_user_id: number;
-    updated_at: string;
-    updated_user_id: number;
-  } | null;
-};
-
-// 学生数据列表响应类型
-export type StudentDataListResponse = {
-  list: StudentDataItem[];
-  pagination: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    from: number;
-    to: number;
-  };
-};
-
-// 学生数据列表分页响应类型（兼容 PaginatedDcmResponse 格式）
-export type StudentDataPaginatedResponse = {
-  data: StudentDataItem[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
 };
 
 // 学生 - 获取单条数据详情（含最新的标记数据）
@@ -293,17 +265,6 @@ export const getStudentDataDetailRequest = async (
   const response = await apiClient.get(
     `/student/copy/detail?user_copy_id=${userCopyId}`
   );
-  return response.data;
-};
-
-// 学生 - 获取个人数据列表
-export const getStudentDataListRequest = async (
-  page: number = 1,
-  per_page: number = 10
-): Promise<ApiResponse<StudentDataListResponse>> => {
-  const response = await apiClient.get("/student/copy/list", {
-    params: { page, per_page },
-  });
   return response.data;
 };
 

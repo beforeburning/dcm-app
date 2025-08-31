@@ -7,8 +7,8 @@ import React, {
 import { Card, CardBody, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import {
-  getStudentDataListRequest,
-  type StudentDataItem,
+  getUserCopyListRequest,
+  type StudentListItem,
   type DcmData,
 } from "@/api/dcm";
 import DataCard from "./DataCard";
@@ -24,7 +24,7 @@ export interface StudentDataListRef {
 
 const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
   ({ userId, onFileClick }, ref) => {
-    const [data, setData] = useState<StudentDataItem[]>([]);
+    const [data, setData] = useState<StudentListItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
@@ -32,55 +32,34 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
 
     const pageSize = 10;
 
-    // 将 StudentDataItem 转换为 DcmData 格式
-    const convertStudentDataToDcmData = (
-      studentData: StudentDataItem
+    // 将 StudentListItem 转换为 DcmData 格式
+    const convertStudentListItemToDcmData = (
+      item: StudentListItem
     ): DcmData => {
       return {
-        id: studentData.original_id,
-        name: studentData.name,
-        description: studentData.original_annotation || undefined,
-        category:
-          studentData.category === 0
-            ? "未分类"
-            : studentData.category === 1
-            ? "X光"
-            : studentData.category === 2
-            ? "CT"
-            : studentData.category === 3
-            ? "MRI"
-            : studentData.category === 4
-            ? "超声"
-            : studentData.category === 5
-            ? "PET"
-            : studentData.category === 6
-            ? "病理图像"
-            : "其他",
-        tags: studentData.tags.map((tag) => tag.tag_name),
-        status: (studentData.active_flag === 1 ? "active" : "inactive") as
-          | "active"
-          | "inactive",
-        file_count: 1, // 学生数据通常是单个文件
-        total_size: studentData.file_size,
-        created_at: studentData.created_at,
-        updated_at: studentData.updated_at,
-        files: [
-          {
-            id: studentData.original_id,
-            name: studentData.file_name,
-            size: studentData.file_size,
-            path: studentData.file_path,
-            original_data_id: studentData.original_id,
-          },
-        ],
+        original_id: item.original_data.original_id,
+        name: item.copy_name || item.original_data.name,
+        remark: item.original_data.remark,
+        category: item.original_data.category,
+        active_flag: item.original_data.active_flag,
+        created_at: item.created_at,
+        created_user_id: item.created_user_id,
+        updated_at: item.updated_at,
+        updated_user_id: item.updated_user_id,
+        tags: [], // 用户复制数据可能没有标签
+        creator: item.user,
+        files: [], // 用户复制数据可能没有文件信息
       };
     };
 
     // 获取学生个人数据的列表
-    const fetchData = async (currentPage: number = page) => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await getStudentDataListRequest(currentPage, pageSize);
+        const response = await getUserCopyListRequest({
+          original_id: Number(userId),
+        });
+
         if (response.success && response.data) {
           setData(response.data.list);
           setTotal(response.data.pagination.total);
@@ -111,14 +90,15 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
 
     const handlePageChange = (newPage: number) => {
       setPage(newPage);
-      fetchData(newPage);
+      // getUserCopyListRequest 不支持分页，所以这里不需要传递页码
+      fetchData();
     };
 
     // 暴露刷新方法给父组件
     useImperativeHandle(
       ref,
       () => ({
-        refresh: () => fetchData(1),
+        refresh: () => fetchData(),
       }),
       [userId]
     );
@@ -147,7 +127,7 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
               </p>
             </div>
             <button
-              onClick={() => fetchData(1)}
+              onClick={() => fetchData()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               刷新
@@ -162,17 +142,20 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
             ) : (
               <>
                 <div className="space-y-4">
-                  {data.map((studentData) => (
+                  {data.map((item) => (
                     <DataCard
-                      key={studentData.original_id}
-                      dcm={convertStudentDataToDcmData(studentData)}
+                      key={item.original_data.original_id}
+                      dcm={convertStudentListItemToDcmData(item)}
                       onFileClick={onFileClick}
                       onDataChange={fetchData}
+                      isPublicData={false}
+                      showCopyButton={false}
                     />
                   ))}
                 </div>
 
-                {totalPages > 1 && (
+                {/* getUserCopyListRequest 不支持分页，暂时隐藏分页组件 */}
+                {/* {totalPages > 1 && (
                   <div className="flex justify-center mt-6">
                     <Pagination
                       total={totalPages}
@@ -183,7 +166,7 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
                       color="primary"
                     />
                   </div>
-                )}
+                )} */}
               </>
             )}
           </CardBody>

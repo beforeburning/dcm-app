@@ -11,24 +11,53 @@ export interface AdminUser {
   last_login_at?: string;
 }
 
-// 分页响应接口
-export interface PaginatedResponse<T> {
-  data: T[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
+// 学生用户接口
+export interface StudentUser {
+  user_id: number;
+  email: string;
+  email_verified_at: string | null;
+  username: string;
+  autoFillUserId: string;
+  role: UserRole;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
 }
 
-// 获取所有用户列表
-export const getAllUsersRequest = async (
-  page: number = 1,
-  per_page: number = 10
-): Promise<ApiResponse<PaginatedResponse<AdminUser>>> => {
-  const response = await apiClient.get('/admin/users', {
-    params: { page, per_page }
+// 分页响应接口
+export interface PaginatedResponse<T> {
+  list: T[];
+  pagination: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+  };
+}
+
+// 获取所有学生用户列表（支持搜索和分页）
+export const getStudentsDataRequest = async (
+  params: {
+    page?: number;
+    per_page?: number;
+    username?: string;
+    email?: string;
+  } = {}
+): Promise<ApiResponse<PaginatedResponse<StudentUser>>> => {
+  const { page = 1, per_page = 10, username, email, ...otherParams } = params;
+
+  const queryParams: any = { page, per_page, ...otherParams };
+
+  // 添加搜索参数
+  if (username) queryParams.username = username;
+  if (email) queryParams.email = email;
+
+  const response = await apiClient.get("/admin/users/students", {
+    params: queryParams,
   });
   return response.data;
 };
@@ -39,29 +68,8 @@ export const updateUserRoleRequest = async (
   newRole: UserRole
 ): Promise<ApiResponse<AdminUser>> => {
   const response = await apiClient.put(`/admin/users/${userId}`, {
-    role: newRole
+    role: newRole,
   });
-  return response.data;
-};
-
-// 搜索用户（支持分页）
-export const searchUsersRequest = async (
-  searchTerm: string = '',
-  role?: UserRole | "all",
-  page: number = 1,
-  per_page: number = 10
-): Promise<ApiResponse<PaginatedResponse<AdminUser>>> => {
-  const params: any = { page, per_page };
-  
-  if (searchTerm) {
-    params.search = searchTerm;
-  }
-  
-  if (role && role !== "all") {
-    params.role = role;
-  }
-  
-  const response = await apiClient.get('/admin/users', { params });
   return response.data;
 };
 

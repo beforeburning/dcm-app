@@ -2,21 +2,21 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Button, Chip } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import type { DcmData } from "@/api/dcm";
+import type { DcmData, StudentListItem } from "@/api/dcm";
 import {
   copyPublicDataToPrivateRequest,
   deleteOriginalDataRequest,
-  deletePublicDataRequest,
 } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface DataCardProps {
-  dcm: DcmData;
+  dcm: DcmData | StudentListItem;
   onFileClick: (id: string) => void;
   onDataChange?: () => void; // 数据变化回调，用于刷新列表
   onCopySuccess?: () => void; // 复制成功回调，用于切换标签页
   showOwnerInfo?: boolean;
   isPublicData?: boolean; // 是否为公共数据
+  showCopyButton?: boolean; // 是否显示复制按钮
 }
 
 function DataCard({
@@ -26,6 +26,7 @@ function DataCard({
   onCopySuccess,
   showOwnerInfo = false,
   isPublicData = false,
+  showCopyButton = true,
 }: DataCardProps): React.JSX.Element {
   const navigate = useNavigate();
   const { userInfo, isAdmin, isTeacher, isStudent } = useUserAuth();
@@ -34,6 +35,22 @@ function DataCard({
     copy: boolean;
     delete: boolean;
   }>({ copy: false, delete: false });
+
+  // 辅助函数：安全获取数据属性
+  const getDataName = (data: DcmData | StudentListItem): string => {
+    if ("name" in data) return data.name;
+    return data.copy_name || data.original_data.name;
+  };
+
+  const getDataCategory = (data: DcmData | StudentListItem): number => {
+    if ("category" in data) return data.category;
+    return data.original_data.category;
+  };
+
+  const getDataRemark = (data: DcmData | StudentListItem): string => {
+    if ("remark" in data) return data.remark;
+    return data.original_data.remark;
+  };
 
   // 分类显示映射
   const getCategoryLabel = (category?: number): string => {
@@ -60,7 +77,8 @@ function DataCard({
     setLoading((prev) => ({ ...prev, copy: true }));
     try {
       const res = await copyPublicDataToPrivateRequest({
-        original_data_id: dcm.original_id,
+        original_id: dcm.original_id,
+        copy_name: `${getDataName(dcm)} - 复制`,
       });
 
       if (res.success) {
@@ -97,7 +115,9 @@ function DataCard({
     }
 
     // 二次确认
-    if (!confirm(`确定要删除数据集 "${dcm.name}" 吗？此操作不可撤销。`)) {
+    if (
+      !confirm(`确定要删除数据集 "${getDataName(dcm)}" 吗？此操作不可撤销。`)
+    ) {
       return;
     }
 
@@ -105,10 +125,7 @@ function DataCard({
     try {
       console.log("🚀 ~ handleDeleteData ~ dcm.original_id:", dcm);
 
-      // 根据数据类型使用不同的删除接口
-      const res = isPublicData
-        ? await deletePublicDataRequest(dcm.original_id)
-        : await deleteOriginalDataRequest(dcm.original_id);
+      const res = await deleteOriginalDataRequest(dcm.original_id);
 
       if (res.success) {
         addToast({
@@ -134,17 +151,16 @@ function DataCard({
 
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer">
-      <CardBody className="p-6">
+      <CardBody className="p-4">
         <div className="flex items-center justify-between">
           <div
             className="flex-1"
             onClick={() => onFileClick(dcm.original_id.toString())}
           >
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {dcm.name}
+              {getDataName(dcm)}
             </h3>
-            <div className="space-y-1 text-sm text-gray-600">
-              <p>文件大小: {(dcm.file_size / 1024 / 1024).toFixed(2)} MB</p>
+            <div className="space-y-2 text-sm text-gray-600">
               <p>
                 创建时间: {new Date(dcm.created_at).toLocaleDateString("zh-CN")}{" "}
                 | 更新时间:{" "}
@@ -154,7 +170,7 @@ function DataCard({
                 <p className="text-blue-600">数据ID: {dcm.original_id}</p>
               )}
               {/* 分类显示 */}
-              {dcm.category && (
+              {getDataCategory(dcm) && (
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-500">分类:</span>
                   <Chip
@@ -163,8 +179,30 @@ function DataCard({
                     variant="flat"
                     className="text-xs"
                   >
-                    {getCategoryLabel(dcm.category)}
+                    {getCategoryLabel(getDataCategory(dcm))}
                   </Chip>
+                </div>
+              )}
+
+              {/* 标签显示 */}
+              {getDataRemark(dcm) && getDataRemark(dcm).trim() && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500">标签:</span>
+                  <div className="flex space-x-1">
+                    {getDataRemark(dcm)
+                      .split(",")
+                      .map((tag, index) => (
+                        <Chip
+                          key={index}
+                          size="sm"
+                          color="secondary"
+                          variant="flat"
+                          className="text-xs"
+                        >
+                          {tag.trim()}
+                        </Chip>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -172,7 +210,7 @@ function DataCard({
 
           <div className="flex items-center space-x-2 ml-4">
             {/* 学生：显示拷贝按钮 */}
-            {isStudent && (
+            {isStudent && showCopyButton && (
               <Button
                 size="sm"
                 color="primary"
@@ -187,18 +225,20 @@ function DataCard({
               </Button>
             )}
 
-            {/* 编辑按钮：所有用户都可以编辑 */}
-            <Button
-              size="sm"
-              color="secondary"
-              variant="flat"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/edit/${dcm.original_id}`);
-              }}
-            >
-              编辑
-            </Button>
+            {/* 编辑按钮：非公共数据的所有用户都可以编辑，公共数据只有管理员和老师可以编辑 */}
+            {(!isPublicData || isAdmin || isTeacher) && (
+              <Button
+                size="sm"
+                color="secondary"
+                variant="flat"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/edit/${dcm.original_id}`);
+                }}
+              >
+                编辑
+              </Button>
+            )}
 
             {/* 删除按钮：非公共数据的管理员和老师可以删除 */}
             {!isPublicData && (isAdmin || isTeacher) && (

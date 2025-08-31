@@ -33,7 +33,8 @@ function ListPage(): React.JSX.Element {
 
     try {
       const response = await copyPublicDataToPrivateRequest({
-        original_data_id: dcm.original_id,
+        original_id: dcm.original_id,
+        copy_name: `${dcm.name} - 复制`,
       });
       if (response.success) {
         addToast({

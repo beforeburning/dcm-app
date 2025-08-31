@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button, Chip, Card, CardBody, CardHeader } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import * as cornerstone from "@cornerstonejs/core";
 import {
@@ -47,7 +46,6 @@ import dicomImageLoader, {
 import * as dicomParser from "dicom-parser";
 import {
   getOriginalDataDetailRequest,
-  qiniuBaseUrl,
   type DcmData,
   saveDcmAnnotationsRequest,
 } from "@/api/dcm";
@@ -91,8 +89,8 @@ function DetailPage() {
         return;
       }
 
-      const res = await saveDcmAnnotationsRequest(id, all);
-      if (res.code === 200) {
+      const res = await saveDcmAnnotationsRequest(Number(id), all);
+      if (res.success) {
         addToast({ color: "success", description: "注释已保存" });
       } else {
         addToast({ color: "warning", description: res.message || "保存失败" });
@@ -102,26 +100,6 @@ function DetailPage() {
       addToast({ color: "danger", description: "保存失败" });
     }
   }, [id]);
-
-  // 分类显示映射
-  const getCategoryLabel = (category?: string): string => {
-    const categoryMap: { [key: string]: string } = {
-      xray: "X光",
-      ct: "CT",
-      mri: "MRI",
-      ultrasound: "超声",
-      pet: "PET",
-      pathology: "病理图像",
-    };
-    return category ? categoryMap[category] || category : "未分类";
-  };
-
-  // 格式化时间
-  const formatTime = (timestamp: number): string => {
-    return new Date(timestamp * 1000).toLocaleDateString("zh-CN");
-  };
-
-  // 切换到上一张/下一张图像在 switchToImage 下方定义，避免依赖顺序问题
 
   // 切换到指定图像
   const switchToImage = useCallback(
@@ -183,16 +161,17 @@ function DetailPage() {
 
       setDataLoading(true);
       try {
-        const response = await getOriginalDataDetailRequest(id);
+        const response = await getOriginalDataDetailRequest(Number(id));
+        console.log("🚀 ~ loadDcmData ~ response:", response);
 
-        if (response.code === 200 && response.data) {
+        if (response.success && response.data) {
           setDcmData(response.data);
 
           // 初始化图像 ID 列表
           if (response.data.files && response.data.files.length > 0) {
             const ids = response.data.files.map((file) => {
-              const fullPath = `${qiniuBaseUrl}${file.path}`;
-              return `wadouri:${fullPath}`;
+              // 使用新的文件结构，直接使用 file_url
+              return `wadouri:${file.file_url}`;
             });
             setImageIds(ids);
             setCurrentImageIndex(0); // 重置到第一张图
@@ -480,8 +459,7 @@ function DetailPage() {
       } else if (dcmData.files && dcmData.files.length > 0) {
         // 如果状态中还没有imageIds，使用dcmData构建
         const allImageIds = dcmData.files.map((file) => {
-          const fullPath = `${qiniuBaseUrl}${file.path}`;
-          return `wadouri:${fullPath}`;
+          return `wadouri:${file.file_url}`;
         });
         // 同时更新状态
         setImageIds(allImageIds);
@@ -819,7 +797,7 @@ function DetailPage() {
         onPrev={goToPreviousImage}
         onNext={goToNextImage}
         onJump={(index) => switchToImage(index)}
-        currentFileName={dcmData?.files[currentImageIndex]?.name}
+        currentFileName={dcmData?.files[currentImageIndex]?.file_name}
       />
     </div>
   );
