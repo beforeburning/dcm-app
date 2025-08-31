@@ -1,5 +1,5 @@
+import { StudentUser } from "@/types/api";
 import React from "react";
-import { type StudentUser } from "@/api/admin";
 
 interface StudentUserListProps {
   students: StudentUser[];

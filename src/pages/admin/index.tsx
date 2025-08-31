@@ -5,10 +5,10 @@ import {
   getStudentsDataRequest,
   updateUserRoleRequest,
   resetUserPasswordRequest,
-  type StudentUser,
 } from "@/api/admin";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import StudentUserList from "./components/StudentUserList";
+import { StudentUser } from "@/types/api";
 
 interface AdminPageProps {}
 
