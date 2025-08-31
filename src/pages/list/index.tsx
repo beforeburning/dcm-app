@@ -33,7 +33,7 @@ function ListPage(): React.JSX.Element {
 
     try {
       const response = await copyPublicDataToPrivateRequest({
-        original_data_id: dcm.id,
+        original_data_id: dcm.original_id,
       });
       if (response.success) {
         addToast({
@@ -109,7 +109,7 @@ function ListPage(): React.JSX.Element {
 
           {/* 所有学生数据 - 教师和管理员可见 */}
           {canViewAllStudentData && (
-            <Tab key="allStudent" title="学生数据">
+            <Tab key="allStudent" title="所有学生数据">
               <AllStudentDataList onFileClick={handleFileClick} />
             </Tab>
           )}

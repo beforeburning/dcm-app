@@ -10,20 +10,33 @@ export type DcmFile = {
 };
 
 export type DcmData = {
-  id: number;
+  original_id: number;
   name: string;
-  description?: string;
-  category?: string;
-  tags: string[];
-  status: "active" | "inactive";
-  file_count: number;
-  total_size: number;
-  oss_bucket?: string;
-  oss_path?: string;
-  thumbnail_url?: string;
+  category: number;
+  file_path: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  original_annotation: string;
+  active_flag: number;
   created_at: string;
+  created_user_id: number;
   updated_at: string;
-  files?: DcmFile[];
+  updated_user_id: number;
+  tags: any[];
+  creator: {
+    user_id: number;
+    email: string;
+    email_verified_at: string | null;
+    username: string;
+    autoFillUserId: string;
+    role: number;
+    active_flag: number;
+    created_at: string;
+    created_user_id: number;
+    updated_at: string;
+    updated_user_id: number;
+  };
 };
 
 // 分页响应接口
@@ -55,7 +68,7 @@ export const getOriginalDataListRequest = async (
   return response.data;
 };
 
-// 管理员 - 创建原始数据 -已对接
+// 管理员 - 创建原始数据 - 已对接
 export const createOriginalDataRequest = async (data: {
   name: string;
   category: number;
@@ -100,7 +113,25 @@ export const createOriginalDataRequest = async (data: {
   return response.data;
 };
 
-// 管理员 - 获取单个原始数据
+// 管理员 - 删除原始数据 - 已对接
+export const deleteOriginalDataRequest = async (
+  userCopyId: number
+): Promise<ApiResponse<any[]>> => {
+  const response = await apiClient.post("/student/del", {
+    user_copy_id: userCopyId,
+  });
+  return response.data;
+};
+
+// 管理员 - 删除公共数据
+export const deletePublicDataRequest = async (
+  originalId: number
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.delete(`/admin/original-data/${originalId}`);
+  return response.data;
+};
+
+// 获取单个原始数据
 export const getOriginalDataDetailRequest = async (
   id: number
 ): Promise<ApiResponse<DcmData>> => {
@@ -120,14 +151,6 @@ export const updateOriginalDataRequest = async (
   }
 ): Promise<ApiResponse<DcmData>> => {
   const response = await apiClient.put(`/admin/original-data/${id}`, data);
-  return response.data;
-};
-
-// 管理员 - 删除原始数据
-export const deleteOriginalDataRequest = async (
-  id: number
-): Promise<ApiResponse<null>> => {
-  const response = await apiClient.delete(`/admin/original-data/${id}`);
   return response.data;
 };
 
@@ -193,7 +216,6 @@ export const getDcmAnnotationsRequest = async (
 
 // 兼容性函数，保持原有接口名称
 export const getDcmListRequest = getUserAccessibleDataRequest;
-export const getDcmDetailRequest = getOriginalDataDetailRequest;
 export const uploadDcmRequest = createOriginalDataRequest;
 
 // 学生 - 复制公共数据到私有
@@ -201,14 +223,6 @@ export const copyPublicDataToPrivateRequest = async (data: {
   original_data_id: number;
 }): Promise<ApiResponse<DcmData>> => {
   const response = await apiClient.post("/student/copy", data);
-  return response.data;
-};
-
-// 学生 - 删除个人名下数据
-export const deletePersonalDataRequest = async (data: {
-  data_id: number;
-}): Promise<ApiResponse<{ message: string }>> => {
-  const response = await apiClient.post("/student/del", data);
   return response.data;
 };
 

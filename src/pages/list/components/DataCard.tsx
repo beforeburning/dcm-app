@@ -5,7 +5,8 @@ import { addToast } from "@heroui/toast";
 import type { DcmData } from "@/api/dcm";
 import {
   copyPublicDataToPrivateRequest,
-  deletePersonalDataRequest,
+  deleteOriginalDataRequest,
+  deletePublicDataRequest,
 } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
@@ -15,6 +16,7 @@ interface DataCardProps {
   onDataChange?: () => void; // 数据变化回调，用于刷新列表
   onCopySuccess?: () => void; // 复制成功回调，用于切换标签页
   showOwnerInfo?: boolean;
+  isPublicData?: boolean; // 是否为公共数据
 }
 
 function DataCard({
@@ -23,25 +25,26 @@ function DataCard({
   onDataChange,
   onCopySuccess,
   showOwnerInfo = false,
+  isPublicData = false,
 }: DataCardProps): React.JSX.Element {
   const navigate = useNavigate();
   const { userInfo, isAdmin, isTeacher, isStudent } = useUserAuth();
+
   const [loading, setLoading] = useState<{
     copy: boolean;
     delete: boolean;
   }>({ copy: false, delete: false });
 
   // 分类显示映射
-  const getCategoryLabel = (category?: string): string => {
-    const categoryMap: { [key: string]: string } = {
-      xray: "X光",
-      ct: "CT",
-      mri: "MRI",
-      ultrasound: "超声",
-      pet: "PET",
-      pathology: "病理图像",
+  const getCategoryLabel = (category?: number): string => {
+    const categoryMap: { [key: number]: string } = {
+      1: "X光",
+      2: "CT",
+      3: "MRI",
+      4: "超声",
+      5: "PET",
     };
-    return category ? categoryMap[category] || category : "未分类";
+    return category ? categoryMap[category] || "未分类" : "未分类";
   };
 
   // 处理复制数据
@@ -57,7 +60,7 @@ function DataCard({
     setLoading((prev) => ({ ...prev, copy: true }));
     try {
       const res = await copyPublicDataToPrivateRequest({
-        original_data_id: dcm.id,
+        original_data_id: dcm.original_id,
       });
 
       if (res.success) {
@@ -100,9 +103,12 @@ function DataCard({
 
     setLoading((prev) => ({ ...prev, delete: true }));
     try {
-      const res = await deletePersonalDataRequest({
-        data_id: dcm.id,
-      });
+      console.log("🚀 ~ handleDeleteData ~ dcm.original_id:", dcm);
+
+      // 根据数据类型使用不同的删除接口
+      const res = isPublicData
+        ? await deletePublicDataRequest(dcm.original_id)
+        : await deleteOriginalDataRequest(dcm.original_id);
 
       if (res.success) {
         addToast({
@@ -132,23 +138,20 @@ function DataCard({
         <div className="flex items-center justify-between">
           <div
             className="flex-1"
-            onClick={() => onFileClick(dcm.id.toString())}
+            onClick={() => onFileClick(dcm.original_id.toString())}
           >
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {dcm.name}
             </h3>
             <div className="space-y-1 text-sm text-gray-600">
-              <p>
-                文件数: {dcm.file_count} | 总大小:{" "}
-                {(dcm.total_size / 1024 / 1024).toFixed(2)} MB
-              </p>
+              <p>文件大小: {(dcm.file_size / 1024 / 1024).toFixed(2)} MB</p>
               <p>
                 创建时间: {new Date(dcm.created_at).toLocaleDateString("zh-CN")}{" "}
                 | 更新时间:{" "}
                 {new Date(dcm.updated_at).toLocaleDateString("zh-CN")}
               </p>
-              {showOwnerInfo && dcm.id && (
-                <p className="text-blue-600">数据ID: {dcm.id}</p>
+              {showOwnerInfo && dcm.original_id && (
+                <p className="text-blue-600">数据ID: {dcm.original_id}</p>
               )}
               {/* 分类显示 */}
               {dcm.category && (
@@ -164,25 +167,6 @@ function DataCard({
                   </Chip>
                 </div>
               )}
-              {/* 标签显示 */}
-              {/*{dcm.tags && dcm.tags.length > 0 && (*/}
-              {/*  <div className="flex items-center space-x-2 flex-wrap">*/}
-              {/*    <span className="text-gray-500">标签:</span>*/}
-              {/*    <div className="flex space-x-1">*/}
-              {/*      {dcm.tags.map((tag, index) => (*/}
-              {/*        <Chip*/}
-              {/*          key={index}*/}
-              {/*          size="sm"*/}
-              {/*          color="secondary"*/}
-              {/*          variant="flat"*/}
-              {/*          className="text-xs"*/}
-              {/*        >*/}
-              {/*          {tag}*/}
-              {/*        </Chip>*/}
-              {/*      ))}*/}
-              {/*    </div>*/}
-              {/*  </div>*/}
-              {/*)}*/}
             </div>
           </div>
 
@@ -203,33 +187,33 @@ function DataCard({
               </Button>
             )}
 
-            {/* 管理员和老师：显示编辑和删除按钮 */}
-            {(isAdmin || isTeacher) && (
-              <>
-                <Button
-                  size="sm"
-                  color="secondary"
-                  variant="flat"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/edit/${dcm.id}`);
-                  }}
-                >
-                  编辑
-                </Button>
-                <Button
-                  size="sm"
-                  color="danger"
-                  variant="flat"
-                  isLoading={loading.delete}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteData();
-                  }}
-                >
-                  删除
-                </Button>
-              </>
+            {/* 编辑按钮：所有用户都可以编辑 */}
+            <Button
+              size="sm"
+              color="secondary"
+              variant="flat"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/edit/${dcm.original_id}`);
+              }}
+            >
+              编辑
+            </Button>
+
+            {/* 删除按钮：非公共数据的管理员和老师可以删除 */}
+            {!isPublicData && (isAdmin || isTeacher) && (
+              <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                isLoading={loading.delete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteData();
+                }}
+              >
+                删除
+              </Button>
             )}
           </div>
         </div>

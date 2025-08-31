@@ -12,7 +12,7 @@ import {
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import type { DcmData } from "@/api/dcm";
-import { getDcmDetailRequest } from "@/api/dcm";
+import { getOriginalDataDetailRequest } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAppStore } from "@/stores/app";
 
@@ -68,7 +68,7 @@ function EditPage(): React.JSX.Element {
 
       setLoading(true);
       try {
-        const response = await getDcmDetailRequest(id);
+        const response = await getOriginalDataDetailRequest(id);
 
         if (response.code === 200 && response.data) {
           const data = response.data;

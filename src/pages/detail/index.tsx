@@ -46,7 +46,7 @@ import dicomImageLoader, {
 } from "@cornerstonejs/dicom-image-loader";
 import * as dicomParser from "dicom-parser";
 import {
-  getDcmDetailRequest,
+  getOriginalDataDetailRequest,
   qiniuBaseUrl,
   type DcmData,
   saveDcmAnnotationsRequest,
@@ -183,7 +183,7 @@ function DetailPage() {
 
       setDataLoading(true);
       try {
-        const response = await getDcmDetailRequest(id);
+        const response = await getOriginalDataDetailRequest(id);
 
         if (response.code === 200 && response.data) {
           setDcmData(response.data);
