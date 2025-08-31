@@ -9,7 +9,7 @@ export type ApiResponse<T> = {
 
 // 创建 axios 实例
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: "http://dcm-p.test/api",
+  baseURL: "/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

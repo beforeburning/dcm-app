@@ -16,11 +16,12 @@ export default defineConfig({
     allowedHosts: ["dcm.test", "localhost", "127.0.0.1"],
     proxy: {
       "/api": {
-        target: "http://dcm.test",
+        target: "http://dcm-p.test",
         changeOrigin: true,
-        secure: false
-      }
-    }
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, "/api"),
+      },
+    },
   },
   plugins: [
     react(),

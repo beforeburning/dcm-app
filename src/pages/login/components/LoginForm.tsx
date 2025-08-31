@@ -8,8 +8,8 @@ export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const { setAccessToken } = useAppStore();
 
-  const [email, setEmail] = useState<string>("admin@dcm.test");
-  const [password, setPassword] = useState<string>("admin123");
+  const [email, setEmail] = useState<string>("18151602693@163.com");
+  const [password, setPassword] = useState<string>("asd123");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleKeyPress = (e: React.KeyboardEvent): void => {
@@ -68,7 +68,7 @@ export const LoginForm: React.FC = () => {
           disabled={loading}
         />
         <div className="text-xs text-gray-400 mt-1">
-          测试账号：admin@dcm.test(管理员) / user@dcm.test(用户)
+          测试账号：18151602693@163.com(管理员) / user@dcm.test(用户)
         </div>
       </div>
 

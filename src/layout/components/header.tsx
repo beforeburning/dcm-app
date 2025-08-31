@@ -90,7 +90,9 @@ const HeaderComponents = (): React.JSX.Element => {
               {/* 用户头像 */}
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-semibold">
-                  {(userInfo?.user?.username || userInfo?.user?.name )?.charAt(0) || "U"}
+                  {(userInfo?.user?.username || userInfo?.user?.name)?.charAt(
+                    0
+                  ) || "U"}
                 </span>
               </div>
 
@@ -167,7 +169,7 @@ const HeaderComponents = (): React.JSX.Element => {
               >
                 {/* 退出图标 */}
                 <svg
-                  className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12"
+                  className="w-4 h-4 transition-transform duration-200"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
