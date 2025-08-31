@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addToast } from "@heroui/toast";
-import { loginRequest } from "@/api/login";
-import { useAppStore } from "@/stores/app";
+import { loginRequest } from "@/api/auth";
+import { useAuthStore } from "@/stores/auth";
 
 export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
-  const { setAccessToken } = useAppStore();
+  const { setAccessToken } = useAuthStore();
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");

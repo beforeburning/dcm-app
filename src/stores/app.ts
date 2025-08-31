@@ -1,123 +1,37 @@
-import { addToast } from "@heroui/toast";
-import { getUserInfoRequest, UserInfo, logoutRequest } from "@/api/login";
-import { mountStoreDevtool } from "simple-zustand-devtools";
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
+import { devtools } from "zustand/middleware";
+import { mountStoreDevtool } from "simple-zustand-devtools";
+import { useAuthStore } from "./auth";
 import { navigationService } from "../components/NavigationProvider";
 
 interface AppState {
-  accessToken: string;
-  setAccessToken: (token: string) => void;
-
-  userInfo: UserInfo | undefined;
-  setUserInfo: (userInfo: UserInfo) => void;
-  getUserInfo: () => Promise<void>;
-  isGettingUserInfo: boolean;
-
-  logout: () => Promise<void>;
-  isAuthenticated: () => boolean;
+  // 应用级状态
+  isLoading: boolean;
+  error: string | null;
+  
+  // 操作方法
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
+  
+  // 认证相关（代理到auth store）
+  getAuthStore: () => ReturnType<typeof useAuthStore.getState>;
 }
 
 const isDev = process.env.NODE_ENV === "development";
-const STORAGE_KEY = "AppStore";
 
 export const useAppStore = create<AppState>()(
   devtools(
-    persist(
-      (set, get) => ({
-        accessToken: "",
-        setAccessToken: (accessToken: string) => {
-          const { getUserInfo } = get();
-          set({ accessToken });
-          // 存储到 localStorage
-          if (accessToken) {
-            localStorage.setItem("access_token", accessToken);
-            getUserInfo();
-          } else {
-            localStorage.removeItem("access_token");
-          }
-        },
+    (set, get) => ({
+      isLoading: false,
+      error: null,
 
-        userInfo: undefined,
-        setUserInfo: (userInfo: UserInfo) => {
-          set({ userInfo });
-        },
+      setLoading: (loading: boolean) => set({ isLoading: loading }),
+      setError: (error: string | null) => set({ error }),
+      clearError: () => set({ error: null }),
 
-        isGettingUserInfo: false,
-
-        getUserInfo: async () => {
-          const { accessToken, logout, isGettingUserInfo } = get();
-
-          // 如果正在获取用户信息，直接返回
-          if (isGettingUserInfo) {
-            return;
-          }
-
-          // 如果没有token，直接返回
-          if (!accessToken && !localStorage.getItem("access_token")) {
-            return;
-          }
-
-          // 设置正在获取用户信息状态
-          set({ isGettingUserInfo: true });
-
-          try {
-            const res = await getUserInfoRequest();
-            console.log("🚀 ~ getUserInfo: ~ res:", res);
-
-            if (!res.success) {
-              addToast({
-                color: "danger",
-                description: res.message,
-              });
-              await logout();
-              return;
-            }
-
-            if (res.data?.user) {
-              set({ userInfo: res.data.user });
-            }
-          } catch (error) {
-            console.error("Get user info failed:", error);
-            await logout();
-          } finally {
-            // 无论成功失败，都要重置状态
-            set({ isGettingUserInfo: false });
-          }
-        },
-
-        logout: async () => {
-          try {
-            // 调用后端登出接口
-            await logoutRequest();
-          } catch (error) {
-            console.error("Logout API failed:", error);
-          } finally {
-            // 无论API调用是否成功，都清除本地状态
-            set({
-              accessToken: "",
-              userInfo: undefined,
-              isGettingUserInfo: false,
-            });
-            localStorage.removeItem("access_token");
-            navigationService.navigate("/");
-          }
-        },
-
-        isAuthenticated: () => {
-          const { accessToken, userInfo } = get();
-          return (
-            !!(accessToken || localStorage.getItem("access_token")) &&
-            !!userInfo
-          );
-        },
-      }),
-      {
-        name: STORAGE_KEY,
-        // 只持久化 accessToken，userInfo 每次重新获取
-        partialize: (state) => ({ accessToken: state.accessToken }),
-      }
-    ),
+      getAuthStore: () => useAuthStore.getState(),
+    }),
     {
       enabled: isDev,
       name: "AppStore",
@@ -128,3 +42,28 @@ export const useAppStore = create<AppState>()(
 if (isDev) {
   mountStoreDevtool("AppStore", useAppStore);
 }
+
+// 兼容性导出，保持原有接口
+export const useAppStoreCompat = () => {
+  const appStore = useAppStore();
+  const authStore = useAuthStore();
+  
+  return {
+    // 应用状态
+    isLoading: appStore.isLoading,
+    setLoading: appStore.setLoading,
+    error: appStore.error,
+    setError: appStore.setError,
+    clearError: appStore.clearError,
+    
+    // 认证状态（保持原有接口）
+    accessToken: authStore.accessToken,
+    setAccessToken: authStore.setAccessToken,
+    userInfo: authStore.userInfo,
+    setUserInfo: authStore.setUserInfo,
+    getUserInfo: authStore.getUserInfo,
+    isGettingUserInfo: authStore.isGettingUserInfo,
+    logout: authStore.logout,
+    isAuthenticated: authStore.isAuthenticated,
+  };
+};

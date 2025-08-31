@@ -280,6 +280,3 @@ export const getStudentDataDetailRequest = async (
   );
   return response.data;
 };
-
-// 保持原有的七牛云URL配置
-export const qiniuBaseUrl = "http://t1am3584v.hn-bkt.clouddn.com/";

@@ -294,7 +294,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter, useRoutes } from 'react-router-dom'
 import routes from './router/routes'
 import { NavigationProvider } from './components/NavigationProvider'
-import { useAppStore } from './stores/app'
+import { useAuthStore } from './stores/auth'
 
 function App() {
   return (
@@ -307,7 +307,7 @@ function App() {
 }
 
 const AppInitializer = () => {
-  const { getUserInfo, accessToken, userInfo } = useAppStore();
+  const { getUserInfo, accessToken, userInfo } = useAuthStore();
 
   useEffect(() => {
     // 在应用启动时，如果有token但没有用户信息则获取用户信息

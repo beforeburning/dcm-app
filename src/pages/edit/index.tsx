@@ -11,19 +11,19 @@ import {
   Chip,
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import type { DcmData } from "@/api/dcm";
+import type { DcmData } from "@/types/api";
 import {
   getOriginalDataDetailRequest,
   updateOriginalDataRequest,
-} from "@/api/dcm";
+} from "@/api/dicom";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { useAppStore } from "@/stores/app";
+import { useAuthStore } from "@/stores/auth";
 
 function EditPage(): React.JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { hasTeacherPermission, userInfo } = useUserAuth();
-  const { userInfo: storeUserInfo } = useAppStore();
+  const { hasTeacherPermission } = useUserAuth();
+  const { userInfo: storeUserInfo } = useAuthStore();
 
   const [dcmData, setDcmData] = useState<DcmData | null>(null);
   const [loading, setLoading] = useState(true);

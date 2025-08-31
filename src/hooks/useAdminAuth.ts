@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppStore } from "@/stores/app";
+import { useAuthStore } from "@/stores/auth";
 import { addToast } from "@heroui/toast";
 
 export const useAdminAuth = () => {
   const navigate = useNavigate();
-  const { userInfo } = useAppStore();
+  const { userInfo } = useAuthStore();
 
   useEffect(() => {
     // 如果用户信息还没加载完成，等待

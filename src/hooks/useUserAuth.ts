@@ -1,8 +1,8 @@
-import { useAppStore } from "@/stores/app";
-import type { UserRole } from "@/api/login";
+import { useAuthStore } from "@/stores/auth";
+import type { UserRole } from "@/types/api";
 
 export const useUserAuth = () => {
-  const { userInfo, isAuthenticated } = useAppStore();
+  const { userInfo, isAuthenticated } = useAuthStore();
 
   const isAdmin = userInfo?.role === 1;
   const isTeacher = userInfo?.role === 2;

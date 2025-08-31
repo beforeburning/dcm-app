@@ -1,13 +1,13 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppStore } from "@/stores/app";
+import { useAuthStore } from "@/stores/auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, getUserInfo, accessToken, userInfo } = useAppStore();
+  const { isAuthenticated, getUserInfo, accessToken, userInfo } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {

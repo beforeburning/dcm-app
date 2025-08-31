@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { addToast } from "@heroui/toast";
-import { useAppStore } from "@/stores/app";
+import { useAuthStore } from "@/stores/auth";
 import { useLocation, useNavigate } from "react-router-dom";
-import { changePasswordRequest } from "@/api/login";
+import { changePasswordRequest } from "@/api/auth";
 
 const HeaderComponents = (): React.JSX.Element => {
-  const { logout, userInfo } = useAppStore();
+  const { logout, userInfo } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
 
