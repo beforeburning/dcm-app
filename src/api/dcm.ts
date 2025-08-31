@@ -160,6 +160,18 @@ export const deleteOriginalDataRequest = async (
   return response.data;
 };
 
+// 修改复制名称
+export const updateCopyNameRequest = async (
+  userCopyId: number,
+  copyName: string
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post("/student/update-copy-name", {
+    user_copy_id: userCopyId,
+    copy_name: copyName,
+  });
+  return response.data;
+};
+
 // 获取单个原始数据  - 已对接
 export const getOriginalDataDetailRequest = async (
   id: number

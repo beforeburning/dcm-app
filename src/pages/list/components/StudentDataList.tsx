@@ -123,15 +123,17 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
               <>
                 <div className="space-y-4">
                   {data.map((item) => (
-                    <DataCard
-                      key={item.original_data.original_id}
-                      dcm={item}
-                      onFileClick={onFileClick}
-                      onDataChange={fetchData}
-                      isPublicData={false}
-                      isStudentData={true}
-                      showCopyButton={false}
-                    />
+                    <>
+                      <DataCard
+                        key={item.user_copy_id}
+                        dcm={item}
+                        onFileClick={onFileClick}
+                        onDataChange={fetchData}
+                        isPublicData={false}
+                        isStudentData={true}
+                        showCopyButton={false}
+                      />
+                    </>
                   ))}
                 </div>
 

@@ -6,6 +6,7 @@ import type { DcmData, StudentListItem } from "@/api/dcm";
 import {
   copyPublicDataToPrivateRequest,
   deleteOriginalDataRequest,
+  updateCopyNameRequest,
 } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
@@ -37,6 +38,11 @@ function DataCard({
     copy: boolean;
     delete: boolean;
   }>({ copy: false, delete: false });
+
+  // 修改名称相关状态
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [newCopyName, setNewCopyName] = useState("");
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
 
   // 辅助函数：安全获取数据属性
   const getDataName = (data: DcmData | StudentListItem): string => {
@@ -103,6 +109,56 @@ function DataCard({
       });
     } finally {
       setLoading((prev) => ({ ...prev, copy: false }));
+    }
+  };
+
+  // 处理修改复制名称
+  const handleUpdateCopyName = async () => {
+    if (!newCopyName.trim()) {
+      addToast({
+        color: "danger",
+        description: "请输入新的复制名称",
+      });
+      return;
+    }
+
+    // 检查是否为 StudentListItem 类型
+    if (!("user_copy_id" in dcm)) {
+      addToast({
+        color: "danger",
+        description: "只能修改复制的数据名称",
+      });
+      return;
+    }
+
+    setIsUpdatingName(true);
+    try {
+      const res = await updateCopyNameRequest(
+        dcm.user_copy_id,
+        newCopyName.trim()
+      );
+
+      if (res.success) {
+        addToast({
+          color: "success",
+          description: "复制名称修改成功",
+        });
+        setShowNameModal(false);
+        setNewCopyName("");
+        onDataChange?.(); // 刷新数据
+      } else {
+        addToast({
+          color: "danger",
+          description: res.message || "修改失败",
+        });
+      }
+    } catch {
+      addToast({
+        color: "danger",
+        description: "网络错误，请重试",
+      });
+    } finally {
+      setIsUpdatingName(false);
     }
   };
 
@@ -226,20 +282,24 @@ function DataCard({
               </Button>
             )}
 
-            {/* 编辑按钮：非公共数据的所有用户都可以编辑，公共数据只有管理员和老师可以编辑 */}
-            {(!isPublicData || isAdmin || isTeacher) && (
-              <Button
-                size="sm"
-                color="secondary"
-                variant="flat"
-                onClick={(e) => {
-                  e.stopPropagation();
+            {/* 编辑按钮：公共数据或非公共数据 */}
+            <Button
+              size="sm"
+              color="secondary"
+              variant="flat"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isPublicData) {
                   navigate(`/edit/${dcm.original_id}`);
-                }}
-              >
-                编辑
-              </Button>
-            )}
+                } else if ("user_copy_id" in dcm) {
+                  // 如果是复制的数据，显示修改名称模态框
+                  setNewCopyName(getDataName(dcm));
+                  setShowNameModal(true);
+                }
+              }}
+            >
+              {isPublicData ? "编辑" : "修改名称"}
+            </Button>
 
             {/* 删除按钮：非公共数据的管理员和老师可以删除 */}
             {isStudentData && (
@@ -259,6 +319,69 @@ function DataCard({
           </div>
         </div>
       </CardBody>
+
+      {/* 修改名称模态框 */}
+      {showNameModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                修改复制名称
+              </h3>
+              <button
+                onClick={() => setShowNameModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  新的复制名称
+                </label>
+                <input
+                  type="text"
+                  value={newCopyName}
+                  onChange={(e) => setNewCopyName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="请输入新的复制名称"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowNameModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={isUpdatingName}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleUpdateCopyName}
+                disabled={isUpdatingName}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isUpdatingName ? "修改中..." : "确认修改"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
