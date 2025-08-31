@@ -34,6 +34,7 @@ export type DcmFile = {
   original_id: number;
   file_path: string;
   file_url: string;
+  fresh_url: string;
   file_name: string;
   file_size: number;
   original_annotation: string;

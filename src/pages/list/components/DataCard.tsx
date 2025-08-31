@@ -16,6 +16,7 @@ interface DataCardProps {
   onCopySuccess?: () => void; // 复制成功回调，用于切换标签页
   showOwnerInfo?: boolean;
   isPublicData?: boolean; // 是否为公共数据
+  isStudentData?: boolean; // 是否为学生数据
   showCopyButton?: boolean; // 是否显示复制按钮
 }
 
@@ -26,6 +27,7 @@ function DataCard({
   onCopySuccess,
   showOwnerInfo = false,
   isPublicData = false,
+  isStudentData = false,
   showCopyButton = true,
 }: DataCardProps): React.JSX.Element {
   const navigate = useNavigate();
@@ -123,9 +125,7 @@ function DataCard({
 
     setLoading((prev) => ({ ...prev, delete: true }));
     try {
-      console.log("🚀 ~ handleDeleteData ~ dcm.original_id:", dcm);
-
-      const res = await deleteOriginalDataRequest(dcm.original_id);
+      const res = await deleteOriginalDataRequest(dcm?.user_copy_id || 0);
 
       if (res.success) {
         addToast({
@@ -241,7 +241,7 @@ function DataCard({
             )}
 
             {/* 删除按钮：非公共数据的管理员和老师可以删除 */}
-            {!isPublicData && (isAdmin || isTeacher) && (
+            {isStudentData && (
               <Button
                 size="sm"
                 color="danger"

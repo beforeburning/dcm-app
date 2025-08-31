@@ -4,10 +4,6 @@ import { LoginForm, RegisterForm } from "./components";
 function LoginPage(): React.JSX.Element {
   const [isRegisterMode, setIsRegisterMode] = useState<boolean>(false);
 
-  const handleSwitchMode = (): void => {
-    setIsRegisterMode(!isRegisterMode);
-  };
-
   const handleRegisterSuccess = (): void => {
     setIsRegisterMode(false);
   };

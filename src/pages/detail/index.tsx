@@ -170,8 +170,8 @@ function DetailPage() {
           // 初始化图像 ID 列表
           if (response.data.files && response.data.files.length > 0) {
             const ids = response.data.files.map((file) => {
-              // 使用新的文件结构，直接使用 file_url
-              return `wadouri:${file.file_url}`;
+              // 使用新的文件结构，直接使用 fresh_url
+              return `wadouri:${file.fresh_url}`;
             });
             setImageIds(ids);
             setCurrentImageIndex(0); // 重置到第一张图

@@ -8,8 +8,8 @@ export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const { setAccessToken } = useAppStore();
 
-  const [email, setEmail] = useState<string>("18151602693@163.com");
-  const [password, setPassword] = useState<string>("asd123");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleKeyPress = (e: React.KeyboardEvent): void => {

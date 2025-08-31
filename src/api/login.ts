@@ -61,6 +61,13 @@ export type SubmitRegisterParams = {
   verification_token?: string;
 };
 
+// 修改密码请求参数
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+  new_password_confirmation: string;
+}
+
 // 登录接口
 export const loginRequest = async (
   params: LoginParams
@@ -152,5 +159,13 @@ export const getVerificationStatusRequest = async (
   const response = await apiClient.get(
     `/register/verification-status?email=${encodeURIComponent(email)}`
   );
+  return response.data;
+};
+
+// 修改密码
+export const changePasswordRequest = async (
+  data: ChangePasswordRequest
+): Promise<ApiResponse<null>> => {
+  const response = await apiClient.post("/user/change-password", data);
   return response.data;
 };

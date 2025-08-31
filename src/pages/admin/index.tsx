@@ -4,9 +4,11 @@ import { Pagination } from "@heroui/react";
 import {
   getStudentsDataRequest,
   updateUserRoleRequest,
+  resetUserPasswordRequest,
   type StudentUser,
 } from "@/api/admin";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import StudentUserList from "./components/StudentUserList";
 
 interface AdminPageProps {}
 
@@ -47,13 +49,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         per_page: pageSize,
       };
 
-      // 根据搜索词判断搜索类型
+      // 添加搜索关键词
       if (search) {
-        if (search.includes("@")) {
-          params.email = search;
-        } else {
-          params.username = search;
-        }
+        params.keyword = search;
       }
 
       const res = await getStudentsDataRequest(params);
@@ -91,59 +89,74 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     setCurrentPage(1); // 重置到第一页
   };
 
-  const handleRoleFilterChange = (role: string) => {
-    setSelectedRole(role);
-    setCurrentPage(1); // 重置到第一页
-  };
-
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // 监听搜索和筛选变化
+  // 处理修改权限
+  const handleRoleChange = async (userId: number, newRole: number) => {
+    try {
+      const res = await updateUserRoleRequest(userId, newRole as any);
+      if (res.success) {
+        addToast({
+          color: "success",
+          description: `用户 ${res.data.username} 的角色已从 ${res.data.old_role_name} 修改为 ${res.data.new_role_name}`,
+        });
+        // 重新获取当前页数据
+        fetchStudents();
+      } else {
+        addToast({
+          color: "danger",
+          description: res.message || "权限更新失败",
+        });
+      }
+    } catch {
+      addToast({
+        color: "danger",
+        description: "网络错误，请重试",
+      });
+    }
+  };
+
+  // 处理重置密码
+  const handleResetPassword = async (userId: number) => {
+    if (!confirm(`确定要重置用户 ID: ${userId} 的密码吗？`)) {
+      return;
+    }
+
+    try {
+      const res = await resetUserPasswordRequest(userId);
+      if (res.success) {
+        addToast({
+          color: "success",
+          description: "密码重置成功",
+        });
+        // 弹窗显示新密码
+        alert(
+          `用户 ${res.data.username} (${res.data.email}) 的密码已重置为: ${res.data.new_password}`
+        );
+      } else {
+        addToast({
+          color: "danger",
+          description: res.message || "密码重置失败",
+        });
+      }
+    } catch {
+      addToast({
+        color: "danger",
+        description: "密码重置失败，请重试",
+      });
+    }
+  };
+
+  // 监听搜索、筛选和分页变化
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchStudents(searchTerm, selectedRole, currentPage);
     }, 300); // 防抖动处理
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, selectedRole]);
-
-  // 监听分页变化
-  useEffect(() => {
-    fetchStudents(searchTerm, selectedRole, currentPage);
-  }, [currentPage]);
-
-  // 初始化加载数据
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const getRoleColor = (role: number) => {
-    switch (role) {
-      case 1:
-        return "bg-red-500 text-white";
-      case 2:
-        return "bg-blue-500 text-white";
-      case 3:
-        return "bg-green-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
-    }
-  };
-
-  const getRoleText = (role: number) => {
-    switch (role) {
-      case 1:
-        return "管理员";
-      case 2:
-        return "老师";
-      case 3:
-        return "学生";
-      default:
-        return "未知";
-    }
-  };
+  }, [searchTerm, selectedRole, currentPage]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -161,25 +174,8 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full px-4 outline-none py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="输入用户名、邮箱或用户ID搜索..."
+                placeholder="输入关键词搜索用户..."
               />
-            </div>
-
-            {/* 角色过滤 */}
-            <div className="w-full md:w-48">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                角色筛选
-              </label>
-              <select
-                value={selectedRole}
-                onChange={(e) => handleRoleFilterChange(e.target.value)}
-                className="w-full pl-2 pr-4 py-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">所有角色</option>
-                <option value="1">管理员</option>
-                <option value="2">老师</option>
-                <option value="3">学生</option>
-              </select>
             </div>
           </div>
         </div>
@@ -192,80 +188,12 @@ const AdminPage: React.FC<AdminPageProps> = () => {
             </h2>
           </div>
 
-          {loading ? (
-            <div className="p-6 text-center">
-              <div className="text-gray-500">加载中...</div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      用户信息
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      邮箱
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      角色
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      创建时间
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {students?.map((student) => (
-                    <tr key={student.user_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-semibold">
-                              {student.username.charAt(0)}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {student.username}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {student.user_id}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {student.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(
-                            student.role
-                          )}`}
-                        >
-                          {getRoleText(student.role)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(student.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {(!students || students.length === 0) && !loading && (
-                <div className="p-6 text-center text-gray-500">
-                  {searchTerm || selectedRole !== "all"
-                    ? "没有找到匹配的学生用户"
-                    : "暂无学生用户"}
-                </div>
-              )}
-            </div>
-          )}
+          <StudentUserList
+            students={students}
+            loading={loading}
+            onRoleChange={handleRoleChange}
+            onResetPassword={handleResetPassword}
+          />
 
           {/* 分页组件 */}
           {!loading && totalPages > 1 && (

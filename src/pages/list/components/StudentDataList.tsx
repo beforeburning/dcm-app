@@ -32,26 +32,6 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
 
     const pageSize = 10;
 
-    // 将 StudentListItem 转换为 DcmData 格式
-    const convertStudentListItemToDcmData = (
-      item: StudentListItem
-    ): DcmData => {
-      return {
-        original_id: item.original_data.original_id,
-        name: item.copy_name || item.original_data.name,
-        remark: item.original_data.remark,
-        category: item.original_data.category,
-        active_flag: item.original_data.active_flag,
-        created_at: item.created_at,
-        created_user_id: item.created_user_id,
-        updated_at: item.updated_at,
-        updated_user_id: item.updated_user_id,
-        tags: [], // 用户复制数据可能没有标签
-        creator: item.user,
-        files: [], // 用户复制数据可能没有文件信息
-      };
-    };
-
     // 获取学生个人数据的列表
     const fetchData = async () => {
       setLoading(true);
@@ -145,17 +125,17 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
                   {data.map((item) => (
                     <DataCard
                       key={item.original_data.original_id}
-                      dcm={convertStudentListItemToDcmData(item)}
+                      dcm={item}
                       onFileClick={onFileClick}
                       onDataChange={fetchData}
                       isPublicData={false}
+                      isStudentData={true}
                       showCopyButton={false}
                     />
                   ))}
                 </div>
 
-                {/* getUserCopyListRequest 不支持分页，暂时隐藏分页组件 */}
-                {/* {totalPages > 1 && (
+                {totalPages > 1 && (
                   <div className="flex justify-center mt-6">
                     <Pagination
                       total={totalPages}
@@ -166,7 +146,7 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
                       color="primary"
                     />
                   </div>
-                )} */}
+                )}
               </>
             )}
           </CardBody>

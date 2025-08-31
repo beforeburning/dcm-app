@@ -64,7 +64,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     try {
       // 先检查邮箱是否已存在
       const checkRes = await checkEmailRequest({ email });
-      
+
       if (checkRes.success && checkRes.data?.exists) {
         addToast({
           color: "danger",
@@ -73,12 +73,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         setSendingCode(false);
         return;
       }
-      
+
       // 发送验证码
-      const res = await sendVerificationCodeRequest({ 
-        email, 
-        name: username || 'User', 
-        password: password || 'temp123' 
+      const res = await sendVerificationCodeRequest({
+        email,
+        name: username || "User",
+        password: password || "temp123",
       });
 
       if (res.success) {
