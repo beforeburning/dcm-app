@@ -165,13 +165,15 @@ function DataCard({
           <div className="flex items-center justify-between">
             <div
               className="flex flex-1"
-              onClick={() =>
+              onClick={() => {
+                // 这里帮我判断一下 如果是公共数据
+
                 onFileClick(
                   dcm?.user_copy_id
                     ? dcm?.user_copy_id.toString()
                     : dcm.original_id.toString()
-                )
-              }
+                );
+              }}
             >
               <DataCardInfo dcm={dcm} showOwnerInfo={showOwnerInfo} />
             </div>

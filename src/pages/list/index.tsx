@@ -14,7 +14,9 @@ function ListPage(): React.JSX.Element {
   const { userInfo, isStudent, canViewAllStudentData } = useUserAuth();
 
   // 当前选中的标签页
-  const [selectedTab, setSelectedTab] = useState("public");
+  const [selectedTab, setSelectedTab] = useState<
+    "public" | "student" | "allStudent"
+  >("public");
 
   // 学生数据列表引用，用于刷新
   const studentDataListRef = useRef<StudentDataListRef>(null);
@@ -32,7 +34,11 @@ function ListPage(): React.JSX.Element {
 
   // 跳转到详情页
   const handleFileClick = (id: string): void => {
-    navigate(`/detail/${id}`);
+    if (selectedTab === "public") {
+      navigate(`/original/${id}`);
+    } else {
+      navigate(`/detail/${id}`);
+    }
   };
 
   return (
@@ -40,7 +46,7 @@ function ListPage(): React.JSX.Element {
       <div className="max-w-7xl mx-auto p-6 pt-3">
         <Tabs
           selectedKey={selectedTab}
-          onSelectionChange={(key) => setSelectedTab(key.toString())}
+          onSelectionChange={(key) => setSelectedTab(key as "public" | "student" | "allStudent")}
           variant="underlined"
           classNames={{
             tabList:

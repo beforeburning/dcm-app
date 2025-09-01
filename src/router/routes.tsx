@@ -32,6 +32,14 @@ const routes: RouteObject[] = [
     ),
   },
   {
+    path: "/original/:id",
+    element: (
+      <PageLayout>
+        <DetailPage />
+      </PageLayout>
+    ),
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute>
