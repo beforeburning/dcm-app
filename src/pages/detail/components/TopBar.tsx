@@ -44,7 +44,7 @@ export default function TopBar({
         </div>
 
         <div className="flex items-center gap-2">
-          {userInfo?.role === 3 && !isOriginal && (
+          {userInfo?.role === 3 && isOriginal && (
             <div className="flex items-center gap-2">
               <Button
                 onClick={onCopyData}
@@ -77,7 +77,7 @@ export default function TopBar({
             </div>
           )}
 
-          {(userInfo?.role !== 3 || isOriginal) && onConsoleEditData && (
+          {((userInfo?.role === 1 || userInfo?.role === 2) || (!isOriginal && userInfo?.role === 3)) && onConsoleEditData && (
             <Button
               onClick={onConsoleEditData}
               disabled={!hasData}
