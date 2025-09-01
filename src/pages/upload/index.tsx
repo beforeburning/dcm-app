@@ -9,9 +9,6 @@ import {
   Chip,
   Select,
   SelectItem,
-  Textarea,
-  Spacer,
-  Divider,
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { createOriginalDataRequest } from "@/api/dcm";

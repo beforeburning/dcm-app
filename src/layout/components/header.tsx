@@ -119,7 +119,7 @@ const HeaderComponents = (): React.JSX.Element => {
             {(isDetailPage || isAdminPage || isUploadPage || isEditPage) && (
               <button
                 onClick={isDetailPage ? handleBack : handleHome}
-                className="group flex items-center justify-center w-9 h-9 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200"
+                className="group flex cursor-pointer items-center justify-center w-9 h-9 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200"
               >
                 <svg
                   className="w-5 h-5 transition-transform duration-200"
@@ -145,7 +145,10 @@ const HeaderComponents = (): React.JSX.Element => {
                 </svg>
               </button>
             )}
-            <div className="flex items-center space-x-2">
+            <div
+              className="flex items-center space-x-2 cursor-pointer"
+              onClick={handleHome}
+            >
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white text-sm font-bold">智</span>
               </div>

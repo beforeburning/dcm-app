@@ -159,7 +159,10 @@ function DataCard({
       <Card className="hover:shadow-md transition-shadow cursor-pointer">
         <CardBody className="p-4">
           <div className="flex items-center justify-between">
-            <div onClick={() => onFileClick(dcm.original_id.toString())}>
+            <div
+              className="flex flex-1"
+              onClick={() => onFileClick(dcm.original_id.toString())}
+            >
               <DataCardInfo dcm={dcm} showOwnerInfo={showOwnerInfo} />
             </div>
 

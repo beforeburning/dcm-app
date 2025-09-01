@@ -11,6 +11,31 @@ type Props = {
   onNext: () => void;
   onJump: (index: number) => void;
   currentFileName?: string;
+  currentFile?: {
+    file_name: string;
+    file_size: number;
+    file_path: string;
+    created_at: string;
+    updated_at: string;
+  };
+  // DICOM 医学影像参数
+  dicomMetadata?: {
+    rows?: number; // 图像行数（高度）
+    columns?: number; // 图像列数（宽度）
+    pixelSpacing?: number[]; // 像素间距 [rowSpacing, columnSpacing]
+    sliceThickness?: number; // 层厚
+    windowCenter?: number; // 窗位
+    windowWidth?: number; // 窗宽
+    bitsAllocated?: number; // 位分配
+    bitsStored?: number; // 位存储
+    highBit?: number; // 高位
+    samplesPerPixel?: number; // 每像素样本数
+    photometricInterpretation?: string; // 光度解释
+    modality?: string; // 模态（CT、MRI等）
+    studyDate?: string; // 检查日期
+    seriesDate?: string; // 序列日期
+    acquisitionDate?: string; // 采集日期
+  };
 };
 
 export default function ImageSwitcher({
@@ -40,7 +65,7 @@ export default function ImageSwitcher({
       </div>
 
       {expanded && (
-        <div className="bg-gray-800 bg-opacity-95 backdrop-blur-sm border border-gray-600 rounded-lg shadow-xl p-4 min-w-72">
+        <div className="bg-gray-800 w-[320px] bg-opacity-95 backdrop-blur-sm border border-gray-600 rounded-lg shadow-xl p-4 min-w-72">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-orange-300">
               图像切换:
@@ -68,10 +93,16 @@ export default function ImageSwitcher({
             </div>
           </div>
 
-          <div className="mb-3">
-            <span className="text-xs text-gray-400">
-              当前文件: {currentFileName || "未知"}
-            </span>
+          <div className="mb-3 space-y-2">
+            {/* 当前文件名 - 强制换行 */}
+            <div>
+              <span className="text-xs text-gray-400 block mb-1">
+                当前文件:
+              </span>
+              <div className="text-xs text-gray-300 bg-gray-700 bg-opacity-50 p-2 rounded break-all leading-relaxed">
+                {currentFileName || "未知"}
+              </div>
+            </div>
           </div>
 
           {imageCount > 2 && (

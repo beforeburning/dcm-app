@@ -7,7 +7,10 @@ interface DataCardInfoProps {
   showOwnerInfo?: boolean;
 }
 
-const DataCardInfo: React.FC<DataCardInfoProps> = ({ dcm, showOwnerInfo = false }) => {
+const DataCardInfo: React.FC<DataCardInfoProps> = ({
+  dcm,
+  showOwnerInfo = false,
+}) => {
   // 辅助函数：安全获取数据属性
   const getDataName = (data: DcmData | StudentListItem): string => {
     if ("name" in data) return data.name;
@@ -37,24 +40,29 @@ const DataCardInfo: React.FC<DataCardInfoProps> = ({ dcm, showOwnerInfo = false 
   };
 
   return (
-    <div className="flex-1" onClick={() => {}}>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">
+    <div className="flex-1 min-h-[120px] flex flex-col" onClick={() => {}}>
+      <h3 className="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
         {getDataName(dcm)}
       </h3>
-      <div className="space-y-2 text-sm text-gray-600">
-        <p>
-          创建时间: {new Date(dcm.created_at).toLocaleDateString("zh-CN")} | 更新时间:{" "}
-          {new Date(dcm.updated_at).toLocaleDateString("zh-CN")}
+      <div className="space-y-2 text-sm text-gray-600 flex-1">
+        <p className="text-xs">
+          创建时间: {new Date(dcm.created_at).toLocaleDateString("zh-CN")} |
+          更新时间: {new Date(dcm.updated_at).toLocaleDateString("zh-CN")}
         </p>
         {showOwnerInfo && dcm.original_id && (
-          <p className="text-blue-600">数据ID: {dcm.original_id}</p>
+          <p className="text-blue-600 text-xs">数据ID: {dcm.original_id}</p>
         )}
-        
+
         {/* 分类显示 */}
         {getDataCategory(dcm) && (
           <div className="flex items-center space-x-2">
-            <span className="text-gray-500">分类:</span>
-            <Chip size="sm" color="primary" variant="flat" className="text-xs">
+            <span className="text-gray-500 text-xs">分类:</span>
+            <Chip
+              size="sm"
+              color="primary"
+              variant="flat"
+              className="text-xs h-[20px]"
+            >
               {getCategoryLabel(getDataCategory(dcm))}
             </Chip>
           </div>
@@ -62,18 +70,19 @@ const DataCardInfo: React.FC<DataCardInfoProps> = ({ dcm, showOwnerInfo = false 
 
         {/* 标签显示 */}
         {getDataRemark(dcm) && getDataRemark(dcm).trim() && (
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-500">标签:</span>
-            <div className="flex space-x-1">
+          <div className="flex items-center w-full space-x-2 h-[20px] overflow-hidden">
+            <span className="text-gray-500 text-xs flex-shrink-0">标签:</span>
+            <div className="flex flex-wrap gap-1 h-[20px]">
               {getDataRemark(dcm)
                 .split(",")
+                .filter((tag) => tag.trim())
                 .map((tag, index) => (
                   <Chip
                     key={index}
                     size="sm"
                     color="secondary"
                     variant="flat"
-                    className="text-xs"
+                    className="text-xs h-full max-w-[120px] truncate"
                   >
                     {tag.trim()}
                   </Chip>

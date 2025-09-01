@@ -49,11 +49,13 @@ import {
   type DcmData,
   saveDcmAnnotationsRequest,
 } from "@/api/dcm";
+import { getDicomMetadata } from "@/utils/dicomMetadata";
 import TopBar from "./components/TopBar";
 import ToolBar from "./components/ToolBar";
 import StatusBanners from "./components/StatusBanners";
 import ViewerCanvas from "./components/ViewerCanvas";
 import ImageSwitcher from "./components/ImageSwitcher";
+import { ParameterMonitoringPanel } from "@/components/common";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -73,6 +75,12 @@ function DetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 当前图像索引
   const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
   const [isImageControlExpanded, setIsImageControlExpanded] = useState(false); // 图像切换控件展开状态
+  const [dicomMetadata, setDicomMetadata] = useState<any>(null); // DICOM 元数据
+  const [frameRate, setFrameRate] = useState<number>(0); // FPS
+  const [zoom, setZoom] = useState<number>(1); // 缩放
+  const [windowWidth, setWindowWidth] = useState<number>(0); // 窗宽
+  const [windowCenter, setWindowCenter] = useState<number>(0); // 窗位
+  const [renderTime, setRenderTime] = useState<number>(0); // 渲染时间
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
@@ -119,6 +127,25 @@ function DetailPage() {
           }
           renderingEngine.render();
           setCurrentImageIndex(index);
+
+          // 获取 DICOM 元数据
+          try {
+            const metadata = await getDicomMetadata(
+              imageIds[index],
+              renderingEngine
+            );
+
+            setDicomMetadata(metadata);
+          } catch (error) {
+            console.warn("获取 DICOM 元数据失败:", error);
+            setDicomMetadata(null);
+          }
+
+          // 更新监控参数
+          setTimeout(() => {
+            updateMonitoringParameters();
+          }, 50);
+
           console.log(`已切换到第 ${index + 1} 张图像`);
         }
       } catch (error) {
@@ -459,7 +486,7 @@ function DetailPage() {
       } else if (dcmData.files && dcmData.files.length > 0) {
         // 如果状态中还没有imageIds，使用dcmData构建
         const allImageIds = dcmData.files.map((file) => {
-          return `wadouri:${file.file_url}`;
+          return `wadouri:${file.fresh_url}`;
         });
         // 同时更新状态
         setImageIds(allImageIds);
@@ -482,6 +509,21 @@ function DetailPage() {
       // 渲染
       if (seq !== loadSeqRef.current) return;
       renderingEngine.render();
+
+      // 获取第一张图像的 DICOM 元数据
+      try {
+        if (currentImageIds.length > 0) {
+          const metadata = await getDicomMetadata(
+            currentImageIds[0],
+            renderingEngine
+          );
+          setDicomMetadata(metadata);
+          console.log("初始 DICOM 元数据获取成功:", metadata);
+        }
+      } catch (error) {
+        console.warn("获取初始 DICOM 元数据失败:", error);
+        setDicomMetadata(null);
+      }
 
       console.log("DICOM 文件加载成功");
     } catch (err) {
@@ -668,6 +710,39 @@ function DetailPage() {
     }
   }, []);
 
+  // 更新监控参数
+  const updateMonitoringParameters = useCallback(() => {
+    if (!renderingEngineRef.current) return;
+
+    try {
+      const renderingEngine = renderingEngineRef.current;
+      const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
+
+      if (viewport) {
+        // 获取缩放信息
+        const camera = (viewport as any).getCamera?.();
+        if (camera) {
+          setZoom(camera.parallelScale || 1);
+        }
+
+        // 获取窗宽窗位
+        const viewportOptions = (viewport as any).getViewportOptions?.();
+        if (viewportOptions) {
+          setWindowWidth(viewportOptions.voi?.windowWidth || 0);
+          setWindowCenter(viewportOptions.voi?.windowCenter || 0);
+        }
+
+        // 计算渲染时间（这里可以添加实际的渲染时间计算）
+        const startTime = performance.now();
+        renderingEngine.render();
+        const endTime = performance.now();
+        setRenderTime(endTime - startTime);
+      }
+    } catch (error) {
+      console.warn("更新监控参数失败:", error);
+    }
+  }, []);
+
   // 重置视图
   const resetView = useCallback(() => {
     if (!renderingEngineRef.current) return;
@@ -751,6 +826,17 @@ function DetailPage() {
     };
   }, [isInitialized]);
 
+  // 定期更新监控参数
+  useEffect(() => {
+    if (!isInitialized || !renderingEngineRef.current) return;
+
+    const interval = setInterval(() => {
+      updateMonitoringParameters();
+    }, 100); // 每100ms更新一次
+
+    return () => clearInterval(interval);
+  }, [isInitialized, updateMonitoringParameters]);
+
   return (
     <div className="h-screen flex flex-col">
       <TopBar
@@ -798,6 +884,20 @@ function DetailPage() {
         onNext={goToNextImage}
         onJump={(index) => switchToImage(index)}
         currentFileName={dcmData?.files[currentImageIndex]?.file_name}
+        currentFile={dcmData?.files[currentImageIndex]}
+        dicomMetadata={dicomMetadata}
+      />
+
+      {/* 实时监控面板 */}
+      <ParameterMonitoringPanel
+        currentImageIndex={currentImageIndex + 1}
+        totalImages={imageIds.length}
+        frameRate={frameRate}
+        zoom={zoom}
+        windowWidth={windowWidth}
+        windowCenter={windowCenter}
+        renderTime={renderTime}
+        isVisible={!!dcmData && isInitialized}
       />
     </div>
   );
