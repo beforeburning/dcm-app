@@ -74,7 +74,7 @@ function DetailPage() {
   const [dcmData, setDcmData] = useState<DcmData | null>(null); // DCM数据
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 当前图像索引
   const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
-  const [isImageControlExpanded, setIsImageControlExpanded] = useState(false); // 图像切换控件展开状态
+  const [isImageControlExpanded, setIsImageControlExpanded] = useState(true); // 图像切换控件展开状态
   const [dicomMetadata, setDicomMetadata] = useState<any>(null); // DICOM 元数据
   const [frameRate, setFrameRate] = useState<number>(0); // FPS
   const [zoom, setZoom] = useState<number>(1); // 缩放
@@ -128,6 +128,21 @@ function DetailPage() {
           if (typeof (viewport as any).resetCamera === "function") {
             (viewport as any).resetCamera();
           }
+
+          // 默认缩放 0.9
+          try {
+            const cam = (viewport as any)?.getCamera?.();
+            const basePS = cam?.parallelScale;
+            if (typeof basePS === "number" && basePS > 0) {
+              initialParallelScaleRef.current = basePS;
+              const targetPS = basePS / 0.9;
+              (viewport as any)?.setCamera?.({
+                ...cam,
+                parallelScale: targetPS,
+              });
+            }
+          } catch {}
+
           renderingEngine.render();
           setCurrentImageIndex(index);
 
@@ -648,6 +663,17 @@ function DetailPage() {
       if (typeof (viewport as any).resetCamera === "function") {
         (viewport as any).resetCamera();
       }
+
+      // 默认缩放 0.9
+      try {
+        const cam = (viewport as any)?.getCamera?.();
+        const basePS = cam?.parallelScale;
+        if (typeof basePS === "number" && basePS > 0) {
+          initialParallelScaleRef.current = basePS;
+          const targetPS = basePS / 0.9;
+          (viewport as any)?.setCamera?.({ ...cam, parallelScale: targetPS });
+        }
+      } catch {}
 
       // 渲染
       if (seq !== loadSeqRef.current) return;
@@ -1195,7 +1221,7 @@ function DetailPage() {
       />
 
       <ImageSwitcher
-        visible={!!dcmData && imageIds.length > 1}
+        visible={!!dcmData}
         isLoading={isLoading}
         imageCount={imageIds.length}
         currentIndex={currentImageIndex}
