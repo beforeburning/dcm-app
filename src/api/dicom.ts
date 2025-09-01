@@ -3,7 +3,7 @@ import {
   ApiResponse,
   DcmData,
   StudentListItem,
-  StudentDataDetail,
+  StudentCopyDataDetail,
   PaginatedResponse,
   FileDownloadUrl,
   BatchFileDownloadUrls,
@@ -149,8 +149,8 @@ export const copyPublicDataToPrivateRequest = async (data: {
 // 获取学生单条数据详情（含最新的标记数据）
 export const getStudentDataDetailRequest = async (
   userCopyId: number
-): Promise<ApiResponse<StudentDataDetail>> => {
-  return apiRequest.get<StudentDataDetail>(
+): Promise<ApiResponse<StudentCopyDataDetail>> => {
+  return apiRequest.get<StudentCopyDataDetail>(
     `/student/copy/detail?user_copy_id=${userCopyId}`
   );
 };
@@ -170,6 +170,28 @@ export const updateCopyNameRequest = async (
   return apiRequest.post<any>("/student/update-copy-name", {
     user_copy_id: userCopyId,
     copy_name: copyName,
+  });
+};
+
+// 更新原始数据标注（管理员/教师）
+export const updateOriginalAnnotationRequest = async (
+  originalId: number,
+  annotation: string
+): Promise<ApiResponse<any>> => {
+  return apiRequest.post<any>("/admin/original-data/updateOriginalAnnotation", {
+    original_id: originalId,
+    annotation: annotation,
+  });
+};
+
+// 更新学生复制数据标注（学生）
+export const updateStudentAnnotationRequest = async (
+  userCopyId: number,
+  annotation: string
+): Promise<ApiResponse<any>> => {
+  return apiRequest.post<any>("/student/updateAnnotation", {
+    user_copy_id: userCopyId,
+    annotation: annotation,
   });
 };
 

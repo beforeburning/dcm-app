@@ -188,11 +188,6 @@ function UploadPage(): React.JSX.Element {
                 : f
             ) as any
         );
-
-        addToast({
-          color: "success",
-          description: `文件 ${fileInfo.file.name} 上传成功`,
-        });
       } else {
         throw new Error("上传失败");
       }

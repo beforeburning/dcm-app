@@ -183,6 +183,74 @@ export interface StudentDataDetail {
   last_annotation: any | null;
 }
 
+// 学生复制数据详情接口（新的完整结构）
+export interface StudentCopyDataDetail {
+  user_copy_id: number;
+  original_id: number;
+  user_id: number;
+  copy_name: string;
+  last_annotation_id: number;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
+  original_data: {
+    original_id: number;
+    name: string;
+    remark: string;
+    category: number;
+    last_annotation_id: number | null;
+    active_flag: number;
+    created_at: string;
+    created_user_id: number;
+    updated_at: string;
+    updated_user_id: number;
+    files: DcmFile[];
+  };
+  creator: User;
+  last_annotation: {
+    annotations_id: number;
+    user_copy_id: number;
+    original_id: number | null;
+    user_id: number;
+    annotation: string;
+    active_flag: number;
+    created_at: string;
+    created_user_id: number;
+    updated_at: string;
+    updated_user_id: number;
+  } | null;
+}
+
+// 原始数据详情接口（新的结构，匹配API返回）
+export interface OriginalDataDetail {
+  original_id: number;
+  name: string;
+  remark: string;
+  category: number;
+  last_annotation_id: number | null;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
+  last_annotation: {
+    annotations_id: number;
+    user_copy_id: number | null;
+    original_id: number;
+    user_id: number;
+    annotation: string;
+    active_flag: number;
+    created_at: string;
+    created_user_id: number;
+    updated_at: string;
+    updated_user_id: number;
+  } | null;
+  creator: User;
+  files: DcmFile[];
+}
+
 // OSS相关类型
 export interface OssConnectionTest {
   status: string;

@@ -1,4 +1,5 @@
 import { ApiResponse, apiClient } from ".";
+import { StudentCopyDataDetail, OriginalDataDetail } from "@/types/api";
 
 // 通用类型定义
 export type Tag = {
@@ -175,7 +176,7 @@ export const updateCopyNameRequest = async (
 // 获取单个原始数据  - 已对接
 export const getOriginalDataDetailRequest = async (
   id: number
-): Promise<ApiResponse<DcmData>> => {
+): Promise<ApiResponse<OriginalDataDetail>> => {
   const response = await apiClient.get(
     `/admin/original-data/detail?original_id=${id}`
   );
@@ -274,7 +275,7 @@ export const copyPublicDataToPrivateRequest = async (data: {
 // 学生 - 获取单条数据详情（含最新的标记数据）
 export const getStudentDataDetailRequest = async (
   userCopyId: number
-): Promise<ApiResponse<DcmData & { annotations?: any }>> => {
+): Promise<ApiResponse<StudentCopyDataDetail>> => {
   const response = await apiClient.get(
     `/student/copy/detail?user_copy_id=${userCopyId}`
   );

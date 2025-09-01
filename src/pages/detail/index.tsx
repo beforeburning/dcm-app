@@ -45,7 +45,6 @@ import dicomImageLoader, {
 import * as dicomParser from "dicom-parser";
 import {
   getOriginalDataDetailRequest,
-  type DcmData,
   copyPublicDataToPrivateRequest,
   StudentListItem,
   getStudentDataDetailRequest,
@@ -60,6 +59,11 @@ import ViewerCanvas from "./components/ViewerCanvas";
 import ImageSwitcher from "./components/ImageSwitcher";
 import { ParameterMonitoringPanel } from "@/components/common";
 import { useAuthStore } from "@/stores/auth";
+import {
+  updateOriginalAnnotationRequest,
+  updateStudentAnnotationRequest,
+} from "@/api/dicom";
+import { StudentCopyDataDetail, OriginalDataDetail } from "@/types/api";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -78,7 +82,9 @@ function DetailPage() {
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [activeTool, setActiveTool] = useState("WindowLevel"); // 当前激活的工具
-  const [dcmData, setDcmData] = useState<DcmData | null>(null); // DCM数据
+  const [dcmData, setDcmData] = useState<
+    StudentCopyDataDetail | OriginalDataDetail | null
+  >(null); // DCM数据
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 当前图像索引
   const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
   const [isImageControlExpanded, setIsImageControlExpanded] = useState(true); // 图像切换控件展开状态
@@ -153,23 +159,53 @@ function DetailPage() {
       const result = imageIds.map((id, index) => ({
         index,
         imageId: id,
-        fileName: dcmData?.files?.[index]?.file_name || null,
+        fileName:
+          (dcmData as any)?.files?.[index]?.file_name ||
+          (dcmData as any)?.original_data?.files?.[index]?.file_name ||
+          null,
         annotations: perImageMap[id] || [],
       }));
 
-      const json = JSON.stringify(result);
-      console.log("🚀 ~ printAnnotations ~ annotationsOnly:", json, result);
+      const annotationData = JSON.stringify(result);
+      console.log("🚀 ~ printAnnotations ~ annotationData:", annotationData);
 
-      // try {
-      //   await (navigator as any)?.clipboard?.writeText?.(json);
-      //   addToast({
-      //     color: "success",
-      //     description: "已复制：仅工具标注数据（按文件分组）",
-      //   });
-      // } catch {
-      //   console.log("Export Annotations JSON (per-file array):\n", json);
-      //   addToast({ color: "warning", description: "已在控制台输出 JSON" });
-      // }
+      if (isOriginal) {
+        // 原始数据 - 管理员/教师保存
+        const response = await updateOriginalAnnotationRequest(
+          dcmData.original_id,
+          annotationData
+        );
+
+        if (response.success) {
+          addToast({
+            color: "success",
+            description: "标注保存成功",
+          });
+        } else {
+          addToast({
+            color: "danger",
+            description: response.message || "保存失败",
+          });
+        }
+      } else {
+        // 学生复制数据 - 学生保存
+        const response = await updateStudentAnnotationRequest(
+          (dcmData as any).user_copy_id,
+          annotationData
+        );
+
+        if (response.success) {
+          addToast({
+            color: "success",
+            description: "标注保存成功",
+          });
+        } else {
+          addToast({
+            color: "danger",
+            description: response.message || "保存失败",
+          });
+        }
+      }
     } catch (e: any) {
       console.warn("导出标注数据失败", e);
       addToast({ color: "danger", description: "导出失败" });
@@ -271,6 +307,7 @@ function DetailPage() {
         const response = isOriginal
           ? await getOriginalDataDetailRequest(Number(id))
           : await getStudentDataDetailRequest(Number(id));
+        console.log("🚀 ~ loadDcmData ~ response:", response);
 
         if (response.success && response.data) {
           setDcmData(response.data);
@@ -701,9 +738,9 @@ function DetailPage() {
       if (imageIds.length > 0) {
         // 使用已加载的图像 ID，只显示当前图像
         currentImageIds = [imageIds[currentImageIndex]];
-      } else if (dcmData.files && dcmData.files.length > 0) {
+      } else if ((dcmData as any).files && (dcmData as any).files.length > 0) {
         // 如果状态中还没有imageIds，使用dcmData构建
-        const allImageIds = dcmData.files.map((file) => {
+        const allImageIds = (dcmData as any).files.map((file: any) => {
           return `wadouri:${file.fresh_url}`;
         });
         // 同时更新状态
@@ -1237,10 +1274,11 @@ function DetailPage() {
     delete: boolean;
   }>({ copy: false, delete: false });
   // 获取数据名称
-  const getDataName = (data: DcmData | StudentListItem | any): string => {
+  const getDataName = (
+    data: StudentCopyDataDetail | OriginalDataDetail
+  ): string => {
     if ("name" in data) return data.name;
     if ("copy_name" in data) return data.copy_name;
-    if (data?.original_data?.name) return data.original_data.name;
     return "未知数据";
   };
   const handleCopyData = async () => {
@@ -1278,7 +1316,11 @@ function DetailPage() {
     <div className="h-screen flex flex-col">
       <TopBar
         title={
-          dataLoading ? "DICOM 图像查看器" : dcmData?.name || "DICOM 图像查看器"
+          dataLoading
+            ? "DICOM 图像查看器"
+            : (dcmData as any)?.name ||
+              (dcmData as any)?.copy_name ||
+              "DICOM 图像查看器"
         }
         isInitialized={!!isInitialized}
         isLoading={!!isLoading}

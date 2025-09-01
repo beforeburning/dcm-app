@@ -154,10 +154,6 @@ function DataCard({
     }
   };
 
-  useEffect(() => {
-    console.log("🚀 ~ dcm:", dcm);
-  }, [dcm]);
-
   return (
     <>
       <Card className="hover:shadow-md transition-shadow cursor-pointer">

@@ -48,7 +48,6 @@ export default function ImageSwitcher({
   onPrev,
   onNext,
   onJump,
-  currentFileName,
 }: Props) {
   if (!visible) return null;
 
@@ -90,18 +89,6 @@ export default function ImageSwitcher({
               >
                 ▶
               </Button>
-            </div>
-          </div>
-
-          <div className="mb-3 space-y-2">
-            {/* 当前文件名 - 强制换行 */}
-            <div>
-              <span className="text-xs text-gray-400 block mb-1">
-                当前文件:
-              </span>
-              <div className="text-xs text-gray-300 bg-gray-700 bg-opacity-50 p-2 rounded break-all leading-relaxed">
-                {currentFileName || "未知"}
-              </div>
             </div>
           </div>
 
