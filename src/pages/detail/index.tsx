@@ -135,10 +135,8 @@ function DetailPage() {
             const basePS = cam?.parallelScale;
             if (typeof basePS === "number" && basePS > 0) {
               initialParallelScaleRef.current = basePS;
-              const targetPS = basePS / 0.9;
               (viewport as any)?.setCamera?.({
                 ...cam,
-                parallelScale: targetPS,
               });
             }
           } catch {}
@@ -664,14 +662,12 @@ function DetailPage() {
         (viewport as any).resetCamera();
       }
 
-      // 默认缩放 0.9
       try {
         const cam = (viewport as any)?.getCamera?.();
         const basePS = cam?.parallelScale;
         if (typeof basePS === "number" && basePS > 0) {
           initialParallelScaleRef.current = basePS;
-          const targetPS = basePS / 0.9;
-          (viewport as any)?.setCamera?.({ ...cam, parallelScale: targetPS });
+          (viewport as any)?.setCamera?.({ ...cam });
         }
       } catch {}
 
@@ -744,19 +740,28 @@ function DetailPage() {
           if (!Number.isNaN(z) && Number.isFinite(z)) setZoom(z);
         };
 
-        // Cornerstone v3 视口提供事件 API（不同版本可能差异，做防御）
-        vp?.addEventListener?.("rendered", handleRendered);
-        vp?.addEventListener?.("cameraModified", handleCameraChange);
+        // Cornerstone v3 视口事件（使用 Enums.Events）
+        try {
+          const EV = Enums?.Events || ({} as any);
+          const RENDERED = EV.VIEWPORT_RENDERED || "rendered";
+          const CAMERA = EV.CAMERA_MODIFIED || "cameraModified";
+          const VOI = EV.VOI_MODIFIED || "voiModified";
 
-        // 立即触发一次，确保初始值正确
-        handleRendered();
+          vp?.addEventListener?.(RENDERED, handleRendered);
+          vp?.addEventListener?.(CAMERA, handleCameraChange);
+          vp?.addEventListener?.(VOI, handleRendered);
 
-        viewportListenerCleanupRef.current = () => {
-          try {
-            vp?.removeEventListener?.("rendered", handleRendered);
-            vp?.removeEventListener?.("cameraModified", handleCameraChange);
-          } catch {}
-        };
+          // 立即触发一次，确保初始值正确
+          handleRendered();
+
+          viewportListenerCleanupRef.current = () => {
+            try {
+              vp?.removeEventListener?.(RENDERED, handleRendered);
+              vp?.removeEventListener?.(CAMERA, handleCameraChange);
+              vp?.removeEventListener?.(VOI, handleRendered);
+            } catch {}
+          };
+        } catch {}
       } catch (e) {
         console.warn("绑定视口监听失败（可忽略）", e);
       }
