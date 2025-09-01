@@ -1,4 +1,5 @@
 import { Button } from "@heroui/react";
+import { useAuthStore } from "@/stores/auth";
 
 type Props = {
   title: string;
@@ -7,8 +8,8 @@ type Props = {
   hasData: boolean;
   onBack: () => void;
   onReload: () => void;
-  onReset: () => void;
   onConsoleEditData?: () => void;
+  onCopyData: () => void;
 };
 
 export default function TopBar({
@@ -18,9 +19,11 @@ export default function TopBar({
   hasData,
   onBack,
   onReload,
-  onReset,
   onConsoleEditData,
+  onCopyData,
 }: Props) {
+  const { userInfo } = useAuthStore();
+
   return (
     <div className="bg-gray-800 text-white px-4 pt-4 flex-shrink-0">
       <div className="flex items-center justify-between mb-3">
@@ -36,6 +39,39 @@ export default function TopBar({
         </div>
 
         <div className="flex items-center gap-2">
+          {userInfo?.role === 3 && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={onCopyData}
+                size="sm"
+                variant="solid"
+                color="success"
+                className="font-medium text-white px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform"
+                startContent={
+                  isLoading ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  )
+                }
+              >
+                拷贝数据
+              </Button>
+            </div>
+          )}
+
           {onConsoleEditData && (
             <Button
               onClick={onConsoleEditData}
@@ -92,32 +128,6 @@ export default function TopBar({
             }
           >
             {isLoading ? "加载中..." : "重新加载"}
-          </Button>
-
-          <Button
-            onClick={onReset}
-            disabled={!isInitialized || isLoading || !hasData}
-            size="sm"
-            variant="solid"
-            color={isInitialized && hasData ? "warning" : "default"}
-            className="font-medium px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform text-white"
-            startContent={
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                />
-              </svg>
-            }
-          >
-            重置视图
           </Button>
         </div>
       </div>

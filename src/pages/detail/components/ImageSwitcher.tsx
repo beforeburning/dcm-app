@@ -70,7 +70,7 @@ export default function ImageSwitcher({
             <span className="text-sm font-medium text-orange-300">
               图像切换:
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 size="sm"
                 onClick={onPrev}

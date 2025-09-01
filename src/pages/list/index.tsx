@@ -1,8 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, Tab } from "@heroui/react";
-import { addToast } from "@heroui/toast";
-import { copyPublicDataToPrivateRequest, type DcmData } from "@/api/dcm";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import {
   PublicDataList,
@@ -13,51 +11,13 @@ import {
 
 function ListPage(): React.JSX.Element {
   const navigate = useNavigate();
-  const {
-    userInfo,
-    isStudent,
-    canViewAllStudentData,
-    canCopyData,
-    canEditOwnData,
-  } = useUserAuth();
+  const { userInfo, isStudent, canViewAllStudentData } = useUserAuth();
 
   // 当前选中的标签页
   const [selectedTab, setSelectedTab] = useState("public");
 
   // 学生数据列表引用，用于刷新
   const studentDataListRef = useRef<StudentDataListRef>(null);
-
-  // 复制数据到学生账户
-  const handleCopyData = async (dcm: DcmData) => {
-    if (!userInfo?.user_id || !userInfo?.username) return;
-
-    try {
-      const response = await copyPublicDataToPrivateRequest({
-        original_id: dcm.original_id,
-        copy_name: `${dcm.name} - 复制`,
-      });
-      if (response.success) {
-        addToast({
-          color: "success",
-          description: "复制成功！您可以在“我的数据”中查看",
-        });
-        // 刷新学生数据
-        if (isStudent && studentDataListRef.current) {
-          studentDataListRef.current.refresh();
-        }
-      } else {
-        addToast({
-          color: "danger",
-          description: response.message || "复制失败",
-        });
-      }
-    } catch {
-      addToast({
-        color: "danger",
-        description: "网络错误，请重试",
-      });
-    }
-  };
 
   // 复制成功后切换到我的数据标签页
   const handleCopySuccess = () => {

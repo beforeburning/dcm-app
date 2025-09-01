@@ -63,7 +63,7 @@ export default function ToolBar({
         <ToolButton name="Label" label="📝 文字" />
 
         <span className="text-xs font-medium text-red-300 mr-1 ml-3">
-          管理:
+          操作:
         </span>
         <ToolButton name="DeleteAnnotation" label="🗑️ 删除" />
       </div>

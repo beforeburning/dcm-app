@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardBody } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { DcmData, StudentListItem } from "@/types/api";
@@ -154,6 +154,10 @@ function DataCard({
     }
   };
 
+  useEffect(() => {
+    console.log("🚀 ~ dcm:", dcm);
+  }, [dcm]);
+
   return (
     <>
       <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -161,7 +165,13 @@ function DataCard({
           <div className="flex items-center justify-between">
             <div
               className="flex flex-1"
-              onClick={() => onFileClick(dcm.original_id.toString())}
+              onClick={() =>
+                onFileClick(
+                  dcm?.user_copy_id
+                    ? dcm?.user_copy_id.toString()
+                    : dcm.original_id.toString()
+                )
+              }
             >
               <DataCardInfo dcm={dcm} showOwnerInfo={showOwnerInfo} />
             </div>

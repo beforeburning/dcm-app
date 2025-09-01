@@ -29,7 +29,6 @@ import {
   LivewireContourTool,
   MagnifyTool,
   OverlayGridTool,
-  ScaleOverlayTool,
   AdvancedMagnifyTool,
   UltrasoundDirectionalTool,
   RectangleScissorsTool,
@@ -47,8 +46,11 @@ import * as dicomParser from "dicom-parser";
 import {
   getOriginalDataDetailRequest,
   type DcmData,
-  saveDcmAnnotationsRequest,
+  copyPublicDataToPrivateRequest,
+  StudentListItem,
 } from "@/api/dcm";
+import { errorHandler } from "@/utils/errorHandler";
+
 import { getDicomMetadata } from "@/utils/dicomMetadata";
 import TopBar from "./components/TopBar";
 import ToolBar from "./components/ToolBar";
@@ -56,6 +58,7 @@ import StatusBanners from "./components/StatusBanners";
 import ViewerCanvas from "./components/ViewerCanvas";
 import ImageSwitcher from "./components/ImageSwitcher";
 import { ParameterMonitoringPanel } from "@/components/common";
+import { useAuthStore } from "@/stores/auth";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -65,6 +68,8 @@ const { MouseBindings } = ToolsEnums;
 function DetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { userInfo } = useAuthStore();
+
   const elementRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true); // 数据加载状态
@@ -150,8 +155,8 @@ function DetailPage() {
         annotations: perImageMap[id] || [],
       }));
 
-      const json = JSON.stringify(result, null, 2);
-      console.log("🚀 ~ printAnnotations ~ annotationsOnly:", result);
+      const json = JSON.stringify(result);
+      console.log("🚀 ~ printAnnotations ~ annotationsOnly:", json, result);
 
       // try {
       //   await (navigator as any)?.clipboard?.writeText?.(json);
@@ -262,7 +267,6 @@ function DetailPage() {
       setDataLoading(true);
       try {
         const response = await getOriginalDataDetailRequest(Number(id));
-        console.log("🚀 ~ loadDcmData ~ response:", response);
 
         if (response.success && response.data) {
           setDcmData(response.data);
@@ -1128,24 +1132,6 @@ function DetailPage() {
     }
   }, []);
 
-  // 重置视图
-  const resetView = useCallback(() => {
-    if (!renderingEngineRef.current) return;
-
-    try {
-      const renderingEngine = renderingEngineRef.current;
-      const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
-
-      if (viewport && typeof (viewport as any).resetCamera === "function") {
-        (viewport as any).resetCamera();
-        renderingEngine.render();
-        console.log("已重置视图");
-      }
-    } catch (error) {
-      console.error("重置视图失败:", error);
-    }
-  }, []);
-
   // 初始化完成后自动加载（取消上一次未完成的加载）
   useEffect(() => {
     if (isInitialized && dcmData && !dataLoading) {
@@ -1238,6 +1224,47 @@ function DetailPage() {
     return () => clearInterval(interval);
   }, [isInitialized, updateMonitoringParameters]);
 
+  // 处理复制数据
+  const [loading, setLoading] = useState<{
+    copy: boolean;
+    delete: boolean;
+  }>({ copy: false, delete: false });
+  // 获取数据名称
+  const getDataName = (data: DcmData | StudentListItem): string => {
+    if ("name" in data) return data.name;
+    return data.copy_name || data.original_data.name;
+  };
+  const handleCopyData = async () => {
+    if (!userInfo?.user_id) {
+      addToast({
+        color: "danger",
+        description: "用户信息错误，请重新登录",
+      });
+      return;
+    }
+
+    setLoading((prev) => ({ ...prev, copy: true }));
+    try {
+      const res = await copyPublicDataToPrivateRequest({
+        original_id: dcmData.original_id,
+        copy_name: `${getDataName(dcmData)} - 复制`,
+      });
+
+      if (res.success) {
+        addToast({
+          color: "success",
+          description: "复制成功！数据已添加到您的账户",
+        });
+      } else {
+        errorHandler.handleApiError(new Error(res.message), "复制失败");
+      }
+    } catch (error) {
+      errorHandler.handleApiError(error, "复制失败");
+    } finally {
+      setLoading((prev) => ({ ...prev, copy: false }));
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <TopBar
@@ -1249,7 +1276,7 @@ function DetailPage() {
         hasData={!!dcmData}
         onBack={() => navigate("/list")}
         onReload={loadDicomFile}
-        onReset={resetView}
+        onCopyData={handleCopyData}
         onConsoleEditData={printAnnotations}
       />
       <ToolBar
