@@ -26,10 +26,10 @@ export default function ToolBar({
   }) => (
     <button
       onClick={() => onSwitch(name)}
-      className={`px-2 py-1 text-xs rounded transition-all ${
+      className={`px-2 py-1 text-xs rounded transition-all cursor-pointer ${
         activeTool === name
           ? "bg-blue-600 text-white"
-          : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+          : "bg-gray-600 text-gray-200"
       }`}
     >
       {label}
