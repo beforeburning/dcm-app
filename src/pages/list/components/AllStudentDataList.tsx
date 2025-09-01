@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Input, Button, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
+import { apiRequest } from "@/api/client";
 import {
-  // searchAllStudentDataRequest,
-  type DcmData,
-} from "@/api/dcm";
+  type StudentListItem,
+  type StudentUserCopyListResponse,
+} from "@/types/api";
 import DataCard from "./DataCard";
 
 interface AllStudentDataListProps {
@@ -14,7 +15,7 @@ interface AllStudentDataListProps {
 function AllStudentDataList({
   onFileClick,
 }: AllStudentDataListProps): React.JSX.Element {
-  const [data, setData] = useState<DcmData[]>([]);
+  const [data, setData] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -29,31 +30,36 @@ function AllStudentDataList({
     search: string = searchTerm
   ) => {
     setLoading(true);
-    // try {
-    //   const response = await searchAllStudentDataRequest(
-    //     search,
-    //     currentPage,
-    //     pageSize
-    //   );
-    //   if (response.code === 200 && response.data) {
-    //     setData(response.data.data);
-    //     setTotal(response.data.total);
-    //     setTotalPages(response.data.totalPages);
-    //     setPage(response.data.page);
-    //   } else {
-    //     addToast({
-    //       color: "danger",
-    //       description: response.message || "获取数据失败",
-    //     });
-    //   }
-    // } catch {
-    //   addToast({
-    //     color: "danger",
-    //     description: "网络错误，请稍后重试",
-    //   });
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      const response = await apiRequest.get<StudentUserCopyListResponse>(
+        "/student/userCopyList",
+        {
+          keyword: search,
+          per_page: pageSize,
+          page: currentPage,
+        }
+      );
+
+      if (response.success && response.data) {
+        setData(response.data.list || []);
+        setTotal(response.data.pagination.total || 0);
+        setTotalPages(response.data.pagination.last_page || 0);
+        setPage(response.data.pagination.current_page || currentPage);
+      } else {
+        addToast({
+          color: "danger",
+          description: response.message || "获取数据失败",
+        });
+      }
+    } catch (error) {
+      console.error("获取学生数据失败:", error);
+      addToast({
+        color: "danger",
+        description: "网络错误，请稍后重试",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 搜索处理
@@ -70,14 +76,6 @@ function AllStudentDataList({
   useEffect(() => {
     fetchData();
   }, []);
-
-  // 搜索防抖
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      handleSearch();
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
 
   if (loading) {
     return (
@@ -98,7 +96,7 @@ function AllStudentDataList({
       {/* 搜索功能 */}
       <div className="mb-6">
         <Input
-          placeholder="搜索数据名称、拥有者..."
+          placeholder="搜索数据名称、拥有者、分类、标签"
           value={searchTerm}
           onValueChange={setSearchTerm}
           className="max-w-md"
@@ -112,6 +110,11 @@ function AllStudentDataList({
               搜索
             </Button>
           }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
         />
       </div>
 
@@ -129,22 +132,31 @@ function AllStudentDataList({
                     onFileClick={onFileClick}
                     onDataChange={fetchData}
                     showOwnerInfo={true}
+                    isStudentData={true}
+                    showCopyButton={false}
+                    showEditButton={false}
                   />
                 ))}
               </div>
 
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
-                  <Pagination
-                    total={totalPages}
-                    page={page}
-                    onChange={handlePageChange}
-                    showControls
-                    size="md"
-                    color="primary"
-                  />
-                </div>
-              )}
+              <div className="flex justify-center mt-6 w-full">
+                <Pagination
+                  total={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  showControls
+                  size="md"
+                  color="primary"
+                  classNames={{
+                    wrapper: "gap-4 overflow-visible h-12",
+                    item: "w-12 h-12 text-base cursor-pointer",
+                    cursor: "w-12 h-12 text-base cursor-pointer",
+                    prev: "w-12 h-12 text-base cursor-pointer",
+                    next: "w-12 h-12 text-base cursor-pointer",
+                    ellipsis: "w-12 h-12 text-base cursor-pointer",
+                  }}
+                />
+              </div>
             </>
           )}
         </CardBody>

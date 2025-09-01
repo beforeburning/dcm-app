@@ -13,6 +13,7 @@ interface DataCardActionsProps {
   isPublicData?: boolean;
   isStudentData?: boolean;
   showCopyButton?: boolean;
+  showEditButton?: boolean;
   onCopy: () => void;
   onDelete: () => void;
   onEditName: () => void;
@@ -24,6 +25,7 @@ const DataCardActions: React.FC<DataCardActionsProps> = ({
   isPublicData = false,
   isStudentData = false,
   showCopyButton = true,
+  showEditButton = false,
   onCopy,
   onDelete,
   onEditName,
@@ -42,46 +44,64 @@ const DataCardActions: React.FC<DataCardActionsProps> = ({
 
   return (
     <div className="flex items-center space-x-2 ml-4">
-      {/* 学生：显示拷贝按钮 */}
-      {isStudent && showCopyButton && (
-        <Button
-          size="sm"
-          color="primary"
-          variant="flat"
-          isLoading={loading.copy}
-          onClick={(e) => {
-            e.stopPropagation();
-            onCopy();
-          }}
-        >
-          拷贝
-        </Button>
+      {/* 公共数据：学生显示拷贝按钮，老师/admin显示编辑按钮 */}
+      {isPublicData && (
+        <>
+          {/* 学生：显示拷贝按钮 */}
+          {isStudent && showCopyButton && (
+            <Button
+              size="sm"
+              color="primary"
+              variant="flat"
+              isLoading={loading.copy}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy();
+              }}
+            >
+              拷贝
+            </Button>
+          )}
+
+          {/* 老师/admin：显示编辑按钮 */}
+          {showEditButton && (isTeacher || isAdmin) && (
+            <Button
+              size="sm"
+              color="secondary"
+              variant="flat"
+              onClick={handleEdit}
+            >
+              编辑
+            </Button>
+          )}
+        </>
       )}
 
-      {/* 编辑按钮：公共数据或非公共数据 */}
-      <Button
-        size="sm"
-        color="secondary"
-        variant="flat"
-        onClick={handleEdit}
-      >
-        {isPublicData ? "编辑" : "修改名称"}
-      </Button>
+      {/* 学生数据：学生显示修改名称和删除按钮，老师/admin不显示按钮 */}
+      {isStudentData && isStudent && (
+        <>
+          <Button
+            size="sm"
+            color="secondary"
+            variant="flat"
+            onClick={handleEdit}
+          >
+            修改名称
+          </Button>
 
-      {/* 删除按钮：非公共数据的管理员和老师可以删除 */}
-      {isStudentData && (
-        <Button
-          size="sm"
-          color="danger"
-          variant="flat"
-          isLoading={loading.delete}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          删除
-        </Button>
+          <Button
+            size="sm"
+            color="danger"
+            variant="flat"
+            isLoading={loading.delete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            删除
+          </Button>
+        </>
       )}
     </div>
   );

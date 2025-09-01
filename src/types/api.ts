@@ -213,3 +213,9 @@ export interface AnnotationData {
   annotations: any;
   updated_at: string;
 }
+
+// 学生用户复制数据列表响应类型
+export interface StudentUserCopyListResponse {
+  list: StudentListItem[];
+  pagination: PaginationInfo;
+}

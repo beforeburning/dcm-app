@@ -196,7 +196,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
           />
 
           {/* 分页组件 */}
-          {!loading && totalPages > 1 && (
+          {!loading && (
             <div className="flex flex-col sm:flex-row justify-center items-center px-6 py-5 border-t border-gray-200">
               <Pagination
                 total={totalPages}

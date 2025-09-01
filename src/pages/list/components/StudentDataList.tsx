@@ -6,12 +6,13 @@ import React, {
 } from "react";
 import { Card, CardBody, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
+import { apiRequest } from "@/api/client";
 import {
-  getUserCopyListRequest,
   type StudentListItem,
-  type DcmData,
-} from "@/api/dcm";
+  type StudentUserCopyListResponse,
+} from "@/types/api";
 import DataCard from "./DataCard";
+import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface StudentDataListProps {
   userId: string;
@@ -24,6 +25,7 @@ export interface StudentDataListRef {
 
 const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
   ({ userId, onFileClick }, ref) => {
+    const { isStudent } = useUserAuth();
     const [data, setData] = useState<StudentListItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -36,15 +38,20 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await getUserCopyListRequest({
-          original_id: Number(userId),
-        });
+        const response = await apiRequest.get<StudentUserCopyListResponse>(
+          "/student/userCopyList",
+          {
+            user_id: Number(userId),
+            page,
+            per_page: pageSize,
+          }
+        );
 
         if (response.success && response.data) {
-          setData(response.data.list);
-          setTotal(response.data.pagination.total);
-          setTotalPages(response.data.pagination.last_page);
-          setPage(response.data.pagination.current_page);
+          setData(response.data.list || []);
+          setTotal(response.data.pagination.total || 0);
+          setTotalPages(response.data.pagination.last_page || 0);
+          setPage(response.data.pagination.current_page || page);
         } else {
           addToast({
             color: "danger",
@@ -95,7 +102,7 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
     }
 
     return (
-      <div className="py-6">
+      <div className="pb-6">
         <div className="mb-6">
           <div className="flex justify-between items-center">
             <div>
@@ -132,23 +139,30 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
                         isPublicData={false}
                         isStudentData={true}
                         showCopyButton={false}
+                        showEditButton={false}
                       />
                     </>
                   ))}
                 </div>
 
-                {totalPages > 1 && (
-                  <div className="flex justify-center mt-6">
-                    <Pagination
-                      total={totalPages}
-                      page={page}
-                      onChange={handlePageChange}
-                      showControls
-                      size="md"
-                      color="primary"
-                    />
-                  </div>
-                )}
+                <div className="flex justify-center mt-6 w-full">
+                  <Pagination
+                    total={totalPages}
+                    page={page}
+                    onChange={handlePageChange}
+                    showControls
+                    size="md"
+                    color="primary"
+                    classNames={{
+                      wrapper: "gap-4 overflow-visible h-12",
+                      item: "w-12 h-12 text-base cursor-pointer",
+                      cursor: "w-12 h-12 text-base cursor-pointer",
+                      prev: "w-12 h-12 text-base cursor-pointer",
+                      next: "w-12 h-12 text-base cursor-pointer",
+                      ellipsis: "w-12 h-12 text-base cursor-pointer",
+                    }}
+                  />
+                </div>
               </>
             )}
           </CardBody>

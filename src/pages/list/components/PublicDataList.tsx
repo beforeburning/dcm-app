@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Pagination } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { getOriginalDataListRequest, type DcmData } from "@/api/dcm";
+import { apiRequest } from "@/api/client";
+import { type DcmData } from "@/types/api";
 import DataCard from "./DataCard";
+import { useUserAuth } from "@/hooks/useUserAuth";
+import { getOriginalDataListRequest } from "@/api";
 
 interface PublicDataListProps {
   onFileClick: (id: string) => void;
@@ -13,6 +16,7 @@ function PublicDataList({
   onFileClick,
   onCopySuccess,
 }: PublicDataListProps): React.JSX.Element {
+  const { isStudent, hasTeacherPermission } = useUserAuth();
   const [data, setData] = useState<DcmData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,11 +30,11 @@ function PublicDataList({
     try {
       const response = await getOriginalDataListRequest(page, perPage);
       if (response.success && response.data) {
-        setData(response.data.list);
-        setTotal(response.data.pagination.total);
-        setLastPage(response.data.pagination.last_page);
-        setCurrentPage(response.data.pagination.current_page);
-        setPerPage(response.data.pagination.per_page);
+        setData(response.data.list || []);
+        setTotal(response.data.pagination.total || 0);
+        setLastPage(response.data.pagination.last_page || 0);
+        setCurrentPage(response.data.pagination.current_page || page);
+        setPerPage(response.data.pagination.per_page || perPage);
       } else {
         addToast({
           color: "danger",
@@ -97,32 +101,32 @@ function PublicDataList({
                 onDataChange={fetchData}
                 onCopySuccess={onCopySuccess}
                 isPublicData={true}
+                showCopyButton={isStudent}
+                showEditButton={hasTeacherPermission}
               />
             ))}
           </div>
 
-          {lastPage > 1 && (
-            <div className="flex flex-col sm:flex-row justify-center items-center px-6 py-5">
-              <Pagination
-                total={lastPage}
-                page={currentPage}
-                onChange={handlePageChange}
-                showControls
-                size="md"
-                color="primary"
-                variant="flat"
-                radius="md"
-                classNames={{
-                  wrapper: "gap-4 overflow-visible h-12",
-                  item: "w-12 h-12 text-base cursor-pointer",
-                  cursor: "w-12 h-12 text-base cursor-pointer",
-                  prev: "w-12 h-12 text-base cursor-pointer",
-                  next: "w-12 h-12 text-base cursor-pointer",
-                  ellipsis: "w-12 h-12 text-base cursor-pointer",
-                }}
-              />
-            </div>
-          )}
+          <div className="flex flex-col sm:flex-row justify-center items-center px-6 py-5">
+            <Pagination
+              total={lastPage}
+              page={currentPage}
+              onChange={handlePageChange}
+              showControls
+              size="md"
+              color="primary"
+              variant="flat"
+              radius="md"
+              classNames={{
+                wrapper: "gap-4 overflow-visible h-12",
+                item: "w-12 h-12 text-base cursor-pointer",
+                cursor: "w-12 h-12 text-base cursor-pointer",
+                prev: "w-12 h-12 text-base cursor-pointer",
+                next: "w-12 h-12 text-base cursor-pointer",
+                ellipsis: "w-12 h-12 text-base cursor-pointer",
+              }}
+            />
+          </div>
         </CardBody>
       </Card>
     </div>

@@ -23,6 +23,7 @@ interface DataCardProps {
   isPublicData?: boolean;
   isStudentData?: boolean;
   showCopyButton?: boolean;
+  showEditButton?: boolean;
 }
 
 function DataCard({
@@ -34,6 +35,7 @@ function DataCard({
   isPublicData = false,
   isStudentData = false,
   showCopyButton = true,
+  showEditButton = false,
 }: DataCardProps): React.JSX.Element {
   const { userInfo } = useUserAuth();
 
@@ -167,6 +169,7 @@ function DataCard({
               isPublicData={isPublicData}
               isStudentData={isStudentData}
               showCopyButton={showCopyButton}
+              showEditButton={showEditButton}
               onCopy={handleCopyData}
               onDelete={() => setShowDeleteConfirm(true)}
               onEditName={() => setShowNameModal(true)}
