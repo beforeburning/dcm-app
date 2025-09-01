@@ -88,29 +88,86 @@ function DetailPage() {
   const lastRenderTsRef = useRef<number>(0);
   const initialParallelScaleRef = useRef<number | null>(null);
 
-  // 打印并保存当前注释/测量 JSON
+  // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
   const printAnnotations = useCallback(async () => {
     try {
-      const all =
+      // 收集所有标注
+      let annotationsAll: any =
         (csToolsAnnotation as any)?.state?.getAllAnnotations?.() || [];
-      console.log("🚀 ~ printAnnotations ~ all:", JSON.stringify(all));
 
-      if (!id) {
-        addToast({ color: "danger", description: "无效的数据ID，无法保存" });
-        return;
+      // 规范化为一维数组
+      if (!Array.isArray(annotationsAll)) {
+        if (annotationsAll && typeof annotationsAll === "object") {
+          annotationsAll = Object.values(annotationsAll).flat?.(2) || [];
+        } else {
+          annotationsAll = [];
+        }
       }
 
-      const res = await saveDcmAnnotationsRequest(Number(id), all);
-      if (res.success) {
-        addToast({ color: "success", description: "注释已保存" });
-      } else {
-        addToast({ color: "warning", description: res.message || "保存失败" });
+      // 序列化：提取可还原的核心字段，过滤函数/循环引用
+      const toSerializable = (a: any) => {
+        const metadata = a?.metadata || {};
+        const data = a?.data || {};
+        const handles = data?.handles || a?.handles || {};
+        const points = handles?.points || data?.points || [];
+        const text = data?.text || a?.text || undefined;
+        const cachedStats = data?.cachedStats || a?.cachedStats || undefined;
+        const toolName = metadata?.toolName || a?.toolName || a?.toolName?.name;
+        const imageId =
+          metadata?.referencedImageId || metadata?.imageId || a?.imageId;
+        const frameOfReferenceUID = metadata?.frameOfReferenceUID;
+
+        return {
+          annotationUID: a?.annotationUID,
+          toolName,
+          imageId,
+          frameOfReferenceUID,
+          data: {
+            points,
+            text,
+            measurements: cachedStats,
+          },
+          // 保留用户可用的 label/name（若存在）
+          label: a?.label ?? data?.label ?? undefined,
+        };
+      };
+
+      const serialized = annotationsAll
+        .map(toSerializable)
+        .filter((x: any) => x.imageId);
+
+      // 按 imageId 分组为每文件一项
+      const perImageMap: Record<string, any[]> = {};
+      for (const s of serialized) {
+        if (!perImageMap[s.imageId]) perImageMap[s.imageId] = [];
+        perImageMap[s.imageId].push(s);
       }
+
+      const result = imageIds.map((id, index) => ({
+        index,
+        imageId: id,
+        fileName: dcmData?.files?.[index]?.file_name || null,
+        annotations: perImageMap[id] || [],
+      }));
+
+      const json = JSON.stringify(result, null, 2);
+      console.log("🚀 ~ printAnnotations ~ annotationsOnly:", result);
+
+      // try {
+      //   await (navigator as any)?.clipboard?.writeText?.(json);
+      //   addToast({
+      //     color: "success",
+      //     description: "已复制：仅工具标注数据（按文件分组）",
+      //   });
+      // } catch {
+      //   console.log("Export Annotations JSON (per-file array):\n", json);
+      //   addToast({ color: "warning", description: "已在控制台输出 JSON" });
+      // }
     } catch (e: any) {
-      console.warn("无法获取或保存注释数据", e);
-      addToast({ color: "danger", description: "保存失败" });
+      console.warn("导出标注数据失败", e);
+      addToast({ color: "danger", description: "导出失败" });
     }
-  }, [id]);
+  }, [imageIds, dcmData]);
 
   // 切换到指定图像
   const switchToImage = useCallback(
@@ -331,7 +388,6 @@ function DetailPage() {
         addTool(LivewireContourTool);
         addTool(MagnifyTool);
         addTool(OverlayGridTool);
-        addTool(ScaleOverlayTool);
         addTool(AdvancedMagnifyTool);
         addTool(UltrasoundDirectionalTool);
         addTool(RectangleScissorsTool);
@@ -408,7 +464,6 @@ function DetailPage() {
         LivewireContourTool,
         MagnifyTool,
         OverlayGridTool,
-        ScaleOverlayTool,
         AdvancedMagnifyTool,
         UltrasoundDirectionalTool,
         RectangleScissorsTool,
@@ -481,9 +536,6 @@ function DetailPage() {
           break;
         case "OverlayGrid":
           setActive(OverlayGridTool, primary);
-          break;
-        case "ScaleOverlay":
-          setActive(ScaleOverlayTool, primary);
           break;
         case "AdvancedMagnify":
           setActive(AdvancedMagnifyTool, primary);
@@ -611,7 +663,6 @@ function DetailPage() {
       toolGroup.addTool(LivewireContourTool.toolName);
       toolGroup.addTool(MagnifyTool.toolName);
       toolGroup.addTool(OverlayGridTool.toolName);
-      toolGroup.addTool(ScaleOverlayTool.toolName);
       toolGroup.addTool(AdvancedMagnifyTool.toolName);
       toolGroup.addTool(UltrasoundDirectionalTool.toolName);
       toolGroup.addTool(RectangleScissorsTool.toolName);
@@ -829,7 +880,6 @@ function DetailPage() {
         LivewireContourTool,
         MagnifyTool,
         OverlayGridTool,
-        ScaleOverlayTool,
         AdvancedMagnifyTool,
         UltrasoundDirectionalTool,
         RectangleScissorsTool,
@@ -908,9 +958,6 @@ function DetailPage() {
           break;
         case "OverlayGrid":
           setActive(OverlayGridTool, primary);
-          break;
-        case "ScaleOverlay":
-          setActive(ScaleOverlayTool, primary);
           break;
         case "AdvancedMagnify":
           setActive(AdvancedMagnifyTool, primary);
