@@ -18,7 +18,7 @@ export default function ViewerCanvas({
   children,
 }: Props) {
   return (
-    <div className="flex-1 relative overflow-hidden mb-5">
+    <div className="flex-1 relative overflow-hidden ">
       <div
         ref={elementRef as any}
         className="w-full h-full bg-black"

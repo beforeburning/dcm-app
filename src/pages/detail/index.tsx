@@ -84,6 +84,9 @@ function DetailPage() {
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
+  const viewportListenerCleanupRef = useRef<(() => void) | null>(null);
+  const lastRenderTsRef = useRef<number>(0);
+  const initialParallelScaleRef = useRef<number | null>(null);
 
   // 打印并保存当前注释/测量 JSON
   const printAnnotations = useCallback(async () => {
@@ -358,6 +361,146 @@ function DetailPage() {
     };
   }, []);
 
+  // 重新应用当前激活工具（不改变UI状态，仅应用到工具组）
+  const reapplyActiveTool = useCallback(() => {
+    if (!toolGroupRef.current) return;
+    const toolName = activeTool;
+    if (!toolName || toolName === "DeleteAnnotation") return;
+
+    try {
+      const toolGroup: any = toolGroupRef.current;
+
+      const maybePassive = (tool: any) => {
+        try {
+          toolGroup.setToolPassive(tool.toolName);
+        } catch {}
+      };
+      [
+        WindowLevelTool,
+        PanTool,
+        ZoomTool,
+        LengthTool,
+        RectangleROITool,
+        EllipticalROITool,
+        CircleROITool,
+        ArrowAnnotateTool,
+        ProbeTool,
+        AngleTool,
+        BidirectionalTool,
+        PlanarFreehandROITool,
+        CobbAngleTool,
+        RectangleROIStartEndThresholdTool,
+        RectangleROIThresholdTool,
+        SplineROITool,
+        LivewireContourTool,
+        MagnifyTool,
+        OverlayGridTool,
+        ScaleOverlayTool,
+        AdvancedMagnifyTool,
+        UltrasoundDirectionalTool,
+        RectangleScissorsTool,
+        CircleScissorsTool,
+        SphereScissorsTool,
+        LabelTool,
+      ].forEach(maybePassive);
+
+      const primary = [{ mouseButton: MouseBindings.Primary }];
+      const setActive = (tool: any, bindings: any) => {
+        try {
+          toolGroup.setToolActive(tool.toolName, { bindings });
+        } catch {}
+      };
+
+      switch (toolName) {
+        case "WindowLevel":
+          setActive(WindowLevelTool, primary);
+          break;
+        case "Pan":
+          setActive(PanTool, primary);
+          break;
+        case "Zoom":
+          setActive(ZoomTool, primary);
+          break;
+        case "Length":
+          setActive(LengthTool, primary);
+          break;
+        case "RectangleROI":
+          setActive(RectangleROITool, primary);
+          break;
+        case "EllipticalROI":
+          setActive(EllipticalROITool, primary);
+          break;
+        case "CircleROI":
+          setActive(CircleROITool, primary);
+          break;
+        case "ArrowAnnotate":
+          setActive(ArrowAnnotateTool, primary);
+          break;
+        case "Probe":
+          setActive(ProbeTool, primary);
+          break;
+        case "Angle":
+          setActive(AngleTool, primary);
+          break;
+        case "Bidirectional":
+          setActive(BidirectionalTool, primary);
+          break;
+        case "PlanarFreehandROI":
+          setActive(PlanarFreehandROITool, primary);
+          break;
+        case "CobbAngle":
+          setActive(CobbAngleTool, primary);
+          break;
+        case "RectangleROIStartEndThreshold":
+          setActive(RectangleROIStartEndThresholdTool, primary);
+          break;
+        case "RectangleROIThreshold":
+          setActive(RectangleROIThresholdTool, primary);
+          break;
+        case "SplineROI":
+          setActive(SplineROITool, primary);
+          break;
+        case "LivewireContour":
+          setActive(LivewireContourTool, primary);
+          break;
+        case "Magnify":
+          setActive(MagnifyTool, primary);
+          break;
+        case "OverlayGrid":
+          setActive(OverlayGridTool, primary);
+          break;
+        case "ScaleOverlay":
+          setActive(ScaleOverlayTool, primary);
+          break;
+        case "AdvancedMagnify":
+          setActive(AdvancedMagnifyTool, primary);
+          break;
+        case "UltrasoundDirectional":
+          setActive(UltrasoundDirectionalTool, primary);
+          break;
+        case "RectangleScissors":
+          setActive(RectangleScissorsTool, primary);
+          break;
+        case "CircleScissors":
+          setActive(CircleScissorsTool, primary);
+          break;
+        case "SphereScissors":
+          setActive(SphereScissorsTool, primary);
+          break;
+        case "Label":
+          setActive(LabelTool, primary);
+          break;
+      }
+
+      // 渲染以确保立即生效
+      try {
+        (renderingEngineRef.current as any)?.render?.();
+      } catch {}
+    } catch (e) {
+      console.warn("重新应用工具失败", e);
+    }
+  }, [activeTool]);
+
   // 加载和渲染 DICOM 文件
   const loadDicomFile = useCallback(async () => {
     if (!isInitialized || !elementRef.current || !dcmData) return;
@@ -510,6 +653,88 @@ function DetailPage() {
       if (seq !== loadSeqRef.current) return;
       renderingEngine.render();
 
+      // 重新应用当前激活工具，避免被重置为窗位
+      reapplyActiveTool();
+
+      // 记录初始 parallelScale 作为缩放基准
+      try {
+        const cam0: any = (viewport as any)?.getCamera?.();
+        const ps0 = cam0?.parallelScale;
+        if (typeof ps0 === "number" && ps0 > 0) {
+          initialParallelScaleRef.current = ps0;
+          setZoom(1);
+        }
+      } catch {}
+
+      // 绑定视口监听，实时更新 Zoom/FPS/WW/WL
+      try {
+        // 清理旧监听
+        viewportListenerCleanupRef.current?.();
+        const re: any = renderingEngine;
+        const vp: any = viewport;
+
+        const computeZoom = () => {
+          // 优先使用 getScale，如果可用
+          const s = vp?.getScale?.();
+          if (typeof s === "number" && s > 0) return s;
+          // 否则用 parallelScale 的相对比值
+          const cam = vp?.getCamera?.();
+          const ps = cam?.parallelScale;
+          const base = initialParallelScaleRef.current;
+          if (
+            typeof ps === "number" &&
+            ps > 0 &&
+            typeof base === "number" &&
+            base > 0
+          ) {
+            return base / ps;
+          }
+          return 1;
+        };
+
+        const handleRendered = () => {
+          // FPS 估算
+          const now = performance.now();
+          if (lastRenderTsRef.current) {
+            const delta = now - lastRenderTsRef.current;
+            if (delta > 0) setFrameRate(1000 / delta);
+          }
+          lastRenderTsRef.current = now;
+
+          // Zoom
+          const z = computeZoom();
+          if (!Number.isNaN(z) && Number.isFinite(z)) setZoom(z);
+
+          // WW/WL from viewport options
+          const opts = vp?.getViewportOptions?.();
+          const ww = opts?.voi?.windowWidth;
+          const wc = opts?.voi?.windowCenter;
+          if (typeof ww === "number") setWindowWidth(ww);
+          if (typeof wc === "number") setWindowCenter(wc);
+        };
+
+        const handleCameraChange = () => {
+          const z = computeZoom();
+          if (!Number.isNaN(z) && Number.isFinite(z)) setZoom(z);
+        };
+
+        // Cornerstone v3 视口提供事件 API（不同版本可能差异，做防御）
+        vp?.addEventListener?.("rendered", handleRendered);
+        vp?.addEventListener?.("cameraModified", handleCameraChange);
+
+        // 立即触发一次，确保初始值正确
+        handleRendered();
+
+        viewportListenerCleanupRef.current = () => {
+          try {
+            vp?.removeEventListener?.("rendered", handleRendered);
+            vp?.removeEventListener?.("cameraModified", handleCameraChange);
+          } catch {}
+        };
+      } catch (e) {
+        console.warn("绑定视口监听失败（可忽略）", e);
+      }
+
       // 获取第一张图像的 DICOM 元数据
       try {
         if (currentImageIds.length > 0) {
@@ -532,184 +757,158 @@ function DetailPage() {
     } finally {
       if (seq === loadSeqRef.current) setIsLoading(false);
     }
-  }, [isInitialized, dcmData, imageIds, currentImageIndex]);
+  }, [isInitialized, dcmData, imageIds, currentImageIndex, reapplyActiveTool]);
 
   // 切换工具
   const switchTool = useCallback((toolName) => {
     if (!toolGroupRef.current) return;
 
     try {
-      const toolGroup = toolGroupRef.current;
+      const toolGroup: any = toolGroupRef.current;
 
-      // 删除为动作，不改变当前工具状态
+      // 删除为一次性动作，不改变当前工具
       if (toolName === "DeleteAnnotation") {
         handleDeleteAnnotation();
         return;
       }
 
-      // 先将所有工具设为非激活状态
-      toolGroup.setToolPassive(WindowLevelTool.toolName);
-      toolGroup.setToolPassive(PanTool.toolName);
-      toolGroup.setToolPassive(ZoomTool.toolName);
-      toolGroup.setToolPassive(LengthTool.toolName);
-      toolGroup.setToolPassive(RectangleROITool.toolName);
-      toolGroup.setToolPassive(EllipticalROITool.toolName);
-      toolGroup.setToolPassive(CircleROITool.toolName);
-      toolGroup.setToolPassive(ArrowAnnotateTool.toolName);
-      toolGroup.setToolPassive(ProbeTool.toolName);
-      toolGroup.setToolPassive(AngleTool.toolName);
-      toolGroup.setToolPassive(BidirectionalTool.toolName);
-      toolGroup.setToolPassive(PlanarFreehandROITool.toolName);
-      toolGroup.setToolPassive(CobbAngleTool.toolName);
-      toolGroup.setToolPassive(RectangleROIStartEndThresholdTool.toolName);
-      toolGroup.setToolPassive(RectangleROIThresholdTool.toolName);
-      toolGroup.setToolPassive(SplineROITool.toolName);
-      toolGroup.setToolPassive(LivewireContourTool.toolName);
-      toolGroup.setToolPassive(MagnifyTool.toolName);
-      toolGroup.setToolPassive(OverlayGridTool.toolName);
-      toolGroup.setToolPassive(ScaleOverlayTool.toolName);
-      toolGroup.setToolPassive(AdvancedMagnifyTool.toolName);
-      toolGroup.setToolPassive(UltrasoundDirectionalTool.toolName);
-      toolGroup.setToolPassive(RectangleScissorsTool.toolName);
-      toolGroup.setToolPassive(CircleScissorsTool.toolName);
-      toolGroup.setToolPassive(SphereScissorsTool.toolName);
-      toolGroup.setToolPassive(LabelTool.toolName);
+      // 将所有工具设为被动
+      const maybePassive = (tool: any) => {
+        try {
+          toolGroup.setToolPassive(tool.toolName);
+        } catch {}
+      };
+      [
+        WindowLevelTool,
+        PanTool,
+        ZoomTool,
+        LengthTool,
+        RectangleROITool,
+        EllipticalROITool,
+        CircleROITool,
+        ArrowAnnotateTool,
+        ProbeTool,
+        AngleTool,
+        BidirectionalTool,
+        PlanarFreehandROITool,
+        CobbAngleTool,
+        RectangleROIStartEndThresholdTool,
+        RectangleROIThresholdTool,
+        SplineROITool,
+        LivewireContourTool,
+        MagnifyTool,
+        OverlayGridTool,
+        ScaleOverlayTool,
+        AdvancedMagnifyTool,
+        UltrasoundDirectionalTool,
+        RectangleScissorsTool,
+        CircleScissorsTool,
+        SphereScissorsTool,
+        LabelTool,
+      ].forEach(maybePassive);
 
-      // 激活选中的工具
+      // 依据工具设置正确的鼠标绑定
+      const primary = [{ mouseButton: MouseBindings.Primary }];
+      const secondary = [{ mouseButton: MouseBindings.Secondary }];
+      const auxiliary = [{ mouseButton: MouseBindings.Auxiliary }];
+
+      const setActive = (tool: any, bindings: any) => {
+        try {
+          toolGroup.setToolActive(tool.toolName, { bindings });
+        } catch {}
+      };
+
       switch (toolName) {
         case "WindowLevel":
-          toolGroup.setToolActive(WindowLevelTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(WindowLevelTool, primary);
           break;
         case "Pan":
-          toolGroup.setToolActive(PanTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          // 显式选择平移时，使用左键拖拽更直观
+          setActive(PanTool, primary);
           break;
         case "Zoom":
-          toolGroup.setToolActive(ZoomTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          // 显式选择缩放时，使用左键拖拽更直观
+          setActive(ZoomTool, primary);
           break;
         case "Length":
-          toolGroup.setToolActive(LengthTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(LengthTool, primary);
           break;
         case "RectangleROI":
-          toolGroup.setToolActive(RectangleROITool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(RectangleROITool, primary);
           break;
         case "EllipticalROI":
-          toolGroup.setToolActive(EllipticalROITool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(EllipticalROITool, primary);
           break;
         case "CircleROI":
-          toolGroup.setToolActive(CircleROITool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(CircleROITool, primary);
           break;
         case "ArrowAnnotate":
-          toolGroup.setToolActive(ArrowAnnotateTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(ArrowAnnotateTool, primary);
           break;
         case "Probe":
-          toolGroup.setToolActive(ProbeTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(ProbeTool, primary);
           break;
         case "Angle":
-          toolGroup.setToolActive(AngleTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(AngleTool, primary);
           break;
         case "Bidirectional":
-          toolGroup.setToolActive(BidirectionalTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(BidirectionalTool, primary);
           break;
         case "PlanarFreehandROI":
-          toolGroup.setToolActive(PlanarFreehandROITool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(PlanarFreehandROITool, primary);
           break;
         case "CobbAngle":
-          toolGroup.setToolActive(CobbAngleTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(CobbAngleTool, primary);
           break;
         case "RectangleROIStartEndThreshold":
-          toolGroup.setToolActive(RectangleROIStartEndThresholdTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(RectangleROIStartEndThresholdTool, primary);
           break;
         case "RectangleROIThreshold":
-          toolGroup.setToolActive(RectangleROIThresholdTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(RectangleROIThresholdTool, primary);
           break;
         case "SplineROI":
-          toolGroup.setToolActive(SplineROITool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(SplineROITool, primary);
           break;
         case "LivewireContour":
-          toolGroup.setToolActive(LivewireContourTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(LivewireContourTool, primary);
           break;
         case "Magnify":
-          toolGroup.setToolActive(MagnifyTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(MagnifyTool, primary);
           break;
         case "OverlayGrid":
-          toolGroup.setToolActive(OverlayGridTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(OverlayGridTool, primary);
           break;
         case "ScaleOverlay":
-          toolGroup.setToolActive(ScaleOverlayTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(ScaleOverlayTool, primary);
           break;
         case "AdvancedMagnify":
-          toolGroup.setToolActive(AdvancedMagnifyTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(AdvancedMagnifyTool, primary);
           break;
         case "UltrasoundDirectional":
-          toolGroup.setToolActive(UltrasoundDirectionalTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(UltrasoundDirectionalTool, primary);
           break;
         case "RectangleScissors":
-          toolGroup.setToolActive(RectangleScissorsTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(RectangleScissorsTool, primary);
           break;
         case "CircleScissors":
-          toolGroup.setToolActive(CircleScissorsTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(CircleScissorsTool, primary);
           break;
         case "SphereScissors":
-          toolGroup.setToolActive(SphereScissorsTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(SphereScissorsTool, primary);
           break;
         case "Label":
-          toolGroup.setToolActive(LabelTool.toolName, {
-            bindings: [{ mouseButton: MouseBindings.Primary }],
-          });
+          setActive(LabelTool, primary);
           break;
       }
 
       setActiveTool(toolName);
+
+      // 切换后强制渲染以确保生效
+      try {
+        const re = renderingEngineRef.current as any;
+        re?.render?.();
+      } catch {}
+
       console.log(`已切换到工具: ${toolName}`);
     } catch (error) {
       console.error("切换工具失败:", error);
@@ -810,27 +1009,41 @@ function DetailPage() {
 
     try {
       const renderingEngine = renderingEngineRef.current;
-      const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
+      const viewport: any = renderingEngine.getViewport("CT_SAGITTAL_STACK");
 
       if (viewport) {
-        // 获取缩放信息
-        const camera = (viewport as any).getCamera?.();
-        if (camera) {
-          setZoom(camera.parallelScale || 1);
+        // Zoom 优先从 getScale 获取，其次通过 parallelScale 基准比值计算
+        let z: number | undefined;
+        const s = viewport?.getScale?.();
+        if (typeof s === "number" && s > 0) {
+          z = s;
+        } else {
+          const cam = viewport?.getCamera?.();
+          const ps = cam?.parallelScale;
+          const base = initialParallelScaleRef.current;
+          if (
+            typeof ps === "number" &&
+            ps > 0 &&
+            typeof base === "number" &&
+            base > 0
+          ) {
+            z = base / ps;
+          }
         }
+        if (typeof z === "number" && Number.isFinite(z)) setZoom(z);
 
-        // 获取窗宽窗位
-        const viewportOptions = (viewport as any).getViewportOptions?.();
+        // 窗宽窗位
+        const viewportOptions = viewport?.getViewportOptions?.();
         if (viewportOptions) {
-          setWindowWidth(viewportOptions.voi?.windowWidth || 0);
-          setWindowCenter(viewportOptions.voi?.windowCenter || 0);
+          if (typeof viewportOptions.voi?.windowWidth === "number") {
+            setWindowWidth(viewportOptions.voi.windowWidth);
+          }
+          if (typeof viewportOptions.voi?.windowCenter === "number") {
+            setWindowCenter(viewportOptions.voi.windowCenter);
+          }
         }
 
-        // 计算渲染时间（这里可以添加实际的渲染时间计算）
-        const startTime = performance.now();
-        renderingEngine.render();
-        const endTime = performance.now();
-        setRenderTime(endTime - startTime);
+        // 渲染时间：不强制触发渲染，避免循环
       }
     } catch (error) {
       console.warn("更新监控参数失败:", error);
