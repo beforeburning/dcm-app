@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { addToast } from "@heroui/toast";
 import * as cornerstone from "@cornerstonejs/core";
 import {
@@ -69,6 +69,7 @@ function DetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userInfo } = useAuthStore();
+  const path = useLocation().pathname;
 
   const elementRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +93,7 @@ function DetailPage() {
   const viewportListenerCleanupRef = useRef<(() => void) | null>(null);
   const lastRenderTsRef = useRef<number>(0);
   const initialParallelScaleRef = useRef<number | null>(null);
+  const isOriginal = useMemo(() => path.includes("original"), [path]);
 
   // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
   const printAnnotations = useCallback(async () => {
@@ -266,7 +268,9 @@ function DetailPage() {
 
       setDataLoading(true);
       try {
-        const response = await getOriginalDataDetailRequest(Number(id));
+        const response = isOriginal
+          ? await getOriginalDataDetailRequest(Number(id))
+          : await getStudentDataDetailRequest(Number(id));
 
         if (response.success && response.data) {
           setDcmData(response.data);

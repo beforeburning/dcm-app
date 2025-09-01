@@ -1,5 +1,7 @@
 import { Button } from "@heroui/react";
 import { useAuthStore } from "@/stores/auth";
+import { useLocation } from "react-router-dom";
+import { useMemo } from "react";
 
 type Props = {
   title: string;
@@ -23,6 +25,9 @@ export default function TopBar({
   onCopyData,
 }: Props) {
   const { userInfo } = useAuthStore();
+  const path = useLocation().pathname;
+
+  const isOriginal = useMemo(() => path.includes("original"), [path]);
 
   return (
     <div className="bg-gray-800 text-white px-4 pt-4 flex-shrink-0">
@@ -39,7 +44,7 @@ export default function TopBar({
         </div>
 
         <div className="flex items-center gap-2">
-          {userInfo?.role === 3 && (
+          {userInfo?.role === 3 && !isOriginal && (
             <div className="flex items-center gap-2">
               <Button
                 onClick={onCopyData}
@@ -72,7 +77,7 @@ export default function TopBar({
             </div>
           )}
 
-          {onConsoleEditData && (
+          {(userInfo?.role !== 3 || isOriginal) && onConsoleEditData && (
             <Button
               onClick={onConsoleEditData}
               disabled={!hasData}

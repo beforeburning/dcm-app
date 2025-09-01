@@ -175,17 +175,18 @@ function UploadPage(): React.JSX.Element {
       const response = await uploadFileToOssRequest(fileInfo.file);
 
       if (response.success) {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileInfo.id
-              ? {
-                  ...f,
-                  status: "success" as const,
-                  uploadedUrl: response.file_url,
-                  uploadedData: response,
-                }
-              : f
-          )
+        setFiles(
+          (prev) =>
+            prev.map((f) =>
+              f.id === fileInfo.id
+                ? {
+                    ...f,
+                    status: "success" as const,
+                    uploadedUrl: (response as any).file_url,
+                    uploadedData: response as any,
+                  }
+                : f
+            ) as any
         );
 
         addToast({
