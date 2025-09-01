@@ -87,7 +87,6 @@ function DetailPage() {
   const [zoom, setZoom] = useState<number>(1); // 缩放
   const [windowWidth, setWindowWidth] = useState<number>(0); // 窗宽
   const [windowCenter, setWindowCenter] = useState<number>(0); // 窗位
-  const [renderTime, setRenderTime] = useState<number>(0); // 渲染时间
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
@@ -1340,7 +1339,6 @@ function DetailPage() {
         zoom={zoom}
         windowWidth={windowWidth}
         windowCenter={windowCenter}
-        renderTime={renderTime}
         isVisible={!!dcmData && isInitialized}
       />
     </div>

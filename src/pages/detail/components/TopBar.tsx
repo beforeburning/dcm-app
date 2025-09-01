@@ -77,33 +77,36 @@ export default function TopBar({
             </div>
           )}
 
-          {((userInfo?.role === 1 || userInfo?.role === 2) || (!isOriginal && userInfo?.role === 3)) && onConsoleEditData && (
-            <Button
-              onClick={onConsoleEditData}
-              disabled={!hasData}
-              size="sm"
-              variant="solid"
-              color={hasData ? "success" : "default"}
-              className="font-medium px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform text-white"
-              startContent={
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-                  />
-                </svg>
-              }
-            >
-              保存数据
-            </Button>
-          )}
+          {(userInfo?.role === 1 ||
+            userInfo?.role === 2 ||
+            (!isOriginal && userInfo?.role === 3)) &&
+            onConsoleEditData && (
+              <Button
+                onClick={onConsoleEditData}
+                disabled={!hasData}
+                size="sm"
+                variant="solid"
+                color={hasData ? "success" : "default"}
+                className="font-medium px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform text-white"
+                startContent={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                    />
+                  </svg>
+                }
+              >
+                保存数据
+              </Button>
+            )}
 
           <Button
             onClick={onReload}
