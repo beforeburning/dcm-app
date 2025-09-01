@@ -61,6 +61,11 @@ export default function ToolBar({
         <ToolButton name="PlanarFreehandROI" label="🎨 绘制" />
         <ToolButton name="ArrowAnnotate" label="➡️ 箭头" />
         <ToolButton name="Label" label="📝 文字" />
+
+        <span className="text-xs font-medium text-red-300 mr-1 ml-3">
+          管理:
+        </span>
+        <ToolButton name="DeleteAnnotation" label="🗑️ 删除" />
       </div>
 
       <div className="text-xs text-gray-300 py-1 rounded">

@@ -541,6 +541,12 @@ function DetailPage() {
     try {
       const toolGroup = toolGroupRef.current;
 
+      // 删除为动作，不改变当前工具状态
+      if (toolName === "DeleteAnnotation") {
+        handleDeleteAnnotation();
+        return;
+      }
+
       // 先将所有工具设为非激活状态
       toolGroup.setToolPassive(WindowLevelTool.toolName);
       toolGroup.setToolPassive(PanTool.toolName);
@@ -710,6 +716,94 @@ function DetailPage() {
     }
   }, []);
 
+  // 删除当前选中的标注
+  const handleDeleteAnnotation = useCallback(() => {
+    try {
+      const annoModule: any = (csToolsAnnotation as any)?.state;
+      if (!annoModule) {
+        addToast({ color: "danger", description: "标注模块不可用" });
+        return;
+      }
+
+      // 优先通过官方方法获取选中标注
+      let selectedUID: string | undefined;
+      try {
+        const selected = annoModule.getSelectedAnnotation?.();
+        selectedUID = selected?.annotationUID;
+      } catch {}
+
+      // 回退方案：遍历所有标注，查找被选中的
+      if (!selectedUID) {
+        let all: any = [];
+        const raw = annoModule.getAllAnnotations?.();
+
+        if (Array.isArray(raw)) {
+          // 可能是注释对象数组，或按工具分组的二维数组
+          all = raw.flat ? raw.flat(2) : raw;
+        } else if (raw && typeof raw === "object") {
+          // 可能是按工具名分组的对象/map
+          const values = Object.values(raw as Record<string, any>);
+          values.forEach((v: any) => {
+            if (Array.isArray(v)) all.push(...v);
+          });
+        }
+
+        const selectedAnno = all.find(
+          (a: any) =>
+            a?.isSelected ||
+            a?.isHighlighted ||
+            a?.highlighted ||
+            a?.selection?.isSelected
+        );
+        selectedUID = selectedAnno?.annotationUID;
+      }
+
+      if (!selectedUID) {
+        addToast({ color: "warning", description: "请先选中要删除的标注" });
+        return;
+      }
+
+      // 执行删除
+      deleteAnnotation(selectedUID);
+    } catch (error) {
+      console.error("删除标注失败:", error);
+      addToast({ color: "danger", description: "删除标注失败" });
+    }
+  }, []);
+
+  // 删除标注
+  const deleteAnnotation = useCallback((annotationId: string) => {
+    try {
+      // 使用 Cornerstone Tools 的 API 删除标注
+      if ((csToolsAnnotation as any)?.state?.removeAnnotation) {
+        (csToolsAnnotation as any).state.removeAnnotation(annotationId);
+        console.log("标注已删除:", annotationId);
+
+        addToast({
+          color: "success",
+          description: "标注已删除",
+        });
+
+        // 重新渲染
+        if (renderingEngineRef.current) {
+          renderingEngineRef.current.render();
+        }
+      } else {
+        console.warn("无法删除标注，API 不可用");
+        addToast({
+          color: "danger",
+          description: "删除标注失败",
+        });
+      }
+    } catch (error) {
+      console.error("删除标注失败:", error);
+      addToast({
+        color: "danger",
+        description: "删除标注失败",
+      });
+    }
+  }, []);
+
   // 更新监控参数
   const updateMonitoringParameters = useCallback(() => {
     if (!renderingEngineRef.current) return;
@@ -775,6 +869,7 @@ function DetailPage() {
   // 键盘快捷键支持
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // 图像切换快捷键
       if (isLoading || imageIds.length <= 1) return;
 
       switch (event.key) {
@@ -789,12 +884,27 @@ function DetailPage() {
       }
     };
 
+    // 删除标注快捷键
+    const handleDeleteKey = (event: KeyboardEvent) => {
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        handleDeleteAnnotation();
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleDeleteKey);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleDeleteKey);
     };
-  }, [imageIds.length, goToPreviousImage, goToNextImage]);
+  }, [
+    imageIds.length,
+    goToPreviousImage,
+    goToNextImage,
+    handleDeleteAnnotation,
+  ]);
 
   // 监听窗口尺寸变化，调整视口大小
   useEffect(() => {

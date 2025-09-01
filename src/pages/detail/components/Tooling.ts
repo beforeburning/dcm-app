@@ -27,7 +27,8 @@ export type ToolName =
   | "RectangleScissors"
   | "CircleScissors"
   | "SphereScissors"
-  | "Label";
+  | "Label"
+  | "DeleteAnnotation";
 
 export const getToolDisplayName = (toolName: string): string => {
   switch (toolName) {
@@ -89,6 +90,8 @@ export const getToolDisplayName = (toolName: string): string => {
       return "球形剪切";
     case "Label":
       return "文字标注";
+    case "DeleteAnnotation":
+      return "删除标注";
     default:
       return toolName;
   }
@@ -154,6 +157,8 @@ export const getToolInstructions = (toolName: string): string => {
       return "球形区域剪切工具";
     case "Label":
       return "点击插入文字标注";
+    case "DeleteAnnotation":
+      return "删除当前选中的标注";
     default:
       return "选择工具进行操作";
   }
