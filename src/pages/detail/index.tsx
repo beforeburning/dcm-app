@@ -64,6 +64,7 @@ import {
   updateStudentAnnotationRequest,
 } from "@/api/dicom";
 import { StudentCopyDataDetail, OriginalDataDetail } from "@/types/api";
+import { Annotation } from "@cornerstonejs/tools/types/AnnotationTypes";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -86,6 +87,7 @@ function DetailPage() {
     StudentCopyDataDetail | OriginalDataDetail | null
   >(null); // DCM数据
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 当前图像索引
+
   const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
   const [isImageControlExpanded, setIsImageControlExpanded] = useState(true); // 图像切换控件展开状态
   const [dicomMetadata, setDicomMetadata] = useState<any>(null); // DICOM 元数据
@@ -108,66 +110,8 @@ function DetailPage() {
       let annotationsAll: any =
         (csToolsAnnotation as any)?.state?.getAllAnnotations?.() || [];
 
-      // 规范化为一维数组
-      if (!Array.isArray(annotationsAll)) {
-        if (annotationsAll && typeof annotationsAll === "object") {
-          annotationsAll = Object.values(annotationsAll).flat?.(2) || [];
-        } else {
-          annotationsAll = [];
-        }
-      }
-
-      // 序列化：提取可还原的核心字段，过滤函数/循环引用
-      const toSerializable = (a: any) => {
-        const metadata = a?.metadata || {};
-        const data = a?.data || {};
-        const handles = data?.handles || a?.handles || {};
-        const points = handles?.points || data?.points || [];
-        const text = data?.text || a?.text || undefined;
-        const cachedStats = data?.cachedStats || a?.cachedStats || undefined;
-        const toolName = metadata?.toolName || a?.toolName || a?.toolName?.name;
-        const imageId =
-          metadata?.referencedImageId || metadata?.imageId || a?.imageId;
-        const frameOfReferenceUID = metadata?.frameOfReferenceUID;
-
-        return {
-          annotationUID: a?.annotationUID,
-          toolName,
-          imageId,
-          frameOfReferenceUID,
-          data: {
-            points,
-            text,
-            measurements: cachedStats,
-          },
-          // 保留用户可用的 label/name（若存在）
-          label: a?.label ?? data?.label ?? undefined,
-        };
-      };
-
-      const serialized = annotationsAll
-        .map(toSerializable)
-        .filter((x: any) => x.imageId);
-
-      // 按 imageId 分组为每文件一项
-      const perImageMap: Record<string, any[]> = {};
-      for (const s of serialized) {
-        if (!perImageMap[s.imageId]) perImageMap[s.imageId] = [];
-        perImageMap[s.imageId].push(s);
-      }
-
-      const result = imageIds.map((id, index) => ({
-        index,
-        imageId: id,
-        fileName:
-          (dcmData as any)?.files?.[index]?.file_name ||
-          (dcmData as any)?.original_data?.files?.[index]?.file_name ||
-          null,
-        annotations: perImageMap[id] || [],
-      }));
-
-      const annotationData = JSON.stringify(result);
-      console.log("🚀 ~ printAnnotations ~ annotationData:", annotationData);
+      const annotationData = JSON.stringify(annotationsAll);
+      console.log("🚀 ~ printAnnotations ~ annotationsAll:", annotationsAll);
 
       if (isOriginal) {
         // 原始数据 - 管理员/教师保存
@@ -307,10 +251,23 @@ function DetailPage() {
         const response = isOriginal
           ? await getOriginalDataDetailRequest(Number(id))
           : await getStudentDataDetailRequest(Number(id));
-        console.log("🚀 ~ loadDcmData ~ response:", response);
 
         if (response.success && response.data) {
           setDcmData(response.data);
+
+          // 如果有保存的标注数据，直接保存到 Cornerstone 状态中
+          if (response.data.last_annotation?.annotation) {
+            try {
+              const savedAnnotations = JSON.parse(
+                response.data.last_annotation.annotation
+              );
+              console.log("🚀恢复标注数据:", savedAnnotations);
+              // 直接保存到 Cornerstone 状态中
+              saveAnnotationsToCornerstone(savedAnnotations);
+            } catch (error) {
+              console.warn("解析保存的标注数据失败:", error);
+            }
+          }
 
           // 初始化图像 ID 列表
           const files =
@@ -1128,6 +1085,32 @@ function DetailPage() {
       });
     }
   }, []);
+
+  // 恢复标注数据 - 使用官方方法
+  const saveAnnotationsToCornerstone = (savedAnnotations: any[]) => {
+    try {
+      console.log("🚀恢复标注数据:", savedAnnotations);
+
+      // 遍历保存的标注数据，逐个添加
+      savedAnnotations.forEach((annotation: Annotation) => {
+        try {
+          // 使用官方方法添加单个标注
+          // 第二个参数是 annotationGroupSelector，使用 FrameOfReferenceUID
+          if (annotation.metadata.FrameOfReferenceUID === "default") {
+            console.log("🚀添加标注成功:", annotation);
+            csToolsAnnotation.state.addAnnotation(
+              annotation,
+              annotation.metadata.FrameOfReferenceUID
+            );
+          }
+        } catch (error) {
+          console.warn("🚀添加单个标注失败:", error, annotation);
+        }
+      });
+    } catch (error) {
+      console.error("🚀恢复标注数据失败:", error);
+    }
+  };
 
   // 更新监控参数
   const updateMonitoringParameters = useCallback(() => {
