@@ -46,7 +46,9 @@ function ListPage(): React.JSX.Element {
       <div className="max-w-7xl mx-auto p-6 pt-3">
         <Tabs
           selectedKey={selectedTab}
-          onSelectionChange={(key) => setSelectedTab(key as "public" | "student" | "allStudent")}
+          onSelectionChange={(key) =>
+            setSelectedTab(key as "public" | "student" | "allStudent")
+          }
           variant="underlined"
           classNames={{
             tabList:
