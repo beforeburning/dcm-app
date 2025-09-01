@@ -166,6 +166,23 @@ export interface StudentListItem {
   };
 }
 
+// 学生数据详情接口
+export interface StudentDataDetail {
+  user_copy_id: number;
+  original_id: number;
+  user_id: number;
+  copy_name: string;
+  last_annotation_id: number;
+  active_flag: number;
+  created_at: string;
+  created_user_id: number;
+  updated_at: string;
+  updated_user_id: number;
+  original_data: DcmData;
+  creator: User;
+  last_annotation: any | null;
+}
+
 // OSS相关类型
 export interface OssConnectionTest {
   status: string;

@@ -48,6 +48,7 @@ import {
   type DcmData,
   copyPublicDataToPrivateRequest,
   StudentListItem,
+  getStudentDataDetailRequest,
 } from "@/api/dcm";
 import { errorHandler } from "@/utils/errorHandler";
 
@@ -276,8 +277,11 @@ function DetailPage() {
           setDcmData(response.data);
 
           // 初始化图像 ID 列表
-          if (response.data.files && response.data.files.length > 0) {
-            const ids = response.data.files.map((file) => {
+          const files =
+            (response.data as any).files ||
+            (response.data as any).original_data?.files;
+          if (files && files.length > 0) {
+            const ids = files.map((file: any) => {
               // 使用新的文件结构，直接使用 fresh_url
               return `wadouri:${file.fresh_url}`;
             });
@@ -1234,9 +1238,11 @@ function DetailPage() {
     delete: boolean;
   }>({ copy: false, delete: false });
   // 获取数据名称
-  const getDataName = (data: DcmData | StudentListItem): string => {
+  const getDataName = (data: DcmData | StudentListItem | any): string => {
     if ("name" in data) return data.name;
-    return data.copy_name || data.original_data.name;
+    if ("copy_name" in data) return data.copy_name;
+    if (data?.original_data?.name) return data.original_data.name;
+    return "未知数据";
   };
   const handleCopyData = async () => {
     if (!userInfo?.user_id) {
@@ -1315,8 +1321,14 @@ function DetailPage() {
         onPrev={goToPreviousImage}
         onNext={goToNextImage}
         onJump={(index) => switchToImage(index)}
-        currentFileName={dcmData?.files[currentImageIndex]?.file_name}
-        currentFile={dcmData?.files[currentImageIndex]}
+        currentFileName={
+          (dcmData as any)?.files?.[currentImageIndex]?.file_name ||
+          (dcmData as any)?.original_data?.files?.[currentImageIndex]?.file_name
+        }
+        currentFile={
+          (dcmData as any)?.files?.[currentImageIndex] ||
+          (dcmData as any)?.original_data?.files?.[currentImageIndex]
+        }
         dicomMetadata={dicomMetadata}
       />
 

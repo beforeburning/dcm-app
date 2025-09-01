@@ -3,6 +3,7 @@ import {
   ApiResponse,
   DcmData,
   StudentListItem,
+  StudentDataDetail,
   PaginatedResponse,
   FileDownloadUrl,
   BatchFileDownloadUrls,
@@ -24,8 +25,11 @@ export const getOriginalDataListRequest = async (
   if (search) params.search = search;
   if (category) params.category = category;
   if (status) params.status = status;
-  
-  return apiRequest.get<PaginatedResponse<DcmData>>("/admin/original-data", params);
+
+  return apiRequest.get<PaginatedResponse<DcmData>>(
+    "/admin/original-data",
+    params
+  );
 };
 
 // 创建原始数据（管理员）
@@ -44,8 +48,12 @@ export const createOriginalDataRequest = async (data: {
 };
 
 // 获取单个原始数据详情（管理员）
-export const getOriginalDataDetailRequest = async (id: number): Promise<ApiResponse<DcmData>> => {
-  return apiRequest.get<DcmData>(`/admin/original-data/detail?original_id=${id}`);
+export const getOriginalDataDetailRequest = async (
+  id: number
+): Promise<ApiResponse<DcmData>> => {
+  return apiRequest.get<DcmData>(
+    `/admin/original-data/detail?original_id=${id}`
+  );
 };
 
 // 更新原始数据（管理员）
@@ -75,17 +83,24 @@ export const getUserAccessibleDataRequest = async (
   const params: any = { page, per_page };
   if (search) params.search = search;
   if (category) params.category = category;
-  
-  return apiRequest.get<PaginatedResponse<DcmData>>("/user/original-data", params);
+
+  return apiRequest.get<PaginatedResponse<DcmData>>(
+    "/user/original-data",
+    params
+  );
 };
 
 // 获取DCM文件下载链接
-export const getDcmFileUrlRequest = async (fileId: number): Promise<ApiResponse<FileDownloadUrl>> => {
+export const getDcmFileUrlRequest = async (
+  fileId: number
+): Promise<ApiResponse<FileDownloadUrl>> => {
   return apiRequest.get<FileDownloadUrl>(`/user/dcm-file/${fileId}/url`);
 };
 
 // 批量获取DCM文件下载链接
-export const getBatchDcmFileUrlsRequest = async (fileIds: number[]): Promise<ApiResponse<BatchFileDownloadUrls>> => {
+export const getBatchDcmFileUrlsRequest = async (
+  fileIds: number[]
+): Promise<ApiResponse<BatchFileDownloadUrls>> => {
   return apiRequest.post<BatchFileDownloadUrls>("/user/dcm-files/batch-urls", {
     file_ids: fileIds,
   });
@@ -96,13 +111,18 @@ export const saveDcmAnnotationsRequest = async (
   dataId: number,
   annotations: any
 ): Promise<ApiResponse<AnnotationSaveResponse>> => {
-  return apiRequest.post<AnnotationSaveResponse>(`/user/dcm-data/${dataId}/annotations`, {
-    annotations: JSON.stringify(annotations),
-  });
+  return apiRequest.post<AnnotationSaveResponse>(
+    `/user/dcm-data/${dataId}/annotations`,
+    {
+      annotations: JSON.stringify(annotations),
+    }
+  );
 };
 
 // 获取DCM注释数据
-export const getDcmAnnotationsRequest = async (dataId: number): Promise<ApiResponse<AnnotationData>> => {
+export const getDcmAnnotationsRequest = async (
+  dataId: number
+): Promise<ApiResponse<AnnotationData>> => {
   return apiRequest.get<AnnotationData>(`/user/dcm-data/${dataId}/annotations`);
 };
 
@@ -112,7 +132,10 @@ export const getDcmAnnotationsRequest = async (dataId: number): Promise<ApiRespo
 export const getUserCopyListRequest = async (data: {
   original_id: number;
 }): Promise<ApiResponse<PaginatedResponse<StudentListItem>>> => {
-  return apiRequest.get<PaginatedResponse<StudentListItem>>("/student/userCopy", data);
+  return apiRequest.get<PaginatedResponse<StudentListItem>>(
+    "/student/userCopy",
+    data
+  );
 };
 
 // 复制公共数据到私有（学生）
@@ -126,12 +149,16 @@ export const copyPublicDataToPrivateRequest = async (data: {
 // 获取学生单条数据详情（含最新的标记数据）
 export const getStudentDataDetailRequest = async (
   userCopyId: number
-): Promise<ApiResponse<DcmData & { annotations?: any }>> => {
-  return apiRequest.get<DcmData & { annotations?: any }>(`/student/copy/detail?user_copy_id=${userCopyId}`);
+): Promise<ApiResponse<StudentDataDetail>> => {
+  return apiRequest.get<StudentDataDetail>(
+    `/student/copy/detail?user_copy_id=${userCopyId}`
+  );
 };
 
 // 删除学生复制的数据
-export const deleteOriginalDataRequest = async (userCopyId: number): Promise<ApiResponse<any[]>> => {
+export const deleteOriginalDataRequest = async (
+  userCopyId: number
+): Promise<ApiResponse<any[]>> => {
   return apiRequest.post<any[]>("/student/del", { user_copy_id: userCopyId });
 };
 
