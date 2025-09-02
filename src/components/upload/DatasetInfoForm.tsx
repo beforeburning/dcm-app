@@ -22,11 +22,12 @@ interface DatasetInfoFormProps {
 }
 
 const categoryOptions = [
-  { key: "1", label: "X光" },
+  { key: "1", label: "X光影像" },
   { key: "2", label: "CT" },
   { key: "3", label: "MRI" },
   { key: "4", label: "超声" },
   { key: "5", label: "PET" },
+  { key: "6", label: "病理图像" },
 ];
 
 export const DatasetInfoForm: React.FC<DatasetInfoFormProps> = ({

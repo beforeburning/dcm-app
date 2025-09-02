@@ -30,11 +30,12 @@ const DataCardInfo: React.FC<DataCardInfoProps> = ({
   // 分类显示映射
   const getCategoryLabel = (category?: number): string => {
     const categoryMap: { [key: number]: string } = {
-      1: "X光",
+      1: "X光影像",
       2: "CT",
       3: "MRI",
       4: "超声",
       5: "PET",
+      6: "病理图像",
     };
     return category ? categoryMap[category] || "未分类" : "未分类";
   };

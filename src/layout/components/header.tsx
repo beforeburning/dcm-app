@@ -32,6 +32,7 @@ const HeaderComponents = (): React.JSX.Element => {
       description: "已退出登录",
     });
     logout();
+    navigate("/");
   };
 
   const handleBack = (): void => {

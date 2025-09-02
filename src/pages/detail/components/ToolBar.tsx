@@ -8,12 +8,16 @@ type Props = {
   isInitialized: boolean;
   activeTool: string;
   onSwitch: (tool: ToolName | string) => void;
+  annotationColor: string;
+  onColorChange: (color: string) => void;
 };
 
 export default function ToolBar({
   isInitialized,
   activeTool,
   onSwitch,
+  annotationColor,
+  onColorChange,
 }: Props) {
   if (!isInitialized) return null;
 
@@ -66,6 +70,38 @@ export default function ToolBar({
           操作:
         </span>
         <ToolButton name="DeleteAnnotation" label="🗑️ 删除" />
+
+        <span className="text-yellow-300 text-xs mr-1 ml-3">颜色:</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={annotationColor}
+            onChange={(e) => onColorChange(e.target.value)}
+            className="w-8 h-8 rounded border-2 border-gray-400 cursor-pointer"
+            title="选择标注颜色"
+          />
+          <button
+            onClick={() => onColorChange(annotationColor)}
+            className="px-2 py-1 text-xs rounded bg-yellow-600 text-white hover:bg-yellow-700 transition-all"
+            title="应用当前颜色到所有标注"
+          >
+            🎨 应用
+          </button>
+          <button
+            onClick={() => onColorChange("#ff0000")}
+            className="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700 transition-all"
+            title="测试红色"
+          >
+            🔴 红
+          </button>
+          <button
+            onClick={() => onColorChange("#00ff00")}
+            className="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700 transition-all"
+            title="测试绿色"
+          >
+            🟢 绿
+          </button>
+        </div>
       </div>
 
       <div className="text-xs text-gray-300 py-1 rounded">
