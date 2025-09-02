@@ -64,7 +64,10 @@ import {
   updateStudentAnnotationRequest,
 } from "@/api/dicom";
 import { StudentCopyDataDetail, OriginalDataDetail } from "@/types/api";
-import { Annotation } from "@cornerstonejs/tools/types/AnnotationTypes";
+import {
+  Annotation,
+  Annotations,
+} from "@cornerstonejs/tools/types/AnnotationTypes";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -108,8 +111,8 @@ function DetailPage() {
   const printAnnotations = useCallback(async () => {
     try {
       // 收集所有标注
-      let annotationsAll: any =
-        (csToolsAnnotation as any)?.state?.getAllAnnotations?.() || [];
+      let annotationsAll: Annotations =
+        csToolsAnnotation.state?.getAllAnnotations?.() || [];
 
       const annotationData = JSON.stringify(annotationsAll);
       console.log("🚀 ~ printAnnotations ~ annotationsAll:", annotationsAll);
@@ -847,7 +850,7 @@ function DetailPage() {
           saveAnnotationsToCornerstone(savedAnnotations);
           // 恢复完成后清空状态
           setSavedAnnotations([]);
-        }, 500); // 延迟 500ms 确保渲染引擎完全就绪
+        }, 2000); // 延迟 500ms 确保渲染引擎完全就绪
       }
     } catch (err) {
       console.error("加载 DICOM 文件失败:", err);
