@@ -221,6 +221,7 @@ export interface StudentCopyDataDetail {
     updated_at: string;
     updated_user_id: number;
   } | null;
+  files: DcmFile[];
 }
 
 // 原始数据详情接口（新的结构，匹配API返回）

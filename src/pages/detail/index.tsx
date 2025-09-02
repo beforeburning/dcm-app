@@ -112,10 +112,30 @@ function DetailPage() {
     try {
       // 收集所有标注
       let annotationsAll: Annotations =
-        csToolsAnnotation.state?.getAllAnnotations?.() || [];
+        csToolsAnnotation.state.getAllAnnotations() || [];
 
-      const annotationData = JSON.stringify(annotationsAll);
-      console.log("🚀 ~ printAnnotations ~ annotationsAll:", annotationsAll);
+      let annotationsAllCopy: Annotations = JSON.parse(
+        JSON.stringify(annotationsAll)
+      );
+      console.log(
+        "🚀 ~ printAnnotations ~ annotationsAllCopy:",
+        annotationsAllCopy
+      );
+
+      let arr = annotationsAllCopy.map((item: Annotation) => {
+        let key = Object.keys(item.data.cachedStats)[0].split("?")[0];
+        let value = Object.values(item.data.cachedStats)[0];
+        let newValue = {
+          [key]: value,
+        };
+        item.data.cachedStats = newValue;
+        item.metadata.referencedImageId =
+          item.metadata.referencedImageId.split("?")[0];
+
+        return item;
+      });
+      const annotationData = JSON.stringify(arr);
+      console.log("🚀 ~ printAnnotations ~ annotationsAll:", arr);
 
       if (isOriginal) {
         // 原始数据 - 管理员/教师保存
@@ -846,11 +866,12 @@ function DetailPage() {
       // 恢复保存的标注数据
       if (savedAnnotations.length > 0) {
         console.log("🚀开始恢复标注数据...");
-        setTimeout(() => {
-          saveAnnotationsToCornerstone(savedAnnotations);
-          // 恢复完成后清空状态
-          setSavedAnnotations([]);
-        }, 2000); // 延迟 500ms 确保渲染引擎完全就绪
+        console.log("🚀当前工具组:", toolGroupRef.current);
+        console.log("🚀当前渲染引擎:", renderingEngineRef.current);
+
+        saveAnnotationsToCornerstone(savedAnnotations);
+        // 恢复完成后清空状态
+        setSavedAnnotations([]);
       }
     } catch (err) {
       console.error("加载 DICOM 文件失败:", err);
@@ -1102,11 +1123,36 @@ function DetailPage() {
 
   // 恢复标注数据 - 使用官方方法
   const saveAnnotationsToCornerstone = (savedAnnotations: any[]) => {
+    if (!dcmData.files) {
+      return;
+    }
     try {
-      console.log("🚀恢复标注数据:", savedAnnotations);
+      let file = dcmData.files.map((item) => {
+        return {
+          name: item.file_name,
+          url: item.fresh_url,
+        };
+      });
+      console.log("🚀恢复标注数据:", file);
+
+      let data = savedAnnotations.map((item: Annotation) => {
+        file.map((fileItem) => {
+          if (item.metadata.referencedImageId.includes(fileItem.name)) {
+            item.metadata.referencedImageId = `wadouri:${fileItem.url}`;
+
+            let value = Object.values(item.data.cachedStats)[0];
+            item.data.cachedStats = {
+              [`imageId:wadouri:${fileItem.url}`]: value,
+            };
+          }
+        });
+        return item;
+      });
+      console.log("🚀 ~ saveAnnotationsToCornerstone ~ data:", data);
 
       // 遍历保存的标注数据，逐个添加
-      savedAnnotations.forEach((annotation: any) => {
+      data.forEach((annotation: any) => {
+        console.log("🚀 ~ savedAnnotations.forEach ~ annotation:", annotation);
         try {
           // 确保标注有正确的 metadata 结构
           if (!annotation.metadata) {
@@ -1121,13 +1167,44 @@ function DetailPage() {
             annotation.metadata.FrameOfReferenceUID = "default";
           }
 
+          // 确保有正确的 toolName
+          if (!annotation.metadata.toolName) {
+            annotation.metadata.toolName = annotation.toolName || "Length";
+          }
+
+          // 确保标注有正确的数据结构
+          if (!annotation.data) {
+            annotation.data = {
+              points: annotation.points || [],
+              measurements: annotation.measurements || {},
+            };
+          }
+
           console.log("🚀添加标注:", annotation);
 
           // 使用官方方法添加单个标注
-          csToolsAnnotation.state.addAnnotation(
+          // 根据文档，第二个参数应该是 element 或 FrameOfReferenceUID
+          // 我们使用当前视口元素来确保标注被正确绑定到视口
+          const annotationUID = csToolsAnnotation.state.addAnnotation(
             annotation,
-            annotation.metadata.FrameOfReferenceUID
+            elementRef.current // 使用 DOM 元素作为 annotationGroupSelector
           );
+
+          // 验证标注是否真的被添加了
+          console.log(`🚀标注 ${annotationUID} 已添加到状态`);
+
+          // 根据文档，需要触发标注添加事件到元素
+          if (elementRef.current) {
+            try {
+              csToolsAnnotation.state.triggerAnnotationAddedForElement(
+                annotation,
+                elementRef.current
+              );
+              console.log(`🚀已触发标注添加事件到元素`);
+            } catch (error) {
+              console.warn("🚀触发标注添加事件失败:", error);
+            }
+          }
 
           console.log("🚀添加标注成功:", annotation.annotationUID);
         } catch (error) {
@@ -1138,7 +1215,40 @@ function DetailPage() {
       // 强制重新渲染视口以显示标注
       if (renderingEngineRef.current) {
         setTimeout(() => {
-          renderingEngineRef.current.render();
+          try {
+            // 确保工具组中的标注被正确渲染
+            const toolGroup = toolGroupRef.current;
+            if (toolGroup) {
+              // 重新激活当前工具以确保标注显示
+              const currentTool = activeTool;
+              if (currentTool && currentTool !== "DeleteAnnotation") {
+                toolGroup.setToolActive(currentTool, {
+                  bindings: [{ mouseButton: MouseBindings.Primary }],
+                });
+              }
+            }
+
+            // 关键：确保标注数据被绑定到视口
+            const viewport =
+              renderingEngineRef.current.getViewport("CT_SAGITTAL_STACK");
+            if (viewport) {
+              // 触发视口重新渲染事件
+              viewport.render();
+            }
+
+            // 强制重新渲染
+            renderingEngineRef.current.render();
+            console.log("🚀标注恢复完成，已强制重新渲染");
+
+            // 验证标注是否真的存在
+            setTimeout(() => {
+              const allAnnotations =
+                csToolsAnnotation.state.getAllAnnotations();
+              console.log("🚀恢复后的所有标注:", allAnnotations);
+            }, 200);
+          } catch (error) {
+            console.warn("强制渲染失败:", error);
+          }
         }, 100);
       }
     } catch (error) {
