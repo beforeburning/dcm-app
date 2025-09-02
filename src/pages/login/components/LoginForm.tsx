@@ -57,18 +57,18 @@ export const LoginForm: React.FC = () => {
     <div className="space-y-6">
       {/* 邮箱 */}
       <div>
-        <div className="block text-sm font-medium text-white mb-2">邮箱</div>
+        <div className="block text-sm font-medium text-white mb-2">用户</div>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyPress={handleKeyPress}
           className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="请输入邮箱"
+          placeholder="请输入用户"
           disabled={loading}
         />
         <div className="text-xs text-gray-400 mt-1">
-          测试账号：18151602693@163.com(管理员) / drqfh06450@atminmail.com(用户)
+          admin@163.com(管理员) / drqfh06450@atminmail.com(用户)
         </div>
       </div>
 

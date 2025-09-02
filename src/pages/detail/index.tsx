@@ -1096,11 +1096,6 @@ function DetailPage() {
         (csToolsAnnotation as any).state.removeAnnotation(annotationId);
         console.log("标注已删除:", annotationId);
 
-        addToast({
-          color: "success",
-          description: "标注已删除",
-        });
-
         // 重新渲染
         if (renderingEngineRef.current) {
           renderingEngineRef.current.render();
