@@ -132,7 +132,7 @@ const StudentDataList = forwardRef<StudentDataListRef, StudentDataListProps>(
                   {data.map((item) => (
                     <>
                       <DataCard
-                        key={item.user_copy_id}
+                        key={`StudentDataList${item.user_copy_id}`}
                         dcm={item}
                         onFileClick={onFileClick}
                         onDataChange={fetchData}

@@ -94,16 +94,18 @@ function PublicDataList({
         <CardBody className="p-6">
           <div className="space-y-4">
             {data.map((dcm) => (
-              <DataCard
-                key={dcm.original_id}
-                dcm={dcm}
-                onFileClick={onFileClick}
-                onDataChange={fetchData}
-                onCopySuccess={onCopySuccess}
-                isPublicData={true}
-                showCopyButton={isStudent}
-                showEditButton={hasTeacherPermission}
-              />
+              <>
+                <DataCard
+                  key={`PublicDataList${dcm.original_id}`}
+                  dcm={dcm}
+                  onFileClick={onFileClick}
+                  onDataChange={fetchData}
+                  onCopySuccess={onCopySuccess}
+                  isPublicData={true}
+                  showCopyButton={isStudent}
+                  showEditButton={hasTeacherPermission}
+                />
+              </>
             ))}
           </div>
 

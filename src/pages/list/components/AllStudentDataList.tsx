@@ -127,7 +127,7 @@ function AllStudentDataList({
               <div className="space-y-4">
                 {data.map((dcm) => (
                   <DataCard
-                    key={dcm.original_id}
+                    key={`AllStudentDataList${dcm.original_id}`}
                     dcm={dcm}
                     onFileClick={onFileClick}
                     onDataChange={fetchData}
