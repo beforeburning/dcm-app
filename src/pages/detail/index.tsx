@@ -200,7 +200,6 @@ function DetailPage() {
             (viewport as any).resetCamera();
           }
 
-          // 默认缩放 0.9
           try {
             const cam = (viewport as any)?.getCamera?.();
             const basePS = cam?.parallelScale;
@@ -933,8 +932,6 @@ function DetailPage() {
 
       // 依据工具设置正确的鼠标绑定
       const primary = [{ mouseButton: MouseBindings.Primary }];
-      const secondary = [{ mouseButton: MouseBindings.Secondary }];
-      const auxiliary = [{ mouseButton: MouseBindings.Auxiliary }];
 
       const setActive = (tool: any, bindings: any) => {
         try {
