@@ -283,11 +283,14 @@ function DetailPage() {
           setDcmData(response.data);
 
           // 如果有保存的标注数据，保存到状态中，等待 Cornerstone 初始化后恢复
-          if (response.data.last_annotation?.annotation) {
+
+          let data =
+            response.data.last_annotation?.annotation ||
+            (response.data as any)?.original_data?.last_annotation?.annotation;
+
+          if (data) {
             try {
-              const savedAnnotations = JSON.parse(
-                response.data.last_annotation.annotation
-              );
+              const savedAnnotations = JSON.parse(data);
               console.log("🚀解析保存的标注数据:", savedAnnotations);
               // 保存到状态中，等待后续恢复
               setSavedAnnotations(savedAnnotations);
@@ -389,7 +392,6 @@ function DetailPage() {
           console.warn("设置 dicomImageLoader 调试选项失败（可忽略）", e);
         }
 
-        console.log(dicomImageLoader);
         // 配置 Web Workers（禁用以避免在深路径刷新时的 worker 404 问题）
         try {
           (dicomImageLoader as any).configure({ useWebWorkers: false });

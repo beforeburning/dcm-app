@@ -30,14 +30,6 @@ export async function getDicomMetadata(imageId: string, renderingEngine?: any) {
       return null;
     }
 
-    console.log("图像数据:", imageData);
-
-    // 检查 Cornerstone.js 的元数据 API
-    console.log("Cornerstone metaData API:", cornerstone.metaData);
-    if (cornerstone.metaData) {
-      console.log("metaData 可用方法:", Object.keys(cornerstone.metaData));
-    }
-
     // 获取图像尺寸
     const rows = imageData?.rows || imageData?.height || 0;
     const columns = imageData?.columns || imageData?.width || 0;
