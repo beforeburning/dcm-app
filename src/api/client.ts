@@ -42,22 +42,24 @@ apiClient.interceptors.response.use(
 // 通用API请求方法
 export const apiRequest = {
   get: <T>(url: string, params?: any): Promise<ApiResponse<T>> =>
-    apiClient.get(url, { params }).then(res => res.data),
-    
+    apiClient.get(url, { params }).then((res) => res.data),
+
   post: <T>(url: string, data?: any, config?: any): Promise<ApiResponse<T>> =>
-    apiClient.post(url, data, config).then(res => res.data),
-    
+    apiClient.post(url, data, config).then((res) => res.data),
+
   put: <T>(url: string, data?: any): Promise<ApiResponse<T>> =>
-    apiClient.put(url, data).then(res => res.data),
-    
+    apiClient.put(url, data).then((res) => res.data),
+
   delete: <T>(url: string): Promise<ApiResponse<T>> =>
-    apiClient.delete(url).then(res => res.data),
-    
+    apiClient.delete(url).then((res) => res.data),
+
   upload: <T>(url: string, file: File): Promise<ApiResponse<T>> => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiClient.post(url, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    }).then(res => res.data);
-  }
+    return apiClient
+      .post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
 };
