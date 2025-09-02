@@ -123,12 +123,15 @@ function DetailPage() {
       );
 
       let arr = annotationsAllCopy.map((item: Annotation) => {
-        let key = Object.keys(item.data.cachedStats)[0].split("?")[0];
-        let value = Object.values(item.data.cachedStats)[0];
-        let newValue = {
-          [key]: value,
-        };
-        item.data.cachedStats = newValue;
+        if (JSON.stringify(item.data.cachedStats) !== "{}") {
+          let key = Object.keys(item.data.cachedStats)[0].split("?")[0];
+          let value = Object.values(item.data.cachedStats)[0];
+          let newValue = {
+            [key]: value,
+          };
+          item.data.cachedStats = newValue;
+        }
+
         item.metadata.referencedImageId =
           item.metadata.referencedImageId.split("?")[0];
 
@@ -866,8 +869,6 @@ function DetailPage() {
       // 恢复保存的标注数据
       if (savedAnnotations.length > 0) {
         console.log("🚀开始恢复标注数据...");
-        console.log("🚀当前工具组:", toolGroupRef.current);
-        console.log("🚀当前渲染引擎:", renderingEngineRef.current);
 
         saveAnnotationsToCornerstone(savedAnnotations);
         // 恢复完成后清空状态
@@ -1123,11 +1124,10 @@ function DetailPage() {
 
   // 恢复标注数据 - 使用官方方法
   const saveAnnotationsToCornerstone = (savedAnnotations: any[]) => {
-    if (!dcmData.files) {
-      return;
-    }
+    const files =
+      dcmData.files || (dcmData as StudentCopyDataDetail).original_data?.files;
     try {
-      let file = dcmData.files.map((item) => {
+      let file = files.map((item) => {
         return {
           name: item.file_name,
           url: item.fresh_url,
@@ -1140,10 +1140,12 @@ function DetailPage() {
           if (item.metadata.referencedImageId.includes(fileItem.name)) {
             item.metadata.referencedImageId = `wadouri:${fileItem.url}`;
 
-            let value = Object.values(item.data.cachedStats)[0];
-            item.data.cachedStats = {
-              [`imageId:wadouri:${fileItem.url}`]: value,
-            };
+            if (JSON.stringify(item.data.cachedStats) !== "{}") {
+              let value = Object.values(item.data.cachedStats)[0];
+              item.data.cachedStats = {
+                [`imageId:wadouri:${fileItem.url}`]: value,
+              };
+            }
           }
         });
         return item;
