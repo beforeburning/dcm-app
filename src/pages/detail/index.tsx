@@ -67,6 +67,7 @@ import {
   Annotation,
   Annotations,
 } from "@cornerstonejs/tools/types/AnnotationTypes";
+import deepMerge from "@cornerstonejs/core/utilities/deepMerge";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
@@ -714,51 +715,7 @@ function DetailPage() {
         bindings: [{ mouseButton: MouseBindings.Secondary }],
       });
 
-      // // 设置标注工具的默认颜色
-      // const annotationTools = [
-      //   LengthTool.toolName,
-      //   RectangleROITool.toolName,
-      //   EllipticalROITool.toolName,
-      //   CircleROITool.toolName,
-      //   ArrowAnnotateTool.toolName,
-      //   ProbeTool.toolName,
-      //   AngleTool.toolName,
-      //   BidirectionalTool.toolName,
-      //   PlanarFreehandROITool.toolName,
-      //   CobbAngleTool.toolName,
-      //   RectangleROIStartEndThresholdTool.toolName,
-      //   RectangleROIThresholdTool.toolName,
-      //   SplineROITool.toolName,
-      //   LivewireContourTool.toolName,
-      //   LabelTool.toolName,
-      // ];
-
-      // // 为每个标注工具设置默认颜色
-      // annotationTools.forEach((toolName) => {
-      //   try {
-      //     // 尝试多种颜色配置方式
-      //     const config = {
-      //       color: annotationColor,
-      //       fillColor: annotationColor,
-      //       lineColor: annotationColor,
-      //       strokeColor: annotationColor,
-      //       annotationColor: annotationColor,
-      //       defaultColor: annotationColor,
-      //     };
-
-      //     // 使用可选链操作符避免方法不存在错误
-      //     if (toolGroup.setToolConfiguration) {
-      //       toolGroup.setToolConfiguration(toolName, config);
-      //       console.log(`🚀已设置工具 ${toolName} 初始颜色配置:`, config);
-      //     } else {
-      //       console.log(
-      //         `🚀工具组不支持 setToolConfiguration 方法，跳过颜色配置`
-      //       );
-      //     }
-      //   } catch (error) {
-      //     console.warn(`设置工具 ${toolName} 初始颜色失败:`, error);
-      //   }
-      // });
+      // 不设置初始颜色，让每个工具使用默认颜色
 
       // 将工具组添加到视口
       toolGroup.addViewport(viewportId, renderingEngineId);
@@ -782,8 +739,6 @@ function DetailPage() {
         const imageId = "wadouri:/3.dcm";
         currentImageIds = [imageId];
       }
-
-      console.log("加载图像 ID:", currentImageIds);
 
       // 设置图像堆栈（只显示当前图像）
       if (seq !== loadSeqRef.current) return;
@@ -1159,17 +1114,126 @@ function DetailPage() {
     }
   }, []);
 
-  // 修改标注颜色
+  // 修改接下来标注颜色
   const changeAnnotationColor = useCallback((color: string) => {
+    setAnnotationColor(color);
+
     try {
-      setAnnotationColor(color);
-      console.log("🚀设置标注颜色:", color);
+      // 获取当前的默认工具样式
+      const currentStyles =
+        csToolsAnnotation.config.style.getDefaultToolStyles();
+      console.log("🚀 ~ 当前默认样式:", currentStyles);
+
+      // 创建新的样式配置
+      const newStyles = {
+        // 为所有标注工具设置默认颜色
+        LengthTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        RectangleROITool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        EllipticalROITool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        CircleROITool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        ArrowAnnotateTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        ProbeTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        AngleTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        BidirectionalTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        PlanarFreehandROITool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        CobbAngleTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        RectangleROIStartEndThresholdTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        RectangleROIThresholdTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        SplineROITool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        LivewireContourTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        LabelTool: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+        // 全局设置，影响所有工具的新标注
+        global: {
+          color: color,
+          colorActive: color,
+          colorHighlighted: color,
+          colorSelected: color,
+        },
+      };
+
+      // 合并样式并设置
+      const mergedStyles = deepMerge(currentStyles, newStyles);
+      csToolsAnnotation.config.style.setDefaultToolStyles(mergedStyles);
+
+      console.log(`🚀已使用 setDefaultToolStyles 设置新标注使用颜色:`, color);
+      console.log("🚀 ~ 合并后的样式:", mergedStyles);
     } catch (error) {
-      console.error("修改标注颜色失败:", error);
-      addToast({
-        color: "danger",
-        description: "修改标注颜色失败",
-      });
+      console.warn("🚀设置默认工具样式失败:", error);
     }
   }, []);
 
@@ -1434,6 +1498,16 @@ function DetailPage() {
     goToNextImage,
     handleDeleteAnnotation,
   ]);
+
+  // 可选：把 #rrggbb 转 rgb(r,g,b)
+  function hexToRgb(hex: string) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!m) return hex;
+    return `rgb(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(
+      m[3],
+      16
+    )})`;
+  }
 
   // 监听窗口尺寸变化，调整视口大小
   useEffect(() => {
