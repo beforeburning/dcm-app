@@ -714,51 +714,51 @@ function DetailPage() {
         bindings: [{ mouseButton: MouseBindings.Secondary }],
       });
 
-      // 设置标注工具的默认颜色
-      const annotationTools = [
-        LengthTool.toolName,
-        RectangleROITool.toolName,
-        EllipticalROITool.toolName,
-        CircleROITool.toolName,
-        ArrowAnnotateTool.toolName,
-        ProbeTool.toolName,
-        AngleTool.toolName,
-        BidirectionalTool.toolName,
-        PlanarFreehandROITool.toolName,
-        CobbAngleTool.toolName,
-        RectangleROIStartEndThresholdTool.toolName,
-        RectangleROIThresholdTool.toolName,
-        SplineROITool.toolName,
-        LivewireContourTool.toolName,
-        LabelTool.toolName,
-      ];
+      // // 设置标注工具的默认颜色
+      // const annotationTools = [
+      //   LengthTool.toolName,
+      //   RectangleROITool.toolName,
+      //   EllipticalROITool.toolName,
+      //   CircleROITool.toolName,
+      //   ArrowAnnotateTool.toolName,
+      //   ProbeTool.toolName,
+      //   AngleTool.toolName,
+      //   BidirectionalTool.toolName,
+      //   PlanarFreehandROITool.toolName,
+      //   CobbAngleTool.toolName,
+      //   RectangleROIStartEndThresholdTool.toolName,
+      //   RectangleROIThresholdTool.toolName,
+      //   SplineROITool.toolName,
+      //   LivewireContourTool.toolName,
+      //   LabelTool.toolName,
+      // ];
 
-      // 为每个标注工具设置默认颜色
-      annotationTools.forEach((toolName) => {
-        try {
-          // 尝试多种颜色配置方式
-          const config = {
-            color: annotationColor,
-            fillColor: annotationColor,
-            lineColor: annotationColor,
-            strokeColor: annotationColor,
-            annotationColor: annotationColor,
-            defaultColor: annotationColor,
-          };
+      // // 为每个标注工具设置默认颜色
+      // annotationTools.forEach((toolName) => {
+      //   try {
+      //     // 尝试多种颜色配置方式
+      //     const config = {
+      //       color: annotationColor,
+      //       fillColor: annotationColor,
+      //       lineColor: annotationColor,
+      //       strokeColor: annotationColor,
+      //       annotationColor: annotationColor,
+      //       defaultColor: annotationColor,
+      //     };
 
-          // 使用可选链操作符避免方法不存在错误
-          if (toolGroup.setToolConfiguration) {
-            toolGroup.setToolConfiguration(toolName, config);
-            console.log(`🚀已设置工具 ${toolName} 初始颜色配置:`, config);
-          } else {
-            console.log(
-              `🚀工具组不支持 setToolConfiguration 方法，跳过颜色配置`
-            );
-          }
-        } catch (error) {
-          console.warn(`设置工具 ${toolName} 初始颜色失败:`, error);
-        }
-      });
+      //     // 使用可选链操作符避免方法不存在错误
+      //     if (toolGroup.setToolConfiguration) {
+      //       toolGroup.setToolConfiguration(toolName, config);
+      //       console.log(`🚀已设置工具 ${toolName} 初始颜色配置:`, config);
+      //     } else {
+      //       console.log(
+      //         `🚀工具组不支持 setToolConfiguration 方法，跳过颜色配置`
+      //       );
+      //     }
+      //   } catch (error) {
+      //     console.warn(`设置工具 ${toolName} 初始颜色失败:`, error);
+      //   }
+      // });
 
       // 将工具组添加到视口
       toolGroup.addViewport(viewportId, renderingEngineId);
@@ -1164,99 +1164,6 @@ function DetailPage() {
     try {
       setAnnotationColor(color);
       console.log("🚀设置标注颜色:", color);
-
-      // 尝试通过 Cornerstone.js 的全局配置设置颜色
-      try {
-        // 方法1: 通过工具组配置
-        if (toolGroupRef.current) {
-          const toolGroup = toolGroupRef.current;
-          const annotationTools = [
-            LengthTool.toolName,
-            RectangleROITool.toolName,
-            EllipticalROITool.toolName,
-            CircleROITool.toolName,
-            ArrowAnnotateTool.toolName,
-            ProbeTool.toolName,
-            AngleTool.toolName,
-            BidirectionalTool.toolName,
-            PlanarFreehandROITool.toolName,
-            CobbAngleTool.toolName,
-            RectangleROIStartEndThresholdTool.toolName,
-            RectangleROIThresholdTool.toolName,
-            SplineROITool.toolName,
-            LivewireContourTool.toolName,
-            LabelTool.toolName,
-          ];
-
-          // 为每个标注工具设置新的颜色配置
-          annotationTools.forEach((toolName) => {
-            try {
-              // 尝试多种颜色配置方式
-              const config = {
-                color: color,
-                fillColor: color,
-                lineColor: color,
-                strokeColor: color,
-                // 一些工具可能使用这些属性
-                annotationColor: color,
-                defaultColor: color,
-              };
-
-              // 使用可选链操作符避免方法不存在错误
-              if (toolGroup.setToolConfiguration) {
-                toolGroup.setToolConfiguration(toolName, config);
-                console.log(`🚀已设置工具 ${toolName} 颜色配置:`, config);
-              } else {
-                console.warn(`工具组不支持 setToolConfiguration 方法`);
-              }
-            } catch (error) {
-              console.warn(`设置工具 ${toolName} 颜色失败:`, error);
-            }
-          });
-        }
-
-        // 方法2: 尝试通过 Cornerstone Tools 的全局配置
-        if ((csToolsAnnotation as any)?.state?.setAnnotationManager) {
-          console.log("🚀尝试通过全局配置设置颜色");
-        }
-      } catch (error) {
-        console.warn("🚀工具组颜色配置失败:", error);
-      }
-
-      // 获取所有现有标注，更新颜色
-      const allAnnotations = csToolsAnnotation.state.getAllAnnotations();
-      if (allAnnotations && Array.isArray(allAnnotations)) {
-        console.log("🚀找到现有标注数量:", allAnnotations.length);
-
-        // 遍历所有标注，更新颜色
-        allAnnotations.forEach((annotation: any) => {
-          if (annotation.metadata) {
-            annotation.metadata.segmentColor = color;
-            // 尝试其他可能的颜色属性
-            annotation.metadata.color = color;
-            annotation.metadata.annotationColor = color;
-          }
-          // 直接设置标注对象的颜色属性
-          if (annotation.data) {
-            annotation.data.color = color;
-            annotation.data.fillColor = color;
-            annotation.data.lineColor = color;
-          }
-        });
-
-        // 强制重新渲染
-        if (renderingEngineRef.current) {
-          renderingEngineRef.current.render();
-          console.log("🚀已强制重新渲染");
-        }
-
-        addToast({
-          color: "success",
-          description: "标注颜色已更新",
-        });
-      } else {
-        console.log("🚀没有找到现有标注");
-      }
     } catch (error) {
       console.error("修改标注颜色失败:", error);
       addToast({

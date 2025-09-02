@@ -81,13 +81,6 @@ export default function ToolBar({
             title="选择标注颜色"
           />
           <button
-            onClick={() => onColorChange(annotationColor)}
-            className="px-2 py-1 text-xs rounded bg-yellow-600 text-white hover:bg-yellow-700 transition-all"
-            title="应用当前颜色到所有标注"
-          >
-            🎨 应用
-          </button>
-          <button
             onClick={() => onColorChange("#ff0000")}
             className="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700 transition-all"
             title="测试红色"
