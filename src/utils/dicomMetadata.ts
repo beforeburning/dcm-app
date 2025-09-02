@@ -8,8 +8,6 @@ import * as cornerstone from "@cornerstonejs/core";
  */
 export async function getDicomMetadata(imageId: string, renderingEngine?: any) {
   try {
-    console.log("开始获取 DICOM 元数据，imageId:", imageId);
-
     // 如果没有渲染引擎，无法获取元数据
     if (!renderingEngine) {
       console.warn("渲染引擎未提供，无法获取元数据");
@@ -105,7 +103,6 @@ export async function getDicomMetadata(imageId: string, renderingEngine?: any) {
       acquisitionDate: getTagValue("00080022"),
     };
 
-    console.log("DICOM 元数据:", dicomMetadata);
     return dicomMetadata;
   } catch (error) {
     console.error("获取 DICOM 元数据失败:", error);

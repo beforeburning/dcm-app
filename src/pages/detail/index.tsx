@@ -118,10 +118,6 @@ function DetailPage() {
       let annotationsAllCopy: Annotations = JSON.parse(
         JSON.stringify(annotationsAll)
       );
-      console.log(
-        "🚀 ~ printAnnotations ~ annotationsAllCopy:",
-        annotationsAllCopy
-      );
 
       let arr = annotationsAllCopy.map((item: Annotation) => {
         if (JSON.stringify(item.data.cachedStats) !== "{}") {
@@ -135,6 +131,30 @@ function DetailPage() {
 
         item.metadata.referencedImageId =
           item.metadata.referencedImageId.split("?")[0];
+
+        // 写入当前标注的颜色到保存数据中
+        try {
+          const toolName = item?.metadata?.toolName || (item as any)?.toolName;
+          let effectiveColor = csToolsAnnotation.config.style.getStyleProperty(
+            "color",
+            {
+              annotationUID: item.annotationUID,
+              toolName,
+            }
+          );
+          if (!effectiveColor) {
+            effectiveColor = hexToRgb(annotationColor);
+          }
+          item.data = {
+            ...(item.data || {}),
+            style: {
+              ...(item.data?.style as any),
+              color: effectiveColor,
+            },
+          };
+        } catch (err) {
+          // 忽略颜色写入失败
+        }
 
         return item;
       });
@@ -418,24 +438,12 @@ function DetailPage() {
         try {
           if ((dicomImageLoader as any)?.internal?.setOptions) {
             (dicomImageLoader as any).internal.setOptions({
-              onloadstart: (_e: any, params: any) => {
-                console.log("请求开始", params?.url);
-              },
-              onprogress: (e: any, params: any) => {
-                console.log("加载进度", params?.url, e?.loaded, e?.total);
-              },
+              onloadstart: (_e: any, params: any) => {},
+              onprogress: (e: any, params: any) => {},
               onreadystatechange: (e: any, params: any) => {
                 const xhr = e?.target;
-                console.log(
-                  "readyState",
-                  params?.url,
-                  (xhr as any)?.readyState,
-                  (xhr as any)?.status
-                );
               },
-              onloadend: (_e: any, params: any) => {
-                console.log("请求结束", params?.url);
-              },
+              onloadend: (_e: any, params: any) => {},
               beforeProcessing: (xhr: any) => Promise.resolve(xhr.response),
               errorInterceptor: (error: any) => {
                 console.error("请求错误", error);
@@ -911,14 +919,11 @@ function DetailPage() {
             renderingEngine
           );
           setDicomMetadata(metadata);
-          console.log("初始 DICOM 元数据获取成功:", metadata);
         }
       } catch (error) {
         console.warn("获取初始 DICOM 元数据失败:", error);
         setDicomMetadata(null);
       }
-
-      console.log("DICOM 文件加载成功");
 
       // 恢复保存的标注数据
       if (savedAnnotations.length > 0) {
@@ -1320,11 +1325,9 @@ function DetailPage() {
         });
         return item;
       });
-      console.log("🚀 ~ saveAnnotationsToCornerstone ~ data:", data);
 
       // 遍历保存的标注数据，逐个添加
       data.forEach((annotation: any) => {
-        console.log("🚀 ~ savedAnnotations.forEach ~ annotation:", annotation);
         try {
           // 确保标注有正确的 metadata 结构
           if (!annotation.metadata) {
@@ -1376,6 +1379,23 @@ function DetailPage() {
             } catch (error) {
               console.warn("🚀触发标注添加事件失败:", error);
             }
+          }
+
+          // 如果保存数据里带有颜色，使用新的 UID 恢复该颜色
+          try {
+            const savedColor = (annotation as any)?.data?.style?.color;
+            if (savedColor && annotationUID) {
+              console.log("🚀 ~ data.forEach ~ savedColor:", savedColor);
+
+              csToolsAnnotation.config.style.setAnnotationStyles(
+                annotationUID,
+                {
+                  color: savedColor,
+                }
+              );
+            }
+          } catch (e) {
+            // 忽略单个标注样式恢复失败
           }
 
           console.log("🚀添加标注成功:", annotation.annotationUID);
