@@ -11,6 +11,7 @@ type Props = {
   onBack: () => void;
   onReload: () => void;
   onConsoleEditData?: () => void;
+  onClearData?: () => void;
   onCopyData: () => void;
 };
 
@@ -22,6 +23,7 @@ export default function TopBar({
   onBack,
   onReload,
   onConsoleEditData,
+  onClearData,
   onCopyData,
 }: Props) {
   const { userInfo } = useAuthStore();
@@ -105,6 +107,37 @@ export default function TopBar({
                 }
               >
                 保存数据
+              </Button>
+            )}
+
+          {(userInfo?.role === 1 ||
+            userInfo?.role === 2 ||
+            (!isOriginal && userInfo?.role === 3)) &&
+            onClearData && (
+              <Button
+                onClick={onClearData}
+                disabled={!hasData}
+                size="sm"
+                variant="solid"
+                color={hasData ? "danger" : "default"}
+                className="font-medium px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform text-white"
+                startContent={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m2 0h10M9 7V4h6v3M10 11v6m4-6v6"
+                    />
+                  </svg>
+                }
+              >
+                清空数据
               </Button>
             )}
 

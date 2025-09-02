@@ -184,6 +184,60 @@ function DetailPage() {
     }
   }, [imageIds, dcmData]);
 
+  // 清空当前视图的所有标注数据（本地与渲染层）
+  const clearAllAnnotations = useCallback(() => {
+    try {
+      // 1) 清空工具状态中的所有标注
+      csToolsAnnotation.state.removeAllAnnotations();
+
+      // 2) 清空本地已保存的标注快照
+      setSavedAnnotations([]);
+
+      // 3) 触发重渲染
+      const renderingEngine = renderingEngineRef.current as any;
+      if (renderingEngine) {
+        const viewport = renderingEngine.getViewport("CT_SAGITTAL_STACK");
+        viewport?.render?.();
+      }
+
+      addToast({ color: "success", description: "已清空所有标注" });
+    } catch (e) {
+      console.warn("清空标注失败", e);
+      addToast({ color: "danger", description: "清空失败" });
+    }
+  }, []);
+
+  // 为“新创建的标注”设置颜色（不影响已存在的标注）
+  useEffect(() => {
+    const onAnnotationAdded = (evt: any) => {
+      const { annotation } = evt.detail || {};
+      // if (!annotation || !annotation.annotationUID) return;
+
+      try {
+        csToolsAnnotation.config.style.setAnnotationStyles(
+          annotation.annotationUID,
+          {
+            color: annotationColor,
+          }
+        );
+      } catch (e) {
+        console.warn("设置新标注颜色失败", e);
+      }
+    };
+
+    cornerstone.eventTarget.addEventListener(
+      ToolsEnums.Events.ANNOTATION_ADDED,
+      onAnnotationAdded
+    );
+
+    return () => {
+      cornerstone.eventTarget.removeEventListener(
+        ToolsEnums.Events.ANNOTATION_ADDED,
+        onAnnotationAdded
+      );
+    };
+  }, [annotationColor]);
+
   // 切换到指定图像
   const switchToImage = useCallback(
     async (index: number) => {
@@ -715,8 +769,6 @@ function DetailPage() {
         bindings: [{ mouseButton: MouseBindings.Secondary }],
       });
 
-      // 不设置初始颜色，让每个工具使用默认颜色
-
       // 将工具组添加到视口
       toolGroup.addViewport(viewportId, renderingEngineId);
 
@@ -875,31 +927,6 @@ function DetailPage() {
         saveAnnotationsToCornerstone(savedAnnotations);
         // 恢复完成后清空状态
         setSavedAnnotations([]);
-      }
-
-      // 验证工具组配置
-      if (toolGroupRef.current) {
-        const toolGroup = toolGroupRef.current;
-        console.log("🚀工具组状态:", {
-          id: toolGroup.id,
-          // 使用正确的 API 方法
-          toolNames: toolGroup.getToolNames?.() || "方法不存在",
-          viewportIds: toolGroup.getViewportIds?.() || "方法不存在",
-        });
-
-        // 验证颜色配置
-        const annotationTools = [
-          LengthTool.toolName,
-          RectangleROITool.toolName,
-        ];
-        annotationTools.forEach((toolName) => {
-          try {
-            const config = toolGroup.getToolConfiguration?.(toolName);
-            console.log(`🚀工具 ${toolName} 配置:`, config);
-          } catch (error) {
-            console.warn(`获取工具 ${toolName} 配置失败:`, error);
-          }
-        });
       }
     } catch (err) {
       console.error("加载 DICOM 文件失败:", err);
@@ -1118,123 +1145,123 @@ function DetailPage() {
   const changeAnnotationColor = useCallback((color: string) => {
     setAnnotationColor(color);
 
-    try {
-      // 获取当前的默认工具样式
-      const currentStyles =
-        csToolsAnnotation.config.style.getDefaultToolStyles();
-      console.log("🚀 ~ 当前默认样式:", currentStyles);
+    // try {
+    //   // 获取当前的默认工具样式
+    //   const currentStyles =
+    //     csToolsAnnotation.config.style.getDefaultToolStyles();
+    //   console.log("🚀 ~ 当前默认样式:", currentStyles);
 
-      // 创建新的样式配置
-      const newStyles = {
-        // 为所有标注工具设置默认颜色
-        LengthTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        RectangleROITool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        EllipticalROITool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        CircleROITool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        ArrowAnnotateTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        ProbeTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        AngleTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        BidirectionalTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        PlanarFreehandROITool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        CobbAngleTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        RectangleROIStartEndThresholdTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        RectangleROIThresholdTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        SplineROITool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        LivewireContourTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        LabelTool: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-        // 全局设置，影响所有工具的新标注
-        global: {
-          color: color,
-          colorActive: color,
-          colorHighlighted: color,
-          colorSelected: color,
-        },
-      };
+    //   // 创建新的样式配置
+    //   const newStyles = {
+    //     // 为所有标注工具设置默认颜色
+    //     LengthTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     RectangleROITool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     EllipticalROITool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     CircleROITool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     ArrowAnnotateTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     ProbeTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     AngleTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     BidirectionalTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     PlanarFreehandROITool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     CobbAngleTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     RectangleROIStartEndThresholdTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     RectangleROIThresholdTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     SplineROITool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     LivewireContourTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     LabelTool: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //     // 全局设置，影响所有工具的新标注
+    //     global: {
+    //       color: color,
+    //       colorActive: color,
+    //       colorHighlighted: color,
+    //       colorSelected: color,
+    //     },
+    //   };
 
-      // 合并样式并设置
-      const mergedStyles = deepMerge(currentStyles, newStyles);
-      csToolsAnnotation.config.style.setDefaultToolStyles(mergedStyles);
+    //   // 合并样式并设置
+    //   const mergedStyles = deepMerge(currentStyles, newStyles);
+    //   csToolsAnnotation.config.style.setDefaultToolStyles(mergedStyles);
 
-      console.log(`🚀已使用 setDefaultToolStyles 设置新标注使用颜色:`, color);
-      console.log("🚀 ~ 合并后的样式:", mergedStyles);
-    } catch (error) {
-      console.warn("🚀设置默认工具样式失败:", error);
-    }
+    //   console.log(`🚀已使用 setDefaultToolStyles 设置新标注使用颜色:`, color);
+    //   console.log("🚀 ~ 合并后的样式:", mergedStyles);
+    // } catch (error) {
+    //   console.warn("🚀设置默认工具样式失败:", error);
+    // }
   }, []);
 
   // 删除标注
@@ -1618,6 +1645,7 @@ function DetailPage() {
         onReload={loadDicomFile}
         onCopyData={handleCopyData}
         onConsoleEditData={printAnnotations}
+        onClearData={clearAllAnnotations}
       />
       <ToolBar
         isInitialized={!!isInitialized}
