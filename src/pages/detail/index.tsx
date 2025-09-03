@@ -1387,7 +1387,6 @@ function DetailPage() {
           url: item.fresh_url,
         };
       });
-      console.log("🚀恢复标注数据:", file);
 
       let data = savedAnnotations.map((item: Annotation) => {
         file.map((fileItem) => {
@@ -1407,33 +1406,8 @@ function DetailPage() {
 
       // 遍历保存的标注数据，逐个添加
       data.forEach((annotation: any) => {
+        console.log("🚀 ~ data.forEach ~ annotation:", annotation);
         try {
-          // 确保标注有正确的 metadata 结构
-          if (!annotation.metadata) {
-            annotation.metadata = {
-              toolName: annotation.toolName || "Length",
-              FrameOfReferenceUID: "default",
-            };
-          }
-
-          // 确保有 FrameOfReferenceUID
-          if (!annotation.metadata.FrameOfReferenceUID) {
-            annotation.metadata.FrameOfReferenceUID = "default";
-          }
-
-          // 确保有正确的 toolName
-          if (!annotation.metadata.toolName) {
-            annotation.metadata.toolName = annotation.toolName || "Length";
-          }
-
-          // 确保标注有正确的数据结构
-          if (!annotation.data) {
-            annotation.data = {
-              points: annotation.points || [],
-              measurements: annotation.measurements || {},
-            };
-          }
-
           // 恢复时确保不带选中/高亮状态
           try {
             if ((annotation as any).selection) {
@@ -1514,7 +1488,7 @@ function DetailPage() {
             }
 
             // 恢复后统一取消选中，避免多选
-            deselectAllAnnotations();
+            // deselectAllAnnotations();
 
             // 强制重新渲染
             renderingEngineRef.current.render();
