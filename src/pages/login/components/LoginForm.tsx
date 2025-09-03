@@ -67,9 +67,9 @@ export const LoginForm: React.FC = () => {
           placeholder="请输入用户"
           disabled={loading}
         />
-        <div className="text-xs text-gray-400 mt-1">
+        {/* <div className="text-xs text-gray-400 mt-1">
           admin@163.com(管理员) / drqfh06450@atminmail.com(用户)
-        </div>
+        </div> */}
       </div>
 
       {/* 密码 */}

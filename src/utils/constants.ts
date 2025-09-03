@@ -25,7 +25,7 @@ export const CATEGORY_LABELS: Record<number, string> = {
 
 // 文件上传相关常量
 export const FILE_UPLOAD = {
-  MAX_FILE_SIZE: 1 * 1024 * 1024, // 1MB
+  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
   ALLOWED_EXTENSIONS: [".dcm", ".dicom"],
   MAX_TAGS: 3,
 } as const;
