@@ -150,6 +150,11 @@ function DetailPage() {
             style: {
               ...(item.data?.style as any),
               color: effectiveColor,
+              textBoxColor: effectiveColor,
+              textbox: {
+                ...(item.data?.style as any)?.textbox,
+                color: effectiveColor,
+              },
             },
           };
         } catch (err) {
@@ -237,7 +242,13 @@ function DetailPage() {
         csToolsAnnotation.config.style.setAnnotationStyles(
           annotation.annotationUID,
           {
+            // 轮廓/线条颜色
             color: annotationColor,
+            // 文本颜色（测量文本/Label 文本）
+            textBoxColor: annotationColor,
+            textbox: {
+              color: annotationColor,
+            },
           }
         );
       } catch (e) {
@@ -1265,14 +1276,21 @@ function DetailPage() {
 
           // 如果保存数据里带有颜色，使用新的 UID 恢复该颜色
           try {
-            const savedColor = (annotation as any)?.data?.style?.color;
-            if (savedColor && annotationUID) {
-              console.log("🚀 ~ data.forEach ~ savedColor:", savedColor);
-
+            const savedStyle = (annotation as any)?.data?.style;
+            const savedColor = savedStyle?.color;
+            const savedTextColor =
+              savedStyle?.textBoxColor || savedStyle?.textbox?.color;
+            if (annotationUID && (savedColor || savedTextColor)) {
               csToolsAnnotation.config.style.setAnnotationStyles(
                 annotationUID,
                 {
-                  color: savedColor,
+                  ...(savedColor ? { color: savedColor } : {}),
+                  ...(savedTextColor
+                    ? {
+                        textBoxColor: savedTextColor,
+                        textbox: { color: savedTextColor },
+                      }
+                    : {}),
                 }
               );
             }
