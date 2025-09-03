@@ -94,7 +94,7 @@ function UploadPage(): React.JSX.Element {
 
     // 检查文件大小限制（单个文件不超过1MB）
     const oversizedFiles = validFiles.filter(
-      (file) => file.size > 1 * 1024 * 1024
+      (file) => file.size > 10 * 1024 * 1024
     );
     if (oversizedFiles.length > 0) {
       addToast({
@@ -702,7 +702,7 @@ function UploadPage(): React.JSX.Element {
                         </span>{" "}
                         格式
                         <br />
-                        可选择多个文件，单个文件大小不超过 1MB
+                        可选择多个文件，单个文件大小不超过 10MB
                       </p>
 
                       <Button
