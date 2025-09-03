@@ -29,11 +29,11 @@ export default function ViewerCanvas({
             <div className="absolute top-1 left-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded z-10">
               图像将自动加载，或点击按钮重新加载
             </div>
-            {showSwitchHint && (
+            {/* {showSwitchHint && (
               <div className="absolute top-1 right-4 text-gray-400 text-sm bg-black bg-opacity-50 px-2 py-1 rounded z-10">
                 使用 ← → 键切换图像
               </div>
-            )}
+            )} */}
           </>
         )}
 

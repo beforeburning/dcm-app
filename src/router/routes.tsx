@@ -6,6 +6,7 @@ import LoginPage from "../pages/login";
 import AdminPage from "../pages/admin";
 import UploadPage from "../pages/upload";
 import EditPage from "../pages/edit";
+import DocsPage from "../pages/docs";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 const routes: RouteObject[] = [
@@ -55,6 +56,16 @@ const routes: RouteObject[] = [
       <ProtectedRoute>
         <PageLayout>
           <UploadPage />
+        </PageLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/docs",
+    element: (
+      <ProtectedRoute>
+        <PageLayout>
+          <DocsPage />
         </PageLayout>
       </ProtectedRoute>
     ),

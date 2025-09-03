@@ -10,6 +10,9 @@ type Props = {
   onSwitch: (tool: ToolName | string) => void;
   annotationColor: string;
   onColorChange: (color: string) => void;
+  showBasic?: boolean;
+  showColor?: boolean;
+  onToggleImagePair?: () => void;
 };
 
 export default function ToolBar({
@@ -18,6 +21,9 @@ export default function ToolBar({
   onSwitch,
   annotationColor,
   onColorChange,
+  showBasic = true,
+  showColor = true,
+  onToggleImagePair,
 }: Props) {
   if (!isInitialized) return null;
 
@@ -43,20 +49,34 @@ export default function ToolBar({
   return (
     <div className="space-y-2 bg-gray-800 px-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium text-blue-300 mr-1">基本:</span>
-        <ToolButton name="WindowLevel" label="🌅 窗位" />
-        <ToolButton name="Pan" label="✋ 平移" />
-        <ToolButton name="Zoom" label="🔍 缩放" />
-        <ToolButton name="Probe" label="🔎 探针" />
+        {showBasic && (
+          <>
+            <span className="text-xs font-medium text-blue-300 mr-1">
+              基本:
+            </span>
+            <ToolButton name="WindowLevel" label="🌅 窗位" />
+            <ToolButton name="Pan" label="✋ 平移" />
+            <ToolButton name="Zoom" label="🔍 缩放" />
+            <ToolButton name="Probe" label="🔎 探针" />
+          </>
+        )}
 
-        <span className="text-xs font-medium text-green-300 mr-1 ml-3">
+        <span
+          className={`text-xs font-medium text-green-300 mr-1 ${
+            showBasic ? "ml-3" : ""
+          }`}
+        >
           测量:
         </span>
         <ToolButton name="Length" label="📏 长度" />
         <ToolButton name="Angle" label="📐 角度" />
         <ToolButton name="Bidirectional" label="↔️ 双向" />
 
-        <span className="text-xs font-medium text-purple-300 mr-1 ml-3">
+        <span
+          className={`text-xs font-medium text-purple-300 mr-1 ${
+            showBasic ? "ml-3" : ""
+          }`}
+        >
           标注:
         </span>
         <ToolButton name="RectangleROI" label="▭ 矩形" />
@@ -66,35 +86,37 @@ export default function ToolBar({
         <ToolButton name="ArrowAnnotate" label="➡️ 箭头" />
         <ToolButton name="Label" label="📝 文字" />
 
-        <span className="text-xs font-medium text-red-300 mr-1 ml-3">
+        <span
+          className={`text-xs font-medium text-red-300 mr-1 ${
+            showBasic ? "ml-3" : ""
+          }`}
+        >
           操作:
         </span>
         <ToolButton name="DeleteAnnotation" label="🗑️ 删除" />
+        {onToggleImagePair && (
+          <button
+            onClick={onToggleImagePair}
+            className="px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-all cursor-pointer"
+          >
+            查看标注
+          </button>
+        )}
 
-        <span className="text-yellow-300 text-xs mr-1 ml-3">颜色:</span>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={annotationColor}
-            onChange={(e) => onColorChange(e.target.value)}
-            className="w-8 h-8 rounded border-2 border-gray-400 cursor-pointer"
-            title="选择标注颜色"
-          />
-          <button
-            onClick={() => onColorChange("#ff0000")}
-            className="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700 transition-all"
-            title="测试红色"
-          >
-            🔴 红
-          </button>
-          <button
-            onClick={() => onColorChange("#00ff00")}
-            className="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700 transition-all"
-            title="测试绿色"
-          >
-            🟢 绿
-          </button>
-        </div>
+        {showColor && (
+          <>
+            <span className="text-yellow-300 text-xs mr-1 ml-3">颜色:</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={annotationColor}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="w-8 h-8 rounded border-2 border-gray-400 cursor-pointer"
+                title="选择标注颜色"
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="text-xs text-gray-300 py-1 rounded">

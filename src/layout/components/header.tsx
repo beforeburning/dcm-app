@@ -17,6 +17,8 @@ const HeaderComponents = (): React.JSX.Element => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const isDetailPage = location.pathname.startsWith("/detail/");
+  const isOriginalPage = location.pathname.startsWith("/original/");
+  const isDetailLikePage = isDetailPage || isOriginalPage;
   const isAdminPage = location.pathname === "/admin";
   const isUploadPage = location.pathname === "/upload";
   const isEditPage = location.pathname.startsWith("/edit/");
@@ -112,14 +114,20 @@ const HeaderComponents = (): React.JSX.Element => {
   };
 
   return (
-    <header className="bg-gray-800 shadow-lg fixed top-0 left-0 right-0 z-50">
+    <header
+      className={`${
+        isDetailLikePage
+          ? "bg-gray-800"
+          : "bg-gradient-to-r from-[#0b6dee] to-[#0f9bea]"
+      } shadow-lg fixed top-0 left-0 right-0 z-50`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-6">
         <div className="flex justify-between items-center h-16">
           {/* 左侧：返回按钮和应用标题 */}
           <div className="flex items-center space-x-3">
-            {(isDetailPage || isAdminPage || isUploadPage || isEditPage) && (
+            {(isDetailLikePage || isAdminPage || isUploadPage || isEditPage) && (
               <button
-                onClick={isDetailPage ? handleBack : handleHome}
+                onClick={isDetailLikePage ? handleBack : handleHome}
                 className="group flex cursor-pointer items-center justify-center w-9 h-9 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200"
               >
                 <svg
@@ -128,7 +136,7 @@ const HeaderComponents = (): React.JSX.Element => {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  {isDetailPage ? (
+                  {isDetailLikePage ? (
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

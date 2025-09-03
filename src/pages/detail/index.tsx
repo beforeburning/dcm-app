@@ -109,6 +109,13 @@ function DetailPage() {
   const selectedAnnotationUIDRef = useRef<string | null>(null);
   const lastAddedAnnotationUIDRef = useRef<string | null>(null);
   const isOriginal = useMemo(() => path.includes("original"), [path]);
+  const mapAtoBRef = useRef<Map<string, string>>(new Map());
+  const mapBtoARef = useRef<Map<string, string>>(new Map());
+  const syncTimerRef = useRef<any>(null);
+  const currentIndexRef = useRef<number>(0);
+  useEffect(() => {
+    currentIndexRef.current = currentImageIndex;
+  }, [currentImageIndex]);
 
   // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
   const printAnnotations = useCallback(async () => {
@@ -276,15 +283,19 @@ function DetailPage() {
           lastAddedAnnotationUIDRef.current = annotation.annotationUID;
         }
       } catch {}
+
+      try {
+        mirrorAnnotationsBetweenTwoImages();
+      } catch {}
     };
 
-    cornerstone.eventTarget.addEventListener(
+    (cornerstone as any).eventTarget.addEventListener(
       ToolsEnums.Events.ANNOTATION_ADDED,
       onAnnotationAdded
     );
 
     return () => {
-      cornerstone.eventTarget.removeEventListener(
+      (cornerstone as any).eventTarget.removeEventListener(
         ToolsEnums.Events.ANNOTATION_ADDED,
         onAnnotationAdded
       );
@@ -389,6 +400,9 @@ function DetailPage() {
           }, 50);
 
           console.log(`已切换到第 ${index + 1} 张图像`);
+          try {
+            mirrorAnnotationsBetweenTwoImages();
+          } catch {}
         }
       } catch (error) {
         console.error("切换图像失败:", error);
@@ -400,19 +414,16 @@ function DetailPage() {
     [imageIds, isLoading]
   );
 
-  // 切换到上一张图像
+  // 切换到上一/下一张图像（内部使用；左右键已禁用）
   const goToPreviousImage = useCallback(() => {
     if (isLoading || imageIds.length <= 1) return;
-    const newIndex =
-      currentImageIndex > 0 ? currentImageIndex - 1 : imageIds.length - 1;
+    const newIndex = currentImageIndex === 0 ? 1 : 0;
     switchToImage(newIndex);
   }, [currentImageIndex, imageIds.length, isLoading, switchToImage]);
 
-  // 切换到下一张图像
   const goToNextImage = useCallback(() => {
     if (isLoading || imageIds.length <= 1) return;
-    const newIndex =
-      currentImageIndex < imageIds.length - 1 ? currentImageIndex + 1 : 0;
+    const newIndex = currentImageIndex === 0 ? 1 : 0;
     switchToImage(newIndex);
   }, [currentImageIndex, imageIds.length, isLoading, switchToImage]);
 
@@ -1570,43 +1581,18 @@ function DetailPage() {
 
   // 键盘快捷键支持
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // 图像切换快捷键
-      if (isLoading || imageIds.length <= 1) return;
-
-      switch (event.key) {
-        case "ArrowLeft":
-          event.preventDefault();
-          goToPreviousImage();
-          break;
-        case "ArrowRight":
-          event.preventDefault();
-          goToNextImage();
-          break;
-      }
-    };
-
-    // 删除标注快捷键
+    // 仅保留删除快捷键
     const handleDeleteKey = (event: KeyboardEvent) => {
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         handleDeleteAnnotation();
       }
     };
-
-    window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keydown", handleDeleteKey);
-
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keydown", handleDeleteKey);
     };
-  }, [
-    imageIds.length,
-    goToPreviousImage,
-    goToNextImage,
-    handleDeleteAnnotation,
-  ]);
+  }, [handleDeleteAnnotation]);
 
   // 可选：把 #rrggbb 转 rgb(r,g,b)
   function hexToRgb(hex: string) {
@@ -1616,6 +1602,15 @@ function DetailPage() {
       m[3],
       16
     )})`;
+  }
+
+  // 规范化 imageId（去除查询参数）
+  function normalizeId(id: string) {
+    try {
+      return (id || "").split("?")[0];
+    } catch {
+      return id;
+    }
   }
 
   // 监听窗口尺寸变化，调整视口大小
@@ -1666,6 +1661,156 @@ function DetailPage() {
     }
   }, [annotationColor, isInitialized, changeAnnotationColor]);
 
+  // 将图像 A 的标注同步到图像 B，反之亦然（两图模式）
+  const mirrorAnnotationsBetweenTwoImages = useCallback(() => {
+    if (!imageIds[0] || !imageIds[1]) return;
+    const idARaw = imageIds[0];
+    const idBRaw = imageIds[1];
+    const idANorm = normalizeId(idARaw);
+    const idBNorm = normalizeId(idBRaw);
+
+    const flatten = (arr: any): any[] => {
+      if (!arr) return [];
+      if (Array.isArray(arr))
+        return (arr as any[]).flat ? (arr as any[]).flat(2) : (arr as any[]);
+      const values = Object.values(arr as any);
+      return (values as any[]).flat
+        ? (values as any[]).flat(2)
+        : (values as any[]);
+    };
+    const annsRaw: any = csToolsAnnotation.state.getAllAnnotations?.();
+    const anns = flatten(annsRaw);
+
+    const sig = (a: any) => {
+      try {
+        const tool = a?.metadata?.toolName || (a as any)?.toolName || "";
+        const pts =
+          a?.data?.handles?.points ||
+          a?.data?.polylinePoints ||
+          a?.data?.cachedStats ||
+          a?.data ||
+          "";
+        return tool + ":" + JSON.stringify(pts);
+      } catch {
+        return JSON.stringify(a || {});
+      }
+    };
+
+    const annsA = anns.filter((a) => {
+      const rid = normalizeId(a?.metadata?.referencedImageId || "");
+      const mir = a?.metadata?.__mirroredFrom;
+      return rid.includes(idANorm) && mir !== idBNorm; // 不把B镜像回A
+    });
+    const annsB = anns.filter((a) => {
+      const rid = normalizeId(a?.metadata?.referencedImageId || "");
+      const mir = a?.metadata?.__mirroredFrom;
+      return rid.includes(idBNorm) && mir !== idANorm; // 不把A镜像回B
+    });
+    const setB = new Set(annsB.map(sig));
+    const setA = new Set(annsA.map(sig));
+
+    const cloneFor = (a: any, targetIdRaw: string) => {
+      try {
+        const cloned: any = JSON.parse(JSON.stringify(a));
+        delete cloned.annotationUID;
+        cloned.metadata = {
+          ...(cloned.metadata || {}),
+          referencedImageId: targetIdRaw,
+          __mirroredFrom: normalizeId(a?.metadata?.referencedImageId || ""),
+        } as any;
+        try {
+          if (
+            cloned?.data &&
+            cloned?.data?.cachedStats &&
+            JSON.stringify(cloned.data.cachedStats) !== "{}"
+          ) {
+            const value = Object.values(cloned.data.cachedStats)[0];
+            cloned.data.cachedStats = {
+              [`imageId:${targetIdRaw}`]: value,
+            } as any;
+          }
+        } catch {}
+        const newUID = csToolsAnnotation.state.addAnnotation(
+          cloned,
+          elementRef.current
+        );
+        return newUID as string | undefined;
+      } catch {}
+    };
+
+    annsA.forEach((a) => {
+      const sourceUID = a?.annotationUID;
+      if (!sourceUID) return;
+      const s = sig(a);
+      if (setB.has(s)) return; // 目标已有等效标注，跳过
+      const prev = mapAtoBRef.current.get(sourceUID);
+      if (prev) {
+        try {
+          (csToolsAnnotation as any).state.removeAnnotation?.(prev);
+        } catch {}
+      }
+      const uid = cloneFor(a, idBRaw);
+      if (uid) mapAtoBRef.current.set(sourceUID, uid);
+    });
+    annsB.forEach((a) => {
+      const sourceUID = a?.annotationUID;
+      if (!sourceUID) return;
+      const s = sig(a);
+      if (setA.has(s)) return;
+      const prev = mapBtoARef.current.get(sourceUID);
+      if (prev) {
+        try {
+          (csToolsAnnotation as any).state.removeAnnotation?.(prev);
+        } catch {}
+      }
+      const uid = cloneFor(a, idARaw);
+      if (uid) mapBtoARef.current.set(sourceUID, uid);
+    });
+    try {
+      (renderingEngineRef.current as any)?.render?.();
+    } catch {}
+  }, [imageIds]);
+
+  // 监听标注“完成”后再镜像，避免绘制过程产生大量临时修改事件
+  useEffect(() => {
+    try {
+      const EV: any = (ToolsEnums as any)?.Events || {};
+      const onSync = () => {
+        try {
+          // 合并同帧内的事件，防抖
+          if (syncTimerRef.current) return;
+          syncTimerRef.current = requestAnimationFrame(() => {
+            syncTimerRef.current = null;
+            mirrorAnnotationsBetweenTwoImages();
+          });
+        } catch {}
+      };
+      const add = EV.ANNOTATION_COMPLETED || EV.ANNOTATION_ADDED;
+      const mod =
+        EV.ANNOTATION_COMPLETED ||
+        EV.ANNOTATION_MODIFIED ||
+        EV.ANNOTATION_UPDATED;
+      const target = (cornerstone as any).eventTarget || window;
+      if (add) target.addEventListener(add, onSync);
+      if (mod) target.addEventListener(mod, onSync);
+      return () => {
+        try {
+          if (
+            syncTimerRef.current &&
+            typeof cancelAnimationFrame === "function"
+          ) {
+            cancelAnimationFrame(syncTimerRef.current as number);
+            syncTimerRef.current = null;
+          }
+          if (add) target.removeEventListener(add, onSync);
+          if (mod) target.removeEventListener(mod, onSync);
+        } catch {}
+      };
+    } catch {
+      return () => {};
+    }
+  }, [mirrorAnnotationsBetweenTwoImages]);
+
   // 处理复制数据
   const [loading, setLoading] = useState<{
     copy: boolean;
@@ -1710,80 +1855,178 @@ function DetailPage() {
     }
   };
 
+  // 预加载所有图像到缓存
+  const prefetchAllImages = useCallback(async (ids: string[]) => {
+    const list = Array.isArray(ids) ? ids : [];
+    await Promise.all(
+      list.map(async (imgId) => {
+        try {
+          const id = imgId;
+          if ((dicomImageLoader as any)?.wadouri?.loadImage) {
+            await (dicomImageLoader as any).wadouri.loadImage(id);
+          } else if ((cornerstone as any)?.imageLoader?.loadAndCacheImage) {
+            await (cornerstone as any).imageLoader.loadAndCacheImage(id);
+          } else {
+            const url = id.replace(/^wadouri:/, "");
+            await fetch(url, { method: "GET" });
+          }
+        } catch (e) {
+          console.warn("预加载失败", imgId, e);
+        }
+      })
+    );
+  }, []);
+
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col">
-      <TopBar
-        title={
-          dataLoading
-            ? "DICOM 图像查看器"
-            : (dcmData as any)?.name ||
-              (dcmData as any)?.copy_name ||
-              "DICOM 图像查看器"
-        }
-        isInitialized={!!isInitialized}
-        isLoading={!!isLoading}
-        hasData={!!dcmData}
-        onBack={() => navigate("/list")}
-        onReload={loadDicomFile}
-        onCopyData={handleCopyData}
-        onConsoleEditData={printAnnotations}
-        onClearData={clearAllAnnotations}
-      />
-      <ToolBar
-        isInitialized={!!isInitialized}
-        activeTool={activeTool}
-        onSwitch={switchTool}
-        annotationColor={annotationColor}
-        onColorChange={changeAnnotationColor}
-      />
+    <div className="h-[calc(100vh-64px)] flex">
+      {/* 左侧：基本操作栏 */}
+      <div className="hidden lg:block w-25 shrink-0 bg-gray-900 border-r border-gray-800 p-2">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2">
+            <button
+              className="px-2 py-1.5 text-xs rounded bg-gray-700 text-gray-200 hover:bg-gray-600 transition cursor-pointer"
+              onClick={() => switchTool("WindowLevel")}
+            >
+              🌅 窗位
+            </button>
+            <button
+              className="px-2 py-1.5 text-xs rounded bg-gray-700 text-gray-200 hover:bg-gray-600 transition cursor-pointer"
+              onClick={() => switchTool("Pan")}
+            >
+              ✋ 平移
+            </button>
+            <button
+              className="px-2 py-1.5 text-xs rounded bg-gray-700 text-gray-200 hover:bg-gray-600 transition cursor-pointer"
+              onClick={() => switchTool("Zoom")}
+            >
+              🔍 缩放
+            </button>
+            <button
+              className="px-2 py-1.5 text-xs rounded bg-gray-700 text-gray-200 hover:bg-gray-600 transition cursor-pointer"
+              onClick={() => switchTool("Probe")}
+            >
+              🔎 探针
+            </button>
+          </div>
+        </div>
+      </div>
 
-      <StatusBanners
-        error={error}
-        dataLoading={dataLoading}
-        isInitialized={isInitialized}
-      />
+      {/* 右侧：内容区 */}
+      <div className="flex-1 flex flex-col">
+        <TopBar
+          title={
+            dataLoading
+              ? "DICOM 图像查看器"
+              : (dcmData as any)?.name ||
+                (dcmData as any)?.copy_name ||
+                "DICOM 图像查看器"
+          }
+          isInitialized={!!isInitialized}
+          isLoading={!!isLoading}
+          hasData={!!dcmData}
+          onBack={() => navigate("/list")}
+          onReload={loadDicomFile}
+          onCopyData={handleCopyData}
+          onConsoleEditData={printAnnotations}
+          onClearData={clearAllAnnotations}
+        />
+        <ToolBar
+          isInitialized={!!isInitialized}
+          activeTool={activeTool}
+          onSwitch={switchTool}
+          annotationColor={annotationColor}
+          onColorChange={changeAnnotationColor}
+          showBasic={false}
+          showColor={false}
+          onToggleImagePair={() => {
+            if (imageIds.length >= 2) {
+              const next = currentImageIndex === 0 ? 1 : 0;
+              switchToImage(next);
+            }
+          }}
+        />
 
-      <ViewerCanvas
-        elementRef={elementRef}
-        isLoading={isLoading}
-        isInitialized={isInitialized}
-        hasData={!!dcmData}
-        showSwitchHint={imageIds.length > 1}
-      />
+        <StatusBanners
+          error={error}
+          dataLoading={dataLoading}
+          isInitialized={isInitialized}
+        />
 
-      <ImageSwitcher
-        visible={!!dcmData}
-        isLoading={isLoading}
-        imageCount={imageIds.length}
-        currentIndex={currentImageIndex}
-        expanded={isImageControlExpanded}
-        onToggleExpanded={() =>
-          setIsImageControlExpanded(!isImageControlExpanded)
-        }
-        onPrev={goToPreviousImage}
-        onNext={goToNextImage}
-        onJump={(index) => switchToImage(index)}
-        currentFileName={
-          (dcmData as any)?.files?.[currentImageIndex]?.file_name ||
-          (dcmData as any)?.original_data?.files?.[currentImageIndex]?.file_name
-        }
-        currentFile={
-          (dcmData as any)?.files?.[currentImageIndex] ||
-          (dcmData as any)?.original_data?.files?.[currentImageIndex]
-        }
-        dicomMetadata={dicomMetadata}
-      />
+        <ViewerCanvas
+          elementRef={elementRef}
+          isLoading={isLoading}
+          isInitialized={isInitialized}
+          hasData={!!dcmData}
+          showSwitchHint={imageIds.length > 1}
+        />
 
-      {/* 实时监控面板 */}
-      <ParameterMonitoringPanel
-        currentImageIndex={currentImageIndex + 1}
-        totalImages={imageIds.length}
-        frameRate={frameRate}
-        zoom={zoom}
-        windowWidth={windowWidth}
-        windowCenter={windowCenter}
-        isVisible={!!dcmData && isInitialized}
-      />
+        {/* <ImageSwitcher
+          visible={!!dcmData}
+          isLoading={isLoading}
+          imageCount={imageIds.length}
+          currentIndex={currentImageIndex}
+          expanded={isImageControlExpanded}
+          onToggleExpanded={() =>
+            setIsImageControlExpanded(!isImageControlExpanded)
+          }
+          onPrev={goToPreviousImage}
+          onNext={goToNextImage}
+          onJump={(index) => switchToImage(index)}
+          currentFileName={
+            (dcmData as any)?.files?.[currentImageIndex]?.file_name ||
+            (dcmData as any)?.original_data?.files?.[currentImageIndex]
+              ?.file_name
+          }
+          currentFile={
+            (dcmData as any)?.files?.[currentImageIndex] ||
+            (dcmData as any)?.original_data?.files?.[currentImageIndex]
+          }
+          dicomMetadata={dicomMetadata}
+        /> */}
+
+        {/* 右侧悬浮颜色面板 */}
+        <div className="fixed right-4 top-[220px] z-40">
+          <div className="bg-gray-900/90 backdrop-blur rounded-xl border border-gray-700 p-2 shadow-lg">
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                "#ff3b30",
+                "#ff9500",
+                "#ffcc00",
+                "#34c759",
+                "#00c7be",
+                "#007aff",
+                "#5856d6",
+                "#af52de",
+                "#ff2d55",
+                "#8e8e93",
+              ].map((c) => (
+                <button
+                  key={c}
+                  className={`w-8 h-8 rounded-md border-2 cursor-pointer hover:scale-105 transition ${
+                    annotationColor.toLowerCase() === c.toLowerCase()
+                      ? "border-blue-400 ring-2 ring-blue-300"
+                      : "border-white/20"
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                  onClick={() => changeAnnotationColor(c)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 实时监控面板 */}
+        <ParameterMonitoringPanel
+          currentImageIndex={currentImageIndex + 1}
+          totalImages={imageIds.length}
+          frameRate={frameRate}
+          zoom={zoom}
+          windowWidth={windowWidth}
+          windowCenter={windowCenter}
+          isVisible={!!dcmData && isInitialized}
+        />
+      </div>
     </div>
   );
 }

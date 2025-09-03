@@ -257,12 +257,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           >
             1
           </div>
-          <div className="w-16 h-0.5 bg-gray-600"></div>
+          <div className="w-16 h-0.5 bg-gray-300"></div>
           <div
             className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
               step === 2
                 ? "bg-blue-600 text-white"
-                : "bg-gray-600 text-gray-400"
+                : "bg-gray-300 text-gray-500"
             }`}
           >
             2
@@ -272,10 +272,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
       {/* 步骤标题 */}
       <div className="text-center">
-        <h3 className="text-lg font-medium text-white">
+        <h3 className="text-lg font-medium text-gray-900">
           {step === 1 ? "邮箱验证" : "设置用户信息"}
         </h3>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-gray-600 mt-1">
           {step === 1 ? "请输入邮箱地址并验证" : "请设置您的用户名和密码"}
         </p>
       </div>
@@ -285,7 +285,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         <>
           {/* 邮箱输入 */}
           <div>
-            <div className="block text-sm font-medium text-white mb-2">
+            <div className="block text-sm font-medium text-gray-800 mb-2">
               邮箱
             </div>
             <div className="flex space-x-2">
@@ -294,7 +294,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                 placeholder="请输入邮箱地址"
                 disabled={sendingCode || codeSent}
               />
@@ -302,9 +302,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 onClick={codeSent ? undefined : handleSendCode}
                 className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
                   sendingCode
-                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : codeSent
-                    ? "bg-green-600 text-white cursor-default"
+                    ? "bg-green-500/90 text-white cursor-default"
                     : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
                 }`}
               >
@@ -316,7 +316,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           {/* 验证码输入 */}
           {codeSent && (
             <div>
-              <div className="block text-sm font-medium text-white mb-2">
+              <div className="block text-sm font-medium text-gray-800 mb-2">
                 验证码
               </div>
               <input
@@ -328,7 +328,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   )
                 }
                 onKeyPress={handleKeyPress}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
+                className="w-full px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest shadow-sm"
                 placeholder="请输入6位验证码"
                 maxLength={6}
                 disabled={verifyingCode}
@@ -349,8 +349,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 }}
                 className={`flex-1 flex items-center justify-center py-3 px-4 font-medium rounded-lg transition-colors duration-200 ${
                   countdown > 0
-                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                    : "bg-gray-600 hover:bg-gray-700 text-white cursor-pointer"
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-900 cursor-pointer"
                 }`}
               >
                 {countdown > 0 ? `重新发送(${countdown}s)` : "重新发送"}
@@ -359,7 +359,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 onClick={handleVerifyCode}
                 className={`flex-1 flex items-center justify-center font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
                   verifyingCode
-                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
                 }`}
               >
@@ -373,7 +373,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         <>
           {/* 用户名 */}
           <div>
-            <div className="block text-sm font-medium text-white mb-2">
+            <div className="block text-sm font-medium text-gray-800 mb-2">
               用户名
             </div>
             <input
@@ -381,7 +381,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               placeholder="请输入用户名（至少3个字符）"
               disabled={completing}
             />
@@ -389,7 +389,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
           {/* 密码 */}
           <div>
-            <div className="block text-sm font-medium text-white mb-2">
+            <div className="block text-sm font-medium text-gray-800 mb-2">
               密码
             </div>
             <input
@@ -397,7 +397,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               placeholder="请输入密码（至少6个字符）"
               disabled={completing}
             />
@@ -405,7 +405,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
           {/* 确认密码 */}
           <div>
-            <div className="block text-sm font-medium text-white mb-2">
+            <div className="block text-sm font-medium text-gray-800 mb-2">
               确认密码
             </div>
             <input
@@ -413,7 +413,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               placeholder="请再次输入密码"
               disabled={completing}
             />
@@ -423,7 +423,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           <div className="flex space-x-3">
             <div
               onClick={handleGoBack}
-              className="flex-1 flex items-center justify-center py-3 px-4 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg cursor-pointer transition-colors duration-200"
+              className="flex-1 flex items-center justify-center py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-lg cursor-pointer transition-colors duration-200"
             >
               返回上一步
             </div>
@@ -431,7 +431,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               onClick={handleCompleteRegister}
               className={`flex-1 flex items-center justify-center font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
                 completing
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
               }`}
             >

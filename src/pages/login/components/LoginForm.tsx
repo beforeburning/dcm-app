@@ -36,7 +36,7 @@ export const LoginForm: React.FC = () => {
           description: "登录成功",
         });
         setAccessToken(res.data.access_token);
-        navigate("/list");
+        navigate("/docs");
       } else {
         addToast({
           color: "danger",
@@ -57,13 +57,13 @@ export const LoginForm: React.FC = () => {
     <div className="space-y-6">
       {/* 邮箱 */}
       <div>
-        <div className="block text-sm font-medium text-black mb-2">用户</div>
+        <div className="block text-sm font-medium text-gray-800 mb-2">用户</div>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
           placeholder="请输入用户"
           disabled={loading}
         />
@@ -74,13 +74,13 @@ export const LoginForm: React.FC = () => {
 
       {/* 密码 */}
       <div>
-        <div className="block text-sm font-medium text-black mb-2">密码</div>
+        <div className="block text-sm font-medium text-gray-800 mb-2">密码</div>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 bg-white/90 backdrop-blur border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
           placeholder="请输入密码"
           disabled={loading}
         />
@@ -89,10 +89,10 @@ export const LoginForm: React.FC = () => {
       {/* 登录按钮 */}
       <div
         onClick={handleLogin}
-        className={`flex items-center cursor-pointer justify-center w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
+        className={`flex items-center cursor-pointer justify-center w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm border ${
           loading
-            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700 text-white"
+            ? "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
         }`}
       >
         {loading ? "登录中..." : "登录"}
