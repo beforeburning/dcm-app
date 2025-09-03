@@ -106,6 +106,8 @@ function DetailPage() {
   const viewportListenerCleanupRef = useRef<(() => void) | null>(null);
   const lastRenderTsRef = useRef<number>(0);
   const initialParallelScaleRef = useRef<number | null>(null);
+  const selectedAnnotationUIDRef = useRef<string | null>(null);
+  const lastAddedAnnotationUIDRef = useRef<string | null>(null);
   const isOriginal = useMemo(() => path.includes("original"), [path]);
 
   // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
@@ -161,6 +163,19 @@ function DetailPage() {
           // 忽略颜色写入失败
         }
 
+        return item;
+      });
+
+      // 去重 annotationUID：保存前确保每条标注 UID 唯一
+      const seenUIDs = new Set<string>();
+      const generateUID = () =>
+        `anno_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+      arr = arr.map((item: any) => {
+        const uid = item?.annotationUID;
+        if (!uid || seenUIDs.has(uid)) {
+          item.annotationUID = generateUID();
+        }
+        seenUIDs.add(item.annotationUID);
         return item;
       });
       const annotationData = JSON.stringify(arr);
@@ -254,6 +269,13 @@ function DetailPage() {
       } catch (e) {
         console.warn("设置新标注颜色失败", e);
       }
+
+      // 记录最近一次新增的标注 UID
+      try {
+        if (annotation?.annotationUID) {
+          lastAddedAnnotationUIDRef.current = annotation.annotationUID;
+        }
+      } catch {}
     };
 
     cornerstone.eventTarget.addEventListener(
@@ -268,6 +290,54 @@ function DetailPage() {
       );
     };
   }, [annotationColor]);
+
+  // 监听标注选中/取消选中事件，记录当前选中 UID（若事件可用）
+  useEffect(() => {
+    try {
+      const EV: any = (ToolsEnums as any)?.Events || {};
+
+      const onSelected = (evt: any) => {
+        const uid =
+          evt?.detail?.annotation?.annotationUID || evt?.detail?.annotationUID;
+        if (uid) selectedAnnotationUIDRef.current = uid;
+      };
+      const onDeselected = (_evt: any) => {
+        selectedAnnotationUIDRef.current = null;
+      };
+
+      if (EV.ANNOTATION_SELECTED) {
+        cornerstone.eventTarget.addEventListener(
+          EV.ANNOTATION_SELECTED,
+          onSelected
+        );
+      }
+      if (EV.ANNOTATION_DESELECTED) {
+        cornerstone.eventTarget.addEventListener(
+          EV.ANNOTATION_DESELECTED,
+          onDeselected
+        );
+      }
+
+      return () => {
+        try {
+          if (EV.ANNOTATION_SELECTED) {
+            cornerstone.eventTarget.removeEventListener(
+              EV.ANNOTATION_SELECTED,
+              onSelected
+            );
+          }
+          if (EV.ANNOTATION_DESELECTED) {
+            cornerstone.eventTarget.removeEventListener(
+              EV.ANNOTATION_DESELECTED,
+              onDeselected
+            );
+          }
+        } catch {}
+      };
+    } catch {
+      return () => {};
+    }
+  }, []);
 
   // 切换到指定图像
   const switchToImage = useCallback(
@@ -999,6 +1069,11 @@ function DetailPage() {
         LabelTool,
       ].forEach(maybePassive);
 
+      // 切换工具前，清理多重选中，保证单选语义
+      try {
+        deselectAllAnnotations();
+      } catch {}
+
       // 依据工具设置正确的鼠标绑定
       const primary = [{ mouseButton: MouseBindings.Primary }];
 
@@ -1118,30 +1193,88 @@ function DetailPage() {
         selectedUID = selected?.annotationUID;
       } catch {}
 
-      // 回退方案：遍历所有标注，查找被选中的
-      if (!selectedUID) {
-        let all: any = [];
-        const raw = annoModule.getAllAnnotations?.();
+      // 其次使用事件跟踪到的选中 UID
+      if (!selectedUID && selectedAnnotationUIDRef.current) {
+        selectedUID = selectedAnnotationUIDRef.current || undefined;
+      }
 
-        if (Array.isArray(raw)) {
-          // 可能是注释对象数组，或按工具分组的二维数组
-          all = raw.flat ? raw.flat(2) : raw;
-        } else if (raw && typeof raw === "object") {
-          // 可能是按工具名分组的对象/map
-          const values = Object.values(raw as Record<string, any>);
+      // 若仍未获得，遍历“所有标注”查找全局唯一的选中/高亮项（不限制当前图像）
+      if (!selectedUID) {
+        let allAnyImage: any[] = [];
+        const rawAll = annoModule.getAllAnnotations?.();
+        if (Array.isArray(rawAll)) {
+          allAnyImage = rawAll.flat ? rawAll.flat(2) : rawAll;
+        } else if (rawAll && typeof rawAll === "object") {
+          const values = Object.values(rawAll as Record<string, any>);
           values.forEach((v: any) => {
-            if (Array.isArray(v)) all.push(...v);
+            if (Array.isArray(v)) allAnyImage.push(...v);
           });
         }
-
-        const selectedAnno = all.find(
+        const explicitSelectedAll = allAnyImage.filter(
           (a: any) =>
             a?.isSelected ||
             a?.isHighlighted ||
             a?.highlighted ||
             a?.selection?.isSelected
         );
-        selectedUID = selectedAnno?.annotationUID;
+        if (explicitSelectedAll.length === 1) {
+          selectedUID = explicitSelectedAll[0]?.annotationUID;
+        } else if (explicitSelectedAll.length > 1) {
+          // 同时选中的全部删除，避免后续误删
+          explicitSelectedAll.forEach((a: any) => {
+            if (a?.annotationUID) deleteAnnotation(a.annotationUID);
+          });
+          addToast({ color: "success", description: "已删除多条选中标注" });
+          return; // 已处理
+        }
+      }
+
+      // 更保守回退：仅在能唯一定位时才删除
+      if (!selectedUID) {
+        const normalize = (s: string) => (s ? s.split("?")[0] : s);
+        const currentImageId = normalize(imageIds[currentImageIndex] || "");
+
+        let all: any[] = [];
+        const raw = annoModule.getAllAnnotations?.();
+
+        if (Array.isArray(raw)) {
+          all = raw.flat ? raw.flat(2) : raw;
+        } else if (raw && typeof raw === "object") {
+          const values = Object.values(raw as Record<string, any>);
+          values.forEach((v: any) => {
+            if (Array.isArray(v)) all.push(...v);
+          });
+        }
+
+        const inCurrentImage = all.filter((a: any) =>
+          normalize(a?.metadata?.referencedImageId || "").includes(
+            currentImageId
+          )
+        );
+
+        const explicitSelected = inCurrentImage.filter(
+          (a: any) =>
+            a?.isSelected ||
+            a?.isHighlighted ||
+            a?.highlighted ||
+            a?.selection?.isSelected
+        );
+
+        if (explicitSelected.length === 1) {
+          selectedUID = explicitSelected[0]?.annotationUID;
+        } else if (explicitSelected.length > 1) {
+          // 同时选中的全部删除
+          explicitSelected.forEach((a: any) => {
+            if (a?.annotationUID) deleteAnnotation(a.annotationUID);
+          });
+          addToast({ color: "success", description: "已删除多条选中标注" });
+          return;
+        } else if (inCurrentImage.length === 1) {
+          selectedUID = inCurrentImage[0]?.annotationUID;
+        } else {
+          addToast({ color: "warning", description: "请先选中需要删除的标注" });
+          return;
+        }
       }
 
       if (!selectedUID) {
@@ -1172,7 +1305,21 @@ function DetailPage() {
 
         // 重新渲染
         if (renderingEngineRef.current) {
-          renderingEngineRef.current.render();
+          try {
+            const viewport = (renderingEngineRef.current as any).getViewport(
+              "CT_SAGITTAL_STACK"
+            );
+            viewport?.render?.();
+          } catch {}
+          (renderingEngineRef.current as any).render?.();
+        }
+
+        // 清理引用
+        if (selectedAnnotationUIDRef.current === annotationId) {
+          selectedAnnotationUIDRef.current = null;
+        }
+        if (lastAddedAnnotationUIDRef.current === annotationId) {
+          lastAddedAnnotationUIDRef.current = null;
         }
       } else {
         console.warn("无法删除标注，API 不可用");
@@ -1188,6 +1335,45 @@ function DetailPage() {
         description: "删除标注失败",
       });
     }
+  }, []);
+
+  // 取消所有标注的选中/高亮（可选保留一个例外）
+  const deselectAllAnnotations = useCallback((exceptUID?: string) => {
+    try {
+      const annoModule: any = (csToolsAnnotation as any)?.state;
+      if (!annoModule?.getAllAnnotations) return;
+
+      let all: any[] = [];
+      const raw = annoModule.getAllAnnotations();
+      if (Array.isArray(raw)) {
+        all = raw.flat ? raw.flat(2) : raw;
+      } else if (raw && typeof raw === "object") {
+        const values = Object.values(raw as Record<string, any>);
+        values.forEach((v: any) => {
+          if (Array.isArray(v)) all.push(...v);
+        });
+      }
+
+      all.forEach((a: any) => {
+        if (!a) return;
+        if (exceptUID && a.annotationUID === exceptUID) return;
+        if (a.selection && typeof a.selection === "object") {
+          a.selection.isSelected = false;
+        }
+        a.isSelected = false;
+        a.isHighlighted = false;
+        a.highlighted = false;
+      });
+
+      // 渲染刷新
+      try {
+        const viewport = (renderingEngineRef.current as any)?.getViewport?.(
+          "CT_SAGITTAL_STACK"
+        );
+        viewport?.render?.();
+      } catch {}
+      (renderingEngineRef.current as any)?.render?.();
+    } catch {}
   }, []);
 
   // 恢复标注数据 - 使用官方方法
@@ -1248,6 +1434,16 @@ function DetailPage() {
             };
           }
 
+          // 恢复时确保不带选中/高亮状态
+          try {
+            if ((annotation as any).selection) {
+              (annotation as any).selection.isSelected = false;
+            }
+            (annotation as any).isSelected = false;
+            (annotation as any).isHighlighted = false;
+            (annotation as any).highlighted = false;
+          } catch {}
+
           console.log("🚀添加标注:", annotation);
 
           // 使用官方方法添加单个标注
@@ -1261,18 +1457,7 @@ function DetailPage() {
           // 验证标注是否真的被添加了
           console.log(`🚀标注 ${annotationUID} 已添加到状态`);
 
-          // 根据文档，需要触发标注添加事件到元素
-          if (elementRef.current) {
-            try {
-              csToolsAnnotation.state.triggerAnnotationAddedForElement(
-                annotation,
-                elementRef.current
-              );
-              console.log(`🚀已触发标注添加事件到元素`);
-            } catch (error) {
-              console.warn("🚀触发标注添加事件失败:", error);
-            }
-          }
+          // 不主动触发“添加事件”，避免触发默认的选中/高亮副作用
 
           // 如果保存数据里带有颜色，使用新的 UID 恢复该颜色
           try {
@@ -1327,6 +1512,9 @@ function DetailPage() {
               // 触发视口重新渲染事件
               viewport.render();
             }
+
+            // 恢复后统一取消选中，避免多选
+            deselectAllAnnotations();
 
             // 强制重新渲染
             renderingEngineRef.current.render();
