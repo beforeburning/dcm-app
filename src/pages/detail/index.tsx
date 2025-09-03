@@ -1737,7 +1737,7 @@ function DetailPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-[calc(100vh-64px)] flex flex-col">
       <TopBar
         title={
           dataLoading
