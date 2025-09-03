@@ -9,14 +9,32 @@ function LoginPage(): React.JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="max-w-xl w-full mx-auto p-8">
+    <div className="min-h-screen bg-gray-900 px-20 flex items-center relative justify-center">
+      <img
+        src="/login_bg.png"
+        alt="logo"
+        className="absolute left-0 top-0 w-full h-full"
+      />
+
+      <div className="flex flex-1 relative z-10 flex-col">
+        <div className="text-white text-[88px] font-medium leading-[100px]">
+          一站式
+          <br />
+          智慧诊疗平台
+        </div>
+        <div className="text-white text-[40px] mt-10 leading-[80px]">
+          整合工作流程
+          <br />
+          让您实现更高效的诊疗过程
+        </div>
+      </div>
+      <div className="w-[576px] relative z-10 mx-auto p-8">
         {/* Logo 区域 */}
         <div className="text-center mb-4">
           <h1 className="text-3xl font-bold text-white">智慧诊疗 v1.5</h1>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="bg-white rounded-lg p-6">
           {/* 统一的模式切换按钮 */}
           <div className="flex mb-6">
             <button

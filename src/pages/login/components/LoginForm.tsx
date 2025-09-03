@@ -57,7 +57,7 @@ export const LoginForm: React.FC = () => {
     <div className="space-y-6">
       {/* 邮箱 */}
       <div>
-        <div className="block text-sm font-medium text-white mb-2">用户</div>
+        <div className="block text-sm font-medium text-black mb-2">用户</div>
         <input
           type="email"
           value={email}
@@ -74,7 +74,7 @@ export const LoginForm: React.FC = () => {
 
       {/* 密码 */}
       <div>
-        <div className="block text-sm font-medium text-white mb-2">密码</div>
+        <div className="block text-sm font-medium text-black mb-2">密码</div>
         <input
           type="password"
           value={password}
