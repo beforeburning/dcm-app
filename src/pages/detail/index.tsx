@@ -261,15 +261,16 @@ function DetailPage() {
       // if (!annotation || !annotation.annotationUID) return;
 
       try {
+        const colorVal = hexToRgb(annotationColor);
         csToolsAnnotation.config.style.setAnnotationStyles(
           annotation.annotationUID,
           {
             // 轮廓/线条颜色
-            color: annotationColor,
+            color: colorVal,
             // 文本颜色（测量文本/Label 文本）
-            textBoxColor: annotationColor,
+            textBoxColor: colorVal,
             textbox: {
-              color: annotationColor,
+              color: colorVal,
             },
           }
         );
@@ -284,21 +285,23 @@ function DetailPage() {
         }
       } catch {}
 
-      try {
-        mirrorAnnotationsBetweenTwoImages();
-      } catch {}
+      // 同步逻辑由“完成/修改”事件统一处理，避免在添加时递归触发
     };
 
-    (cornerstone as any).eventTarget.addEventListener(
+    const target = (cornerstone as any).eventTarget || window;
+    target.addEventListener(
       ToolsEnums.Events.ANNOTATION_ADDED,
-      onAnnotationAdded
+      onAnnotationAdded,
+      { once: false }
     );
 
     return () => {
-      (cornerstone as any).eventTarget.removeEventListener(
-        ToolsEnums.Events.ANNOTATION_ADDED,
-        onAnnotationAdded
-      );
+      try {
+        target.removeEventListener(
+          ToolsEnums.Events.ANNOTATION_ADDED,
+          onAnnotationAdded
+        );
+      } catch {}
     };
   }, [annotationColor]);
 
@@ -1654,12 +1657,7 @@ function DetailPage() {
     return () => clearInterval(interval);
   }, [isInitialized, updateMonitoringParameters]);
 
-  // 监听标注颜色变化，更新工具组配置
-  useEffect(() => {
-    if (toolGroupRef.current && isInitialized) {
-      changeAnnotationColor(annotationColor);
-    }
-  }, [annotationColor, isInitialized, changeAnnotationColor]);
+  // 移除不必要的颜色回写，避免潜在的循环
 
   // 将图像 A 的标注同步到图像 B，反之亦然（两图模式）
   const mirrorAnnotationsBetweenTwoImages = useCallback(() => {
