@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function DocsPage() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"list" | "cards">("list");
   const cards = [
     {
       title: "胸部X光数据集",
@@ -42,6 +43,21 @@ export default function DocsPage() {
     },
   ];
 
+  const tableRows = Array.from({ length: 10 }).map((_, idx) => {
+    const name = `FILE0肝部CT-XXX`;
+    const createdAt = `2025-08-18 12:00:19`;
+    const annotated = idx % 3 !== 1;
+    const annotatedAt = annotated ? `2025-08-19 12:00:19` : `——`;
+    return {
+      id: idx + 1,
+      name,
+      format: "dcm",
+      createdAt,
+      annotated,
+      annotatedAt,
+    };
+  });
+
   return (
     <div className="px-6 py-6">
       <div className="mx-auto max-w-[1200px] flex gap-6">
@@ -60,45 +76,132 @@ export default function DocsPage() {
         </aside>
 
         <section className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-2xl font-semibold text-gray-900">数据文档</div>
-            <button
-              className="px-4 py-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-              onClick={() => navigate("/upload")}
-            >
-              上传
-            </button>
-          </div>
-          <div className="text-sm text-gray-500 mb-6">首页 · 数据文档</div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {cards.map((c, idx) => (
-              <div
-                key={c.key}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition"
-                onClick={() => navigate("/original/8")}
-                role="button"
-                tabIndex={0}
-              >
-                <div className="px-4 py-3 border-b border-gray-100 text-sm font-medium text-gray-800 flex items-center gap-2">
-                  <span className="w-1 h-4 bg-blue-600 rounded-sm inline-block" />
-                  {c.title}
-                </div>
-                <div className="p-4">
-                  <div className="aspect-[16/10] bg-gray-100 rounded-lg mb-3 overflow-hidden">
-                    <img
-                      src={c.img as string}
-                      alt={c.title}
-                      className="w-full h-full object-cover"
-                    />
+          {mode === "list" ? (
+            <div className="mt-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="text-lg font-semibold text-gray-900">
+                    PET-CT
                   </div>
-                  <div className="text-xs leading-6 text-gray-500">
-                    {c.desc}
+                  <div className="text-xs text-gray-500">
+                    首页 · 数据文档 · PET-CT
                   </div>
                 </div>
+                <button
+                  className="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                  onClick={() => navigate("/upload")}
+                >
+                  上传
+                </button>
               </div>
-            ))}
-          </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                        文件名
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                        文件格式
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                        创建时间
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                        标注状态
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                        标注时间
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {tableRows.map((row) => (
+                      <tr key={row.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-3 text-sm text-gray-800">
+                          {row.name}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-500">
+                          {row.format}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-500">
+                          {row.createdAt}
+                        </td>
+                        <td className="px-6 py-3 text-sm">
+                          {row.annotated ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-50 text-green-600 border border-green-200 text-xs">
+                              已标注
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200 text-xs">
+                              未标注
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-500">
+                          {row.annotatedAt}
+                        </td>
+                        <td className="px-6 py-3 text-sm">
+                          <button
+                            className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                            onClick={() => setMode("cards")}
+                          >
+                            查看
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4 mt-2">
+                <div className="text-lg font-semibold text-gray-900">
+                  数据文档 · 专题
+                </div>
+                <button
+                  className="px-3 py-1.5 text-xs rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-pointer"
+                  onClick={() => setMode("list")}
+                >
+                  返回列表
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {cards.map((c) => (
+                  <div
+                    key={c.key}
+                    className="bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition"
+                    onClick={() => navigate("/original/9")}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100 text-sm font-medium text-gray-800 flex items-center gap-2">
+                      <span className="w-1 h-4 bg-blue-600 rounded-sm inline-block" />
+                      {c.title}
+                    </div>
+                    <div className="p-4">
+                      <div className="aspect-[16/10] bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                        <img
+                          src={c.img as string}
+                          alt={c.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-xs leading-6 text-gray-500">
+                        {c.desc}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </section>
       </div>
     </div>
