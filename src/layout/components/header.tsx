@@ -278,7 +278,7 @@ const HeaderComponents = (): React.JSX.Element => {
                 {/* 退出按钮 */}
                 <button
                   onClick={handleLogout}
-                  className="group relative flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
+                  className="group relative flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105"
                 >
                   {/* 退出图标 */}
                   <svg

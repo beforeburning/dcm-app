@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function DocsPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"list" | "cards">("list");
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const cards = [
     {
       title: "胸部X光数据集",
@@ -57,6 +58,12 @@ export default function DocsPage() {
       annotatedAt,
     };
   });
+
+  useEffect(() => {
+    const onDocClick = () => setMenuOpenId(null);
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
 
   return (
     <div className="px-6 py-6">
@@ -146,12 +153,55 @@ export default function DocsPage() {
                           {row.annotatedAt}
                         </td>
                         <td className="px-6 py-3 text-sm">
-                          <button
-                            className="text-blue-600 hover:text-blue-700 cursor-pointer"
-                            onClick={() => setMode("cards")}
-                          >
-                            查看
-                          </button>
+                          <div className="relative inline-flex items-center gap-2">
+                            <button
+                              className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMode("cards");
+                                setMenuOpenId(null);
+                              }}
+                            >
+                              查看
+                            </button>
+                            <button
+                              className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuOpenId(
+                                  menuOpenId === row.id ? null : row.id
+                                );
+                              }}
+                              aria-label="更多操作"
+                            >
+                              <span className="block w-1 h-1 bg-gray-500 rounded-full" />
+                              <span className="block w-1 h-1 bg-gray-500 rounded-full mx-[2px]" />
+                              <span className="block w-1 h-1 bg-gray-500 rounded-full" />
+                            </button>
+
+                            {menuOpenId === row.id && (
+                              <div
+                                className="absolute right-0 top-8 z-20 w-28 bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-gray-50 cursor-pointer"
+                                  onClick={() => {
+                                    setMenuOpenId(null);
+                                    navigate(`/edit/9`);
+                                  }}
+                                >
+                                  编辑
+                                </button>
+                                <div className="w-full px-3 py-2 text-sm text-gray-400 cursor-not-allowed select-none">
+                                  重命名
+                                </div>
+                                <div className="w-full px-3 py-2 text-sm text-gray-400 cursor-not-allowed select-none">
+                                  移动
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
