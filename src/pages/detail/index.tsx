@@ -435,7 +435,7 @@ function DetailPage() {
           color: "danger",
           description: "数据ID无效",
         });
-        navigate("/list");
+        navigate("/docs");
         return;
       }
 
@@ -482,7 +482,7 @@ function DetailPage() {
             color: "danger",
             description: response.message || "加载数据失败",
           });
-          navigate("/list");
+          navigate("/docs");
         }
       } catch (err) {
         console.error("加载数据错误:", err);
@@ -490,7 +490,7 @@ function DetailPage() {
           color: "danger",
           description: "加载数据失败",
         });
-        navigate("/list");
+        navigate("/docs");
       } finally {
         setDataLoading(false);
       }
@@ -1924,7 +1924,7 @@ function DetailPage() {
           isInitialized={!!isInitialized}
           isLoading={!!isLoading}
           hasData={!!dcmData}
-          onBack={() => navigate("/list")}
+          onBack={() => navigate("/docs")}
           onReload={loadDicomFile}
           onCopyData={handleCopyData}
           onConsoleEditData={printAnnotations}

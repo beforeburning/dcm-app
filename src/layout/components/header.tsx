@@ -50,7 +50,7 @@ const HeaderComponents = (): React.JSX.Element => {
   };
 
   const handleHome = (): void => {
-    navigate("/list");
+    navigate("/docs");
   };
 
   // 处理修改密码
@@ -125,7 +125,10 @@ const HeaderComponents = (): React.JSX.Element => {
         <div className="flex justify-between items-center h-16">
           {/* 左侧：返回按钮和应用标题 */}
           <div className="flex items-center space-x-3">
-            {(isDetailLikePage || isAdminPage || isUploadPage || isEditPage) && (
+            {(isDetailLikePage ||
+              isAdminPage ||
+              isUploadPage ||
+              isEditPage) && (
               <button
                 onClick={isDetailLikePage ? handleBack : handleHome}
                 className="group flex cursor-pointer items-center justify-center w-9 h-9 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200"

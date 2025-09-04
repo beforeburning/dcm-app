@@ -99,7 +99,7 @@ export default function ToolBar({
             onClick={onToggleImagePair}
             className="px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-all cursor-pointer"
           >
-            查看标注
+            轮廓识别
           </button>
         )}
 

@@ -42,7 +42,7 @@ function EditPage(): React.JSX.Element {
         color: "danger",
         description: "您没有权限访问此页面",
       });
-      navigate("/list");
+      navigate("/docs");
       return;
     }
   }, [hasTeacherPermission, navigate]);
@@ -65,7 +65,7 @@ function EditPage(): React.JSX.Element {
           color: "danger",
           description: "数据ID无效",
         });
-        navigate("/list");
+        navigate("/docs");
         return;
       }
 
@@ -88,7 +88,7 @@ function EditPage(): React.JSX.Element {
             color: "danger",
             description: response.message || "加载数据失败",
           });
-          navigate("/list");
+          navigate("/docs");
         }
       } catch (error) {
         console.error("加载数据错误:", error);
@@ -96,7 +96,7 @@ function EditPage(): React.JSX.Element {
           color: "danger",
           description: "加载数据失败",
         });
-        navigate("/list");
+        navigate("/docs");
       } finally {
         setLoading(false);
       }
@@ -159,7 +159,7 @@ function EditPage(): React.JSX.Element {
           color: "success",
           description: "保存成功",
         });
-        navigate("/list");
+        navigate("/docs");
       } else {
         addToast({
           color: "danger",
@@ -326,7 +326,7 @@ function EditPage(): React.JSX.Element {
               <Button
                 color="default"
                 variant="flat"
-                onClick={() => navigate("/list")}
+                onClick={() => navigate("/docs")}
                 disabled={saving}
               >
                 取消

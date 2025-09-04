@@ -19,7 +19,7 @@ export const useAdminAuth = () => {
         color: "danger",
         description: "您没有权限访问管理端",
       });
-      navigate("/list"); // 重定向到列表页
+      navigate("/docs"); // 重定向到列表页
     }
   }, [userInfo, navigate]);
 

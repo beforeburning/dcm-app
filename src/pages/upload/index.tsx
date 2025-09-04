@@ -321,7 +321,7 @@ function UploadPage(): React.JSX.Element {
 
         // 延迟2秒后跳转到列表页
         setTimeout(() => {
-          navigate("/list");
+          navigate("/docs");
         }, 2000);
       } else {
         addToast({
@@ -984,7 +984,7 @@ function UploadPage(): React.JSX.Element {
                 <Button
                   color="default"
                   variant="flat"
-                  onClick={() => navigate("/list")}
+                  onClick={() => navigate("/docs")}
                   isDisabled={uploading}
                   className="shadow-md hover:shadow-lg transition-all duration-200"
                   aria-label="返回数据集列表页面"
