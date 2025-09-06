@@ -687,6 +687,7 @@ function DetailPage() {
           break;
         case "BrushTool": {
           setActive(BrushTool, primary);
+
           try {
             const viewportId = "CT_SAGITTAL_STACK";
             // 确保分割存在并绑定到视口
@@ -694,6 +695,7 @@ function DetailPage() {
             const vp: any = (renderingEngineRef.current as any)?.getViewport?.(
               viewportId
             );
+
             const stackIds: string[] =
               (typeof vp?.getImageIds === "function" && vp.getImageIds()) ||
               (imageIds?.length ? imageIds : [imageIds[currentImageIndex]]);
@@ -710,24 +712,26 @@ function DetailPage() {
                 },
               ]);
             } catch {}
-            try {
-              segmentation.addLabelmapRepresentationToViewport(viewportId, [
-                { segmentationId: segId },
-              ]);
-            } catch {}
-            try {
-              segmentation.activeSegmentation.setActiveSegmentation(
-                viewportId,
-                segId
-              );
-              segmentation.segmentIndex.setActiveSegmentIndex(segId, 1);
-              segmentation.config.color.setSegmentIndexColor(
-                viewportId,
-                segId,
-                1,
-                [255, 0, 0, 255]
-              );
-            } catch {}
+
+            // try {
+            //   segmentation.addLabelmapRepresentationToViewport(viewportId, [
+            //     { segmentationId: segId },
+            //   ]);
+            // } catch {}
+
+            // try {
+            //   segmentation.activeSegmentation.setActiveSegmentation(
+            //     viewportId,
+            //     segId
+            //   );
+            //   segmentation.segmentIndex.setActiveSegmentIndex(segId, 1);
+            //   segmentation.config.color.setSegmentIndexColor(
+            //     viewportId,
+            //     segId,
+            //     1,
+            //     [255, 0, 0, 255]
+            //   );
+            // } catch {}
 
             // 画笔配置：红色由段1控制，大小 1
             try {
@@ -739,6 +743,7 @@ function DetailPage() {
 
             (renderingEngineRef.current as any)?.render?.();
           } catch {}
+
           break;
         }
         case "Probe":
