@@ -700,7 +700,7 @@ function DetailPage() {
               (typeof vp?.getImageIds === "function" && vp.getImageIds()) ||
               (imageIds?.length ? imageIds : [imageIds[currentImageIndex]]);
 
-            // 幂等添加/绑定
+            // 幂等添加 / 绑定;
             try {
               segmentation.addSegmentations([
                 {
@@ -713,25 +713,11 @@ function DetailPage() {
               ]);
             } catch {}
 
-            // try {
-            //   segmentation.addLabelmapRepresentationToViewport(viewportId, [
-            //     { segmentationId: segId },
-            //   ]);
-            // } catch {}
-
-            // try {
-            //   segmentation.activeSegmentation.setActiveSegmentation(
-            //     viewportId,
-            //     segId
-            //   );
-            //   segmentation.segmentIndex.setActiveSegmentIndex(segId, 1);
-            //   segmentation.config.color.setSegmentIndexColor(
-            //     viewportId,
-            //     segId,
-            //     1,
-            //     [255, 0, 0, 255]
-            //   );
-            // } catch {}
+            try {
+              segmentation.addLabelmapRepresentationToViewport(viewportId, [
+                { segmentationId: segId },
+              ]);
+            } catch {}
 
             // 画笔配置：红色由段1控制，大小 1
             try {
@@ -1091,160 +1077,7 @@ function DetailPage() {
   // 切换工具
   const switchTool = useCallback((toolName) => {
     if (!toolGroupRef.current) return;
-
-    try {
-      const toolGroup: any = toolGroupRef.current;
-
-      // 删除为一次性动作，不改变当前工具
-      if (toolName === "DeleteAnnotation") {
-        handleDeleteAnnotation();
-        return;
-      }
-
-      // 将所有工具设为被动
-      const maybePassive = (tool: any) => {
-        try {
-          toolGroup.setToolPassive(tool.toolName);
-        } catch {}
-      };
-      [
-        WindowLevelTool,
-        PanTool,
-        ZoomTool,
-        LengthTool,
-        RectangleROITool,
-        EllipticalROITool,
-        CircleROITool,
-        ArrowAnnotateTool,
-        BrushTool,
-        ProbeTool,
-        AngleTool,
-        BidirectionalTool,
-        PlanarFreehandROITool,
-        CobbAngleTool,
-        RectangleROIStartEndThresholdTool,
-        RectangleROIThresholdTool,
-        SplineROITool,
-        LivewireContourTool,
-        MagnifyTool,
-        OverlayGridTool,
-        AdvancedMagnifyTool,
-        UltrasoundDirectionalTool,
-        RectangleScissorsTool,
-        CircleScissorsTool,
-        SphereScissorsTool,
-        LabelTool,
-      ].forEach(maybePassive);
-
-      // 切换工具前，清理多重选中，保证单选语义
-      try {
-        deselectAllAnnotations();
-      } catch {}
-
-      // 依据工具设置正确的鼠标绑定
-      const primary = [{ mouseButton: MouseBindings.Primary }];
-
-      const setActive = (tool: any, bindings: any) => {
-        try {
-          toolGroup.setToolActive(tool.toolName, { bindings });
-        } catch {}
-      };
-
-      switch (toolName) {
-        case "WindowLevel":
-          setActive(WindowLevelTool, primary);
-          break;
-        case "Pan":
-          // 显式选择平移时，使用左键拖拽更直观
-          setActive(PanTool, primary);
-          break;
-        case "Zoom":
-          // 显式选择缩放时，使用左键拖拽更直观
-          setActive(ZoomTool, primary);
-          break;
-        case "Length":
-          setActive(LengthTool, primary);
-          break;
-        case "RectangleROI":
-          setActive(RectangleROITool, primary);
-          break;
-        case "EllipticalROI":
-          setActive(EllipticalROITool, primary);
-          break;
-        case "CircleROI":
-          setActive(CircleROITool, primary);
-          break;
-        case "ArrowAnnotate":
-          setActive(ArrowAnnotateTool, primary);
-          break;
-        case "BrushTool":
-          setActive(BrushTool, primary);
-          break;
-        case "Probe":
-          setActive(ProbeTool, primary);
-          break;
-        case "Angle":
-          setActive(AngleTool, primary);
-          break;
-        case "Bidirectional":
-          setActive(BidirectionalTool, primary);
-          break;
-        case "PlanarFreehandROI":
-          setActive(PlanarFreehandROITool, primary);
-          break;
-        case "CobbAngle":
-          setActive(CobbAngleTool, primary);
-          break;
-        case "RectangleROIStartEndThreshold":
-          setActive(RectangleROIStartEndThresholdTool, primary);
-          break;
-        case "RectangleROIThreshold":
-          setActive(RectangleROIThresholdTool, primary);
-          break;
-        case "SplineROI":
-          setActive(SplineROITool, primary);
-          break;
-        case "LivewireContour":
-          setActive(LivewireContourTool, primary);
-          break;
-        case "Magnify":
-          setActive(MagnifyTool, primary);
-          break;
-        case "OverlayGrid":
-          setActive(OverlayGridTool, primary);
-          break;
-        case "AdvancedMagnify":
-          setActive(AdvancedMagnifyTool, primary);
-          break;
-        case "UltrasoundDirectional":
-          setActive(UltrasoundDirectionalTool, primary);
-          break;
-        case "RectangleScissors":
-          setActive(RectangleScissorsTool, primary);
-          break;
-        case "CircleScissors":
-          setActive(CircleScissorsTool, primary);
-          break;
-        case "SphereScissors":
-          setActive(SphereScissorsTool, primary);
-          break;
-        case "Label":
-          setActive(LabelTool, primary);
-          break;
-      }
-
-      setActiveTool(toolName);
-
-      // 切换后强制渲染以确保生效
-      try {
-        const re = renderingEngineRef.current as any;
-        re?.render?.();
-      } catch {}
-
-      console.log(`已切换到工具: ${toolName}`);
-    } catch (error) {
-      console.error("切换工具失败:", error);
-    }
+    setActiveTool(toolName);
   }, []);
 
   // 删除当前选中的标注
@@ -1558,7 +1391,7 @@ function DetailPage() {
             }
 
             // 恢复后统一取消选中，避免多选
-            // deselectAllAnnotations();
+            deselectAllAnnotations();
 
             // 强制重新渲染
             renderingEngineRef.current.render();
