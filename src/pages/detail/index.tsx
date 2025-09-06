@@ -688,48 +688,6 @@ function DetailPage() {
         case "BrushTool": {
           setActive(BrushTool, primary);
 
-          try {
-            const viewportId = "CT_SAGITTAL_STACK";
-            // 确保分割存在并绑定到视口
-            const segId = `seg-1`;
-            const vp: any = (renderingEngineRef.current as any)?.getViewport?.(
-              viewportId
-            );
-
-            const stackIds: string[] =
-              (typeof vp?.getImageIds === "function" && vp.getImageIds()) ||
-              (imageIds?.length ? imageIds : [imageIds[currentImageIndex]]);
-
-            // 幂等添加/绑定
-            try {
-              segmentation.addSegmentations([
-                {
-                  segmentationId: segId,
-                  representation: {
-                    type: ToolsEnums.SegmentationRepresentations.Labelmap,
-                    data: { imageIds: stackIds?.filter(Boolean) || [] },
-                  },
-                },
-              ]);
-            } catch {}
-
-            try {
-              segmentation.addLabelmapRepresentationToViewport(viewportId, [
-                { segmentationId: segId },
-              ]);
-            } catch {}
-
-            // 画笔配置：红色由段1控制，大小 1
-            try {
-              toolGroup.setToolConfiguration?.(BrushTool.toolName, {
-                brushSize: 1,
-                activeStrategy: "FILL_INSIDE_CIRCLE",
-              });
-            } catch {}
-
-            (renderingEngineRef.current as any)?.render?.();
-          } catch {}
-
           break;
         }
         case "Probe":
