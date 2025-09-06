@@ -64,6 +64,7 @@ export default function ToolBar({
         <ToolButton name="CircleROI" label="◯ 圆形" />
         <ToolButton name="PlanarFreehandROI" label="🎨 绘制" />
         <ToolButton name="ArrowAnnotate" label="➡️ 箭头" />
+        <ToolButton name="BrushTool" label="🖌️ 画笔" />
         <ToolButton name="Label" label="📝 文字" />
 
         <span className="text-xs font-medium text-red-300 mr-1 ml-3">

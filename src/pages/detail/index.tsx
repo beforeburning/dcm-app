@@ -38,6 +38,8 @@ import {
   ToolGroupManager,
   Enums as ToolsEnums,
   annotation as csToolsAnnotation,
+  BrushTool,
+  segmentation,
 } from "@cornerstonejs/tools";
 import dicomImageLoader, {
   init as dicomImageLoaderInit,
@@ -554,6 +556,7 @@ function DetailPage() {
         addTool(EllipticalROITool);
         addTool(CircleROITool);
         addTool(ArrowAnnotateTool);
+        addTool(BrushTool);
         addTool(ProbeTool);
         addTool(AngleTool);
         addTool(BidirectionalTool);
@@ -630,6 +633,7 @@ function DetailPage() {
         EllipticalROITool,
         CircleROITool,
         ArrowAnnotateTool,
+        BrushTool,
         ProbeTool,
         AngleTool,
         BidirectionalTool,
@@ -681,6 +685,62 @@ function DetailPage() {
         case "ArrowAnnotate":
           setActive(ArrowAnnotateTool, primary);
           break;
+        case "BrushTool": {
+          setActive(BrushTool, primary);
+          try {
+            const viewportId = "CT_SAGITTAL_STACK";
+            // 确保分割存在并绑定到视口
+            const segId = `seg-1`;
+            const vp: any = (renderingEngineRef.current as any)?.getViewport?.(
+              viewportId
+            );
+            const stackIds: string[] =
+              (typeof vp?.getImageIds === "function" && vp.getImageIds()) ||
+              (imageIds?.length ? imageIds : [imageIds[currentImageIndex]]);
+
+            // 幂等添加/绑定
+            try {
+              segmentation.addSegmentations([
+                {
+                  segmentationId: segId,
+                  representation: {
+                    type: ToolsEnums.SegmentationRepresentations.Labelmap,
+                    data: { imageIds: stackIds?.filter(Boolean) || [] },
+                  },
+                },
+              ]);
+            } catch {}
+            try {
+              segmentation.addLabelmapRepresentationToViewport(viewportId, [
+                { segmentationId: segId },
+              ]);
+            } catch {}
+            try {
+              segmentation.activeSegmentation.setActiveSegmentation(
+                viewportId,
+                segId
+              );
+              segmentation.segmentIndex.setActiveSegmentIndex(segId, 1);
+              segmentation.config.color.setSegmentIndexColor(
+                viewportId,
+                segId,
+                1,
+                [255, 0, 0, 255]
+              );
+            } catch {}
+
+            // 画笔配置：红色由段1控制，大小 1
+            try {
+              toolGroup.setToolConfiguration?.(BrushTool.toolName, {
+                brushSize: 1,
+                activeStrategy: "FILL_INSIDE_CIRCLE",
+              });
+            } catch {}
+
+            (renderingEngineRef.current as any)?.render?.();
+          } catch {}
+          break;
+        }
         case "Probe":
           setActive(ProbeTool, primary);
           break;
@@ -829,6 +889,7 @@ function DetailPage() {
       toolGroup.addTool(EllipticalROITool.toolName);
       toolGroup.addTool(CircleROITool.toolName);
       toolGroup.addTool(ArrowAnnotateTool.toolName);
+      toolGroup.addTool(BrushTool.toolName);
       toolGroup.addTool(ProbeTool.toolName);
       toolGroup.addTool(AngleTool.toolName);
       toolGroup.addTool(BidirectionalTool.toolName);
@@ -1050,6 +1111,7 @@ function DetailPage() {
         EllipticalROITool,
         CircleROITool,
         ArrowAnnotateTool,
+        BrushTool,
         ProbeTool,
         AngleTool,
         BidirectionalTool,
@@ -1109,6 +1171,9 @@ function DetailPage() {
           break;
         case "ArrowAnnotate":
           setActive(ArrowAnnotateTool, primary);
+          break;
+        case "BrushTool":
+          setActive(BrushTool, primary);
           break;
         case "Probe":
           setActive(ProbeTool, primary);
