@@ -122,6 +122,7 @@ function DetailPage() {
   const [drawBrushColor, setDrawBrushColor] = useState<string>("red");
   const [drawBrushRadius, setDrawBrushRadius] = useState<number>(10);
   const [canvasScale, setCanvasScale] = useState<number>(1);
+  const [isDrawingOpen, setIsDrawingOpen] = useState<boolean>(false);
 
   // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
   const printAnnotations = useCallback(async () => {
@@ -672,82 +673,159 @@ function DetailPage() {
       switch (toolName) {
         case "WindowLevel":
           setActive(WindowLevelTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Pan":
           setActive(PanTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Zoom":
           setActive(ZoomTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Length":
           setActive(LengthTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleROI":
           setActive(RectangleROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "EllipticalROI":
           setActive(EllipticalROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "CircleROI":
           setActive(CircleROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "ArrowAnnotate":
           setActive(ArrowAnnotateTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "BrushTool": {
-          console.log("BrushTool");
+          try {
+            setIsDrawingOpen(true);
+          } catch {}
           break;
         }
         case "Probe":
           setActive(ProbeTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Angle":
           setActive(AngleTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Bidirectional":
           setActive(BidirectionalTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "PlanarFreehandROI":
           setActive(PlanarFreehandROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "CobbAngle":
           setActive(CobbAngleTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleROIStartEndThreshold":
           setActive(RectangleROIStartEndThresholdTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleROIThreshold":
           setActive(RectangleROIThresholdTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "SplineROI":
           setActive(SplineROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "LivewireContour":
           setActive(LivewireContourTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Magnify":
           setActive(MagnifyTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "OverlayGrid":
           setActive(OverlayGridTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "AdvancedMagnify":
           setActive(AdvancedMagnifyTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "UltrasoundDirectional":
           setActive(UltrasoundDirectionalTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleScissors":
           setActive(RectangleScissorsTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "CircleScissors":
           setActive(CircleScissorsTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "SphereScissors":
           setActive(SphereScissorsTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Label":
           setActive(LabelTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
       }
 
@@ -1104,84 +1182,161 @@ function DetailPage() {
       switch (toolName) {
         case "WindowLevel":
           setActive(WindowLevelTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Pan":
           // 显式选择平移时，使用左键拖拽更直观
           setActive(PanTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Zoom":
           // 显式选择缩放时，使用左键拖拽更直观
           setActive(ZoomTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Length":
           setActive(LengthTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleROI":
           setActive(RectangleROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "EllipticalROI":
           setActive(EllipticalROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "CircleROI":
           setActive(CircleROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "ArrowAnnotate":
           setActive(ArrowAnnotateTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "BrushTool":
           // setActive(BrushTool, primary);
-          console.log("BrushTool");
+          try {
+            setIsDrawingOpen(true);
+          } catch {}
           break;
         case "Probe":
           setActive(ProbeTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Angle":
           setActive(AngleTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Bidirectional":
           setActive(BidirectionalTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "PlanarFreehandROI":
           setActive(PlanarFreehandROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "CobbAngle":
           setActive(CobbAngleTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleROIStartEndThreshold":
           setActive(RectangleROIStartEndThresholdTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleROIThreshold":
           setActive(RectangleROIThresholdTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "SplineROI":
           setActive(SplineROITool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "LivewireContour":
           setActive(LivewireContourTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Magnify":
           setActive(MagnifyTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "OverlayGrid":
           setActive(OverlayGridTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "AdvancedMagnify":
           setActive(AdvancedMagnifyTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "UltrasoundDirectional":
           setActive(UltrasoundDirectionalTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "RectangleScissors":
           setActive(RectangleScissorsTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "CircleScissors":
           setActive(CircleScissorsTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "SphereScissors":
           setActive(SphereScissorsTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
         case "Label":
           setActive(LabelTool, primary);
+          try {
+            setIsDrawingOpen(false);
+          } catch {}
           break;
       }
 
@@ -1823,145 +1978,117 @@ function DetailPage() {
         isVisible={!!dcmData && isInitialized}
       />
 
-      <div className="w-full h-full fixed top-0 z-[99999] left-0">
-        {canvasSize.width > 0 && canvasSize.height > 0 && (
-          <CanvasDraw
-            ref={drawRef}
-            canvasWidth={canvasSize.width}
-            canvasHeight={canvasSize.height}
-            brushRadius={drawBrushRadius}
-            brushColor={drawBrushColor}
-            backgroundColor="transparent"
-            lazyRadius={0}
-          />
-        )}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 bg-white/90 border border-gray-200 rounded-lg shadow-md">
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-sm text-gray-700">画笔颜色</span>
-            <input
-              type="color"
-              value={drawBrushColor}
-              onChange={(e) => setDrawBrushColor(e.target.value)}
-              className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-              title="选择画笔颜色"
+      {isDrawingOpen && (
+        <div className="w-full h-full fixed top-0 z-[99999] left-0">
+          {canvasSize.width > 0 && canvasSize.height > 0 && (
+            <CanvasDraw
+              ref={drawRef}
+              canvasWidth={canvasSize.width}
+              canvasHeight={canvasSize.height}
+              brushRadius={drawBrushRadius}
+              brushColor={drawBrushColor}
+              backgroundColor="transparent"
+              lazyRadius={0}
             />
-            <button
-              onClick={() => setDrawBrushColor("#ff0000")}
-              className="px-2 py-1 text-xs rounded bg-red-600 text-white"
-            >
-              红
-            </button>
-            <button
-              onClick={() => setDrawBrushColor("#00aa00")}
-              className="px-2 py-1 text-xs rounded bg-green-600 text-white"
-            >
-              绿
-            </button>
-            <button
-              onClick={() => setDrawBrushColor("#0077ff")}
-              className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
-            >
-              蓝
-            </button>
+          )}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 bg-white/90 border border-gray-200 rounded-lg shadow-md">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-sm text-gray-700">画笔颜色</span>
+              <input
+                type="color"
+                value={drawBrushColor}
+                onChange={(e) => setDrawBrushColor(e.target.value)}
+                className="w-8 h-8 rounded border border-gray-300 cursor-pointer bg-white"
+                title="选择画笔颜色"
+              />
+              <button
+                onClick={() => setDrawBrushColor("#ff0000")}
+                className="px-2 py-1 text-xs rounded bg-red-600 text-white cursor-pointer"
+              >
+                红
+              </button>
+              <button
+                onClick={() => setDrawBrushColor("#00aa00")}
+                className="px-2 py-1 text-xs rounded bg-green-600 text-white cursor-pointer"
+              >
+                绿
+              </button>
+              <button
+                onClick={() => setDrawBrushColor("#0077ff")}
+                className="px-2 py-1 text-xs rounded bg-blue-600 text-white cursor-pointer"
+              >
+                蓝
+              </button>
 
-            <span className="mx-2 h-5 w-px bg-gray-300" />
+              <span className="mx-2 h-5 w-px bg-gray-300" />
 
-            <span className="text-sm text-gray-700">画笔粗细</span>
-            <button
-              onClick={() => setDrawBrushRadius((r) => Math.max(1, r - 1))}
-              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
-            >
-              -
-            </button>
-            <span className="text-sm text-gray-800 min-w-[2ch] text-center">
-              {drawBrushRadius}
-            </span>
-            <button
-              onClick={() => setDrawBrushRadius((r) => Math.min(100, r + 1))}
-              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
-            >
-              +
-            </button>
+              <span className="text-sm text-gray-700">画笔粗细</span>
+              <button
+                onClick={() => setDrawBrushRadius((r) => Math.max(1, r - 1))}
+                className="px-2 py-1 text-xs rounded bg-gray-700 text-white cursor-pointer"
+              >
+                -
+              </button>
+              <span className="text-sm text-gray-800 min-w-[2ch] text-center">
+                {drawBrushRadius}
+              </span>
+              <button
+                onClick={() => setDrawBrushRadius((r) => Math.min(100, r + 1))}
+                className="px-2 py-1 text-xs rounded bg-gray-700 text-white cursor-pointer"
+              >
+                +
+              </button>
 
-            <span className="mx-2 h-5 w-px bg-gray-300" />
+              <span className="mx-2 h-5 w-px bg-gray-300" />
 
-            <span className="text-sm text-gray-700">缩放</span>
-            <button
-              onClick={() => {
-                const next = Math.max(
-                  0.5,
-                  Number((canvasScale - 0.1).toFixed(2))
-                );
-                setCanvasScale(next);
-                try {
-                  setCanvasSize({
-                    width: Math.round(window.innerWidth * next),
-                    height: Math.round(window.innerHeight * next),
-                  });
-                } catch {}
-              }}
-              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
-            >
-              -
-            </button>
-            <span className="text-sm text-gray-800 min-w-[4ch] text-center">
-              {Math.round(canvasScale * 100)}%
-            </span>
-            <button
-              onClick={() => {
-                const next = Math.min(
-                  3,
-                  Number((canvasScale + 0.1).toFixed(2))
-                );
-                setCanvasScale(next);
-                try {
-                  setCanvasSize({
-                    width: Math.round(window.innerWidth * next),
-                    height: Math.round(window.innerHeight * next),
-                  });
-                } catch {}
-              }}
-              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
-            >
-              +
-            </button>
+              <button
+                onClick={() => drawRef.current?.undo?.()}
+                className="px-3 py-1 text-xs rounded bg-yellow-600 text-white cursor-pointer"
+              >
+                撤销
+              </button>
+              <button
+                onClick={() => drawRef.current?.clear?.()}
+                className="px-3 py-1 text-xs rounded bg-red-500 text-white cursor-pointer"
+              >
+                清空
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const dataUrl = drawRef.current?.getDataURL?.("image/png");
+                    if (!dataUrl) return;
+                    const link = document.createElement("a");
+                    link.href = dataUrl;
+                    link.download = `canvas-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  } catch (e) {
+                    console.warn("保存图片失败", e);
+                  }
+                }}
+                className="px-3 py-1 text-xs rounded bg-blue-700 text-white cursor-pointer"
+              >
+                保存图片
+              </button>
+              <span className="mx-2 h-5 w-px bg-gray-300" />
 
-            <span className="mx-2 h-5 w-px bg-gray-300" />
-
-            <button
-              onClick={() => drawRef.current?.undo?.()}
-              className="px-3 py-1 text-xs rounded bg-yellow-600 text-white"
-            >
-              撤销
-            </button>
-            <button
-              onClick={() => drawRef.current?.clear?.()}
-              className="px-3 py-1 text-xs rounded bg-red-700 text-white"
-            >
-              清空
-            </button>
-            <button
-              onClick={() => {
-                try {
-                  const dataUrl = drawRef.current?.getDataURL?.("image/png");
-                  if (!dataUrl) return;
-                  const link = document.createElement("a");
-                  link.href = dataUrl;
-                  link.download = `canvas-${Date.now()}.png`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                } catch (e) {
-                  console.warn("保存图片失败", e);
-                }
-              }}
-              className="px-3 py-1 text-xs rounded bg-blue-700 text-white"
-            >
-              保存图片
-            </button>
+              <button
+                onClick={() => {
+                  try {
+                    setIsDrawingOpen(false);
+                  } catch {}
+                }}
+                className="px-3 py-1 text-xs rounded bg-red-500 text-white cursor-pointer"
+                title="退出画笔"
+              >
+                退出画笔
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
