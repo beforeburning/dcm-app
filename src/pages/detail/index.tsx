@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import CanvasDraw from "react-canvas-draw";
 import { addToast } from "@heroui/toast";
 import * as cornerstone from "@cornerstonejs/core";
 import {
@@ -38,8 +39,6 @@ import {
   ToolGroupManager,
   Enums as ToolsEnums,
   annotation as csToolsAnnotation,
-  BrushTool,
-  segmentation,
 } from "@cornerstonejs/tools";
 import dicomImageLoader, {
   init as dicomImageLoaderInit,
@@ -102,6 +101,13 @@ function DetailPage() {
   const [windowCenter, setWindowCenter] = useState<number>(0); // 窗位
   const [savedAnnotations, setSavedAnnotations] = useState<any[]>([]); // 保存的标注数据
   const [annotationColor, setAnnotationColor] = useState<string>("#00ff00"); // 标注颜色
+  const [canvasSize, setCanvasSize] = useState<{
+    width: number;
+    height: number;
+  }>({
+    width: 0,
+    height: 0,
+  });
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
@@ -111,6 +117,11 @@ function DetailPage() {
   const selectedAnnotationUIDRef = useRef<string | null>(null);
   const lastAddedAnnotationUIDRef = useRef<string | null>(null);
   const isOriginal = useMemo(() => path.includes("original"), [path]);
+  // 覆盖绘图层（react-canvas-draw）相关
+  const drawRef = useRef<any>(null);
+  const [drawBrushColor, setDrawBrushColor] = useState<string>("red");
+  const [drawBrushRadius, setDrawBrushRadius] = useState<number>(10);
+  const [canvasScale, setCanvasScale] = useState<number>(1);
 
   // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
   const printAnnotations = useCallback(async () => {
@@ -556,7 +567,6 @@ function DetailPage() {
         addTool(EllipticalROITool);
         addTool(CircleROITool);
         addTool(ArrowAnnotateTool);
-        addTool(BrushTool);
         addTool(ProbeTool);
         addTool(AngleTool);
         addTool(BidirectionalTool);
@@ -633,7 +643,6 @@ function DetailPage() {
         EllipticalROITool,
         CircleROITool,
         ArrowAnnotateTool,
-        BrushTool,
         ProbeTool,
         AngleTool,
         BidirectionalTool,
@@ -686,57 +695,7 @@ function DetailPage() {
           setActive(ArrowAnnotateTool, primary);
           break;
         case "BrushTool": {
-          setActive(BrushTool, primary);
-
-          try {
-            toolGroup.setToolConfiguration?.(BrushTool.toolName, {
-              brushSize: 1,
-              activeStrategy: "FILL_INSIDE_CIRCLE",
-            });
-          } catch {}
-
-          try {
-            const viewportId = "CT_SAGITTAL_STACK";
-            // 确保分割存在并绑定到视口
-            const segId = `seg-1`;
-            const vp: any = (renderingEngineRef.current as any)?.getViewport?.(
-              viewportId
-            );
-
-            const stackIds: string[] =
-              (typeof vp?.getImageIds === "function" && vp.getImageIds()) ||
-              (imageIds?.length ? imageIds : [imageIds[currentImageIndex]]);
-
-            // 幂等添加/绑定
-            try {
-              segmentation.addSegmentations([
-                {
-                  segmentationId: segId,
-                  representation: {
-                    type: ToolsEnums.SegmentationRepresentations.Labelmap,
-                    data: { imageIds: stackIds?.filter(Boolean) || [] },
-                  },
-                },
-              ]);
-            } catch {}
-
-            try {
-              segmentation.addLabelmapRepresentationToViewport(viewportId, [
-                { segmentationId: segId },
-              ]);
-            } catch {}
-
-            // 画笔配置：红色由段1控制，大小 1
-            try {
-              toolGroup.setToolConfiguration?.(BrushTool.toolName, {
-                brushSize: 1,
-                activeStrategy: "FILL_INSIDE_CIRCLE",
-              });
-            } catch {}
-
-            (renderingEngineRef.current as any)?.render?.();
-          } catch {}
-
+          console.log("BrushTool");
           break;
         }
         case "Probe":
@@ -887,7 +846,6 @@ function DetailPage() {
       toolGroup.addTool(EllipticalROITool.toolName);
       toolGroup.addTool(CircleROITool.toolName);
       toolGroup.addTool(ArrowAnnotateTool.toolName);
-      toolGroup.addTool(BrushTool.toolName);
       toolGroup.addTool(ProbeTool.toolName);
       toolGroup.addTool(AngleTool.toolName);
       toolGroup.addTool(BidirectionalTool.toolName);
@@ -1100,6 +1058,7 @@ function DetailPage() {
           toolGroup.setToolPassive(tool.toolName);
         } catch {}
       };
+
       [
         WindowLevelTool,
         PanTool,
@@ -1109,7 +1068,6 @@ function DetailPage() {
         EllipticalROITool,
         CircleROITool,
         ArrowAnnotateTool,
-        BrushTool,
         ProbeTool,
         AngleTool,
         BidirectionalTool,
@@ -1171,7 +1129,8 @@ function DetailPage() {
           setActive(ArrowAnnotateTool, primary);
           break;
         case "BrushTool":
-          setActive(BrushTool, primary);
+          // setActive(BrushTool, primary);
+          console.log("BrushTool");
           break;
         case "Probe":
           setActive(ProbeTool, primary);
@@ -1684,6 +1643,14 @@ function DetailPage() {
   // 监听窗口尺寸变化，调整视口大小
   useEffect(() => {
     const handleResize = () => {
+      // 更新覆盖绘图层尺寸（CanvasDraw 需要数值尺寸）
+      try {
+        setCanvasSize({
+          width: Math.round(window.innerWidth * canvasScale),
+          height: Math.round(window.innerHeight * canvasScale),
+        });
+      } catch {}
+
       if (renderingEngineRef.current && elementRef.current) {
         try {
           setTimeout(() => {
@@ -1704,12 +1671,20 @@ function DetailPage() {
     // 初始化时也调用一次
     if (isInitialized) {
       setTimeout(handleResize, 200);
+    } else {
+      // 页面初载也设置一次尺寸，防止 0x0 导致第三方库内部未初始化
+      try {
+        setCanvasSize({
+          width: Math.round(window.innerWidth * canvasScale),
+          height: Math.round(window.innerHeight * canvasScale),
+        });
+      } catch {}
     }
 
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [isInitialized]);
+  }, [isInitialized, canvasScale]);
 
   // 定期更新监控参数
   useEffect(() => {
@@ -1847,6 +1822,146 @@ function DetailPage() {
         windowCenter={windowCenter}
         isVisible={!!dcmData && isInitialized}
       />
+
+      <div className="w-full h-full fixed top-0 z-[99999] left-0">
+        {canvasSize.width > 0 && canvasSize.height > 0 && (
+          <CanvasDraw
+            ref={drawRef}
+            canvasWidth={canvasSize.width}
+            canvasHeight={canvasSize.height}
+            brushRadius={drawBrushRadius}
+            brushColor={drawBrushColor}
+            backgroundColor="transparent"
+            lazyRadius={0}
+          />
+        )}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 bg-white/90 border border-gray-200 rounded-lg shadow-md">
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-sm text-gray-700">画笔颜色</span>
+            <input
+              type="color"
+              value={drawBrushColor}
+              onChange={(e) => setDrawBrushColor(e.target.value)}
+              className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+              title="选择画笔颜色"
+            />
+            <button
+              onClick={() => setDrawBrushColor("#ff0000")}
+              className="px-2 py-1 text-xs rounded bg-red-600 text-white"
+            >
+              红
+            </button>
+            <button
+              onClick={() => setDrawBrushColor("#00aa00")}
+              className="px-2 py-1 text-xs rounded bg-green-600 text-white"
+            >
+              绿
+            </button>
+            <button
+              onClick={() => setDrawBrushColor("#0077ff")}
+              className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
+            >
+              蓝
+            </button>
+
+            <span className="mx-2 h-5 w-px bg-gray-300" />
+
+            <span className="text-sm text-gray-700">画笔粗细</span>
+            <button
+              onClick={() => setDrawBrushRadius((r) => Math.max(1, r - 1))}
+              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
+            >
+              -
+            </button>
+            <span className="text-sm text-gray-800 min-w-[2ch] text-center">
+              {drawBrushRadius}
+            </span>
+            <button
+              onClick={() => setDrawBrushRadius((r) => Math.min(100, r + 1))}
+              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
+            >
+              +
+            </button>
+
+            <span className="mx-2 h-5 w-px bg-gray-300" />
+
+            <span className="text-sm text-gray-700">缩放</span>
+            <button
+              onClick={() => {
+                const next = Math.max(
+                  0.5,
+                  Number((canvasScale - 0.1).toFixed(2))
+                );
+                setCanvasScale(next);
+                try {
+                  setCanvasSize({
+                    width: Math.round(window.innerWidth * next),
+                    height: Math.round(window.innerHeight * next),
+                  });
+                } catch {}
+              }}
+              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
+            >
+              -
+            </button>
+            <span className="text-sm text-gray-800 min-w-[4ch] text-center">
+              {Math.round(canvasScale * 100)}%
+            </span>
+            <button
+              onClick={() => {
+                const next = Math.min(
+                  3,
+                  Number((canvasScale + 0.1).toFixed(2))
+                );
+                setCanvasScale(next);
+                try {
+                  setCanvasSize({
+                    width: Math.round(window.innerWidth * next),
+                    height: Math.round(window.innerHeight * next),
+                  });
+                } catch {}
+              }}
+              className="px-2 py-1 text-xs rounded bg-gray-700 text-white"
+            >
+              +
+            </button>
+
+            <span className="mx-2 h-5 w-px bg-gray-300" />
+
+            <button
+              onClick={() => drawRef.current?.undo?.()}
+              className="px-3 py-1 text-xs rounded bg-yellow-600 text-white"
+            >
+              撤销
+            </button>
+            <button
+              onClick={() => drawRef.current?.clear?.()}
+              className="px-3 py-1 text-xs rounded bg-red-700 text-white"
+            >
+              清空
+            </button>
+            <button
+              onClick={() => {
+                try {
+                  const dataUrl = drawRef.current?.getDataURL?.("image/png");
+                  if (!dataUrl) return;
+                  const link = document.createElement("a");
+                  link.href = dataUrl;
+                  link.download = `canvas-${Date.now()}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } catch (e) {
+                  console.warn("保存图片失败", e);
+                }
+              }}
+              className="px-3 py-1 text-xs rounded bg-blue-700 text-white"
+            >
+              保存图片
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
