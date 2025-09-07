@@ -108,6 +108,7 @@ function DetailPage() {
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
   const initialParallelScaleRef = useRef<number | null>(null);
+  const reapplyActiveToolRef = useRef<() => void>(() => {});
   const selectedAnnotationUIDRef = useRef<string | null>(null);
   const lastAddedAnnotationUIDRef = useRef<string | null>(null);
   const isOriginal = useMemo(() => path.includes("original"), [path]);
@@ -800,9 +801,33 @@ function DetailPage() {
           } catch {}
           break;
       }
+
+      // 保持中键=平移、右键=缩放 一直可用
+      try {
+        toolGroup.setToolActive(PanTool.toolName, {
+          bindings: [{ mouseButton: MouseBindings.Auxiliary }],
+        });
+      } catch {}
+      try {
+        toolGroup.setToolActive(ZoomTool.toolName, {
+          bindings: [{ mouseButton: MouseBindings.Secondary }],
+        });
+      } catch {}
     } catch (e) {
       console.warn("重新应用工具失败", e);
     }
+  }, [activeTool]);
+
+  // 始终持有最新的 reapplyActiveTool 引用，避免被依赖触发重新加载
+  useEffect(() => {
+    reapplyActiveToolRef.current = reapplyActiveTool;
+  }, [reapplyActiveTool]);
+
+  // 当 UI 选择的工具变化时，立即应用到工具组
+  useEffect(() => {
+    try {
+      reapplyActiveToolRef.current?.();
+    } catch {}
   }, [activeTool]);
 
   // 加载和渲染 DICOM 文件
@@ -938,7 +963,9 @@ function DetailPage() {
       renderingEngine.render();
 
       // 重新应用当前激活工具，避免被重置为窗位
-      reapplyActiveTool();
+      try {
+        reapplyActiveToolRef.current?.();
+      } catch {}
 
       // 记录初始 parallelScale 作为缩放基准
       try {
@@ -964,19 +991,23 @@ function DetailPage() {
     } finally {
       if (seq === loadSeqRef.current) setIsLoading(false);
     }
-  }, [isInitialized, dcmData, imageIds, currentImageIndex, reapplyActiveTool]);
+  }, [isInitialized, dcmData, imageIds, currentImageIndex]);
 
   // 切换工具
-  const switchTool = useCallback((toolName) => {
-    if (!toolGroupRef.current) return;
+  const switchTool = useCallback(
+    (toolName) => {
+      if (!toolGroupRef.current) return;
 
-    if (isOriginal && userInfo.role === 3) {
-      addToast({ color: "danger", description: "您没有权限编辑原始数据" });
-      return;
-    }
+      const role = (userInfo as any)?.role;
+      if (isOriginal && role === 3) {
+        addToast({ color: "danger", description: "您没有权限编辑原始数据" });
+        return;
+      }
 
-    setActiveTool(toolName);
-  }, []);
+      setActiveTool(toolName);
+    },
+    [isOriginal, userInfo]
+  );
 
   // 删除当前选中的标注
   const handleDeleteAnnotation = useCallback(() => {
