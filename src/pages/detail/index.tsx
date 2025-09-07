@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import CanvasDraw from "react-canvas-draw";
+import DrawingOverlay from "./components/DrawingOverlay";
 import { addToast } from "@heroui/toast";
 import * as cornerstone from "@cornerstonejs/core";
 import {
@@ -51,7 +51,6 @@ import {
 } from "@/api/dcm";
 import { errorHandler } from "@/utils/errorHandler";
 
-import { getDicomMetadata } from "@/utils/dicomMetadata";
 import TopBar from "./components/TopBar";
 import ToolBar from "./components/ToolBar";
 import StatusBanners from "./components/StatusBanners";
@@ -68,12 +67,19 @@ import {
   Annotation,
   Annotations,
 } from "@cornerstonejs/tools/types/AnnotationTypes";
-import deepMerge from "@cornerstonejs/core/utilities/deepMerge";
 
 const { ViewportType } = Enums;
 const { MouseBindings } = ToolsEnums;
 
-// 工具显示与说明已拆分到组件内部
+// 可选：把 #rrggbb 转 rgb(r,g,b)
+function hexToRgb(hex: string) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return hex;
+  return `rgb(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(
+    m[3],
+    16
+  )})`;
+}
 
 function DetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -94,34 +100,18 @@ function DetailPage() {
 
   const [imageIds, setImageIds] = useState<string[]>([]); // 图像 ID列表
   const [isImageControlExpanded, setIsImageControlExpanded] = useState(true); // 图像切换控件展开状态
-  const [dicomMetadata, setDicomMetadata] = useState<any>(null); // DICOM 元数据
-  const [frameRate, setFrameRate] = useState<number>(0); // FPS
   const [zoom, setZoom] = useState<number>(1); // 缩放
-  const [windowWidth, setWindowWidth] = useState<number>(0); // 窗宽
-  const [windowCenter, setWindowCenter] = useState<number>(0); // 窗位
   const [savedAnnotations, setSavedAnnotations] = useState<any[]>([]); // 保存的标注数据
   const [annotationColor, setAnnotationColor] = useState<string>("#00ff00"); // 标注颜色
-  const [canvasSize, setCanvasSize] = useState<{
-    width: number;
-    height: number;
-  }>({
-    width: 0,
-    height: 0,
-  });
+
   const renderingEngineRef = useRef(null);
   const toolGroupRef = useRef(null); // 保存工具组引用
   const loadSeqRef = useRef(0); // 加载序列，用于防止并发操作导致的已销毁实例访问
-  const viewportListenerCleanupRef = useRef<(() => void) | null>(null);
-  const lastRenderTsRef = useRef<number>(0);
   const initialParallelScaleRef = useRef<number | null>(null);
   const selectedAnnotationUIDRef = useRef<string | null>(null);
   const lastAddedAnnotationUIDRef = useRef<string | null>(null);
   const isOriginal = useMemo(() => path.includes("original"), [path]);
-  // 覆盖绘图层（react-canvas-draw）相关
-  const drawRef = useRef<any>(null);
-  const [drawBrushColor, setDrawBrushColor] = useState<string>("red");
-  const [drawBrushRadius, setDrawBrushRadius] = useState<number>(10);
-  const [canvasScale, setCanvasScale] = useState<number>(1);
+  // 覆盖绘图层开关
   const [isDrawingOpen, setIsDrawingOpen] = useState<boolean>(false);
 
   // 打印并保存当前注释/测量 JSON（仅工具绘制数据）
@@ -383,24 +373,6 @@ function DetailPage() {
 
           renderingEngine.render();
           setCurrentImageIndex(index);
-
-          // 获取 DICOM 元数据
-          try {
-            const metadata = await getDicomMetadata(
-              imageIds[index],
-              renderingEngine
-            );
-
-            setDicomMetadata(metadata);
-          } catch (error) {
-            console.warn("获取 DICOM 元数据失败:", error);
-            setDicomMetadata(null);
-          }
-
-          // 更新监控参数
-          setTimeout(() => {
-            updateMonitoringParameters();
-          }, 50);
 
           console.log(`已切换到第 ${index + 1} 张图像`);
         }
@@ -828,11 +800,6 @@ function DetailPage() {
           } catch {}
           break;
       }
-
-      // 渲染以确保立即生效
-      try {
-        (renderingEngineRef.current as any)?.render?.();
-      } catch {}
     } catch (e) {
       console.warn("重新应用工具失败", e);
     }
@@ -876,21 +843,6 @@ function DetailPage() {
       };
 
       renderingEngine.enableElement(viewportInput);
-
-      // 等待DOM更新后调整尺寸
-      setTimeout(() => {
-        try {
-          if (seq !== loadSeqRef.current) return;
-          renderingEngine.resize(true);
-          const vp = renderingEngine.getViewport(viewportId);
-          if (vp && typeof (vp as any).resetCamera === "function") {
-            (vp as any).resetCamera();
-          }
-          renderingEngine.render();
-        } catch (e) {
-          console.warn("调整渲染引擎尺寸失败:", e);
-        }
-      }, 50);
 
       // 获取视口
       const viewport = renderingEngine.getViewport(viewportId);
@@ -941,17 +893,6 @@ function DetailPage() {
       toolGroup.addTool(CircleScissorsTool.toolName);
       toolGroup.addTool(SphereScissorsTool.toolName);
       toolGroup.addTool(LabelTool.toolName);
-
-      // 设置工具为激活状态
-      toolGroup.setToolActive(WindowLevelTool.toolName, {
-        bindings: [{ mouseButton: MouseBindings.Primary }],
-      });
-      toolGroup.setToolActive(PanTool.toolName, {
-        bindings: [{ mouseButton: MouseBindings.Auxiliary }],
-      });
-      toolGroup.setToolActive(ZoomTool.toolName, {
-        bindings: [{ mouseButton: MouseBindings.Secondary }],
-      });
 
       // 将工具组添加到视口
       toolGroup.addViewport(viewportId, renderingEngineId);
@@ -1009,98 +950,6 @@ function DetailPage() {
         }
       } catch {}
 
-      // 绑定视口监听，实时更新 Zoom/FPS/WW/WL
-      try {
-        // 清理旧监听
-        viewportListenerCleanupRef.current?.();
-        const re: any = renderingEngine;
-        const vp: any = viewport;
-
-        const computeZoom = () => {
-          // 优先使用 getScale，如果可用
-          const s = vp?.getScale?.();
-          if (typeof s === "number" && s > 0) return s;
-          // 否则用 parallelScale 的相对比值
-          const cam = vp?.getCamera?.();
-          const ps = cam?.parallelScale;
-          const base = initialParallelScaleRef.current;
-          if (
-            typeof ps === "number" &&
-            ps > 0 &&
-            typeof base === "number" &&
-            base > 0
-          ) {
-            return base / ps;
-          }
-          return 1;
-        };
-
-        const handleRendered = () => {
-          // FPS 估算
-          const now = performance.now();
-          if (lastRenderTsRef.current) {
-            const delta = now - lastRenderTsRef.current;
-            if (delta > 0) setFrameRate(1000 / delta);
-          }
-          lastRenderTsRef.current = now;
-
-          // Zoom
-          const z = computeZoom();
-          if (!Number.isNaN(z) && Number.isFinite(z)) setZoom(z);
-
-          // WW/WL from viewport options
-          const opts = vp?.getViewportOptions?.();
-          const ww = opts?.voi?.windowWidth;
-          const wc = opts?.voi?.windowCenter;
-          if (typeof ww === "number") setWindowWidth(ww);
-          if (typeof wc === "number") setWindowCenter(wc);
-        };
-
-        const handleCameraChange = () => {
-          const z = computeZoom();
-          if (!Number.isNaN(z) && Number.isFinite(z)) setZoom(z);
-        };
-
-        // Cornerstone v3 视口事件（使用 Enums.Events）
-        try {
-          const EV = Enums?.Events || ({} as any);
-          const RENDERED = EV.VIEWPORT_RENDERED || "rendered";
-          const CAMERA = EV.CAMERA_MODIFIED || "cameraModified";
-          const VOI = EV.VOI_MODIFIED || "voiModified";
-
-          vp?.addEventListener?.(RENDERED, handleRendered);
-          vp?.addEventListener?.(CAMERA, handleCameraChange);
-          vp?.addEventListener?.(VOI, handleRendered);
-
-          // 立即触发一次，确保初始值正确
-          handleRendered();
-
-          viewportListenerCleanupRef.current = () => {
-            try {
-              vp?.removeEventListener?.(RENDERED, handleRendered);
-              vp?.removeEventListener?.(CAMERA, handleCameraChange);
-              vp?.removeEventListener?.(VOI, handleRendered);
-            } catch {}
-          };
-        } catch {}
-      } catch (e) {
-        console.warn("绑定视口监听失败（可忽略）", e);
-      }
-
-      // 获取第一张图像的 DICOM 元数据
-      try {
-        if (currentImageIds.length > 0) {
-          const metadata = await getDicomMetadata(
-            currentImageIds[0],
-            renderingEngine
-          );
-          setDicomMetadata(metadata);
-        }
-      } catch (error) {
-        console.warn("获取初始 DICOM 元数据失败:", error);
-        setDicomMetadata(null);
-      }
-
       // 恢复保存的标注数据
       if (savedAnnotations.length > 0) {
         console.log("🚀开始恢复标注数据...");
@@ -1121,237 +970,12 @@ function DetailPage() {
   const switchTool = useCallback((toolName) => {
     if (!toolGroupRef.current) return;
 
-    try {
-      const toolGroup: any = toolGroupRef.current;
-
-      // 删除为一次性动作，不改变当前工具
-      if (toolName === "DeleteAnnotation") {
-        handleDeleteAnnotation();
-        return;
-      }
-
-      // 将所有工具设为被动
-      const maybePassive = (tool: any) => {
-        try {
-          toolGroup.setToolPassive(tool.toolName);
-        } catch {}
-      };
-
-      [
-        WindowLevelTool,
-        PanTool,
-        ZoomTool,
-        LengthTool,
-        RectangleROITool,
-        EllipticalROITool,
-        CircleROITool,
-        ArrowAnnotateTool,
-        ProbeTool,
-        AngleTool,
-        BidirectionalTool,
-        PlanarFreehandROITool,
-        CobbAngleTool,
-        RectangleROIStartEndThresholdTool,
-        RectangleROIThresholdTool,
-        SplineROITool,
-        LivewireContourTool,
-        MagnifyTool,
-        OverlayGridTool,
-        AdvancedMagnifyTool,
-        UltrasoundDirectionalTool,
-        RectangleScissorsTool,
-        CircleScissorsTool,
-        SphereScissorsTool,
-        LabelTool,
-      ].forEach(maybePassive);
-
-      // 切换工具前，清理多重选中，保证单选语义
-      try {
-        deselectAllAnnotations();
-      } catch {}
-
-      // 依据工具设置正确的鼠标绑定
-      const primary = [{ mouseButton: MouseBindings.Primary }];
-
-      const setActive = (tool: any, bindings: any) => {
-        try {
-          toolGroup.setToolActive(tool.toolName, { bindings });
-        } catch {}
-      };
-
-      switch (toolName) {
-        case "WindowLevel":
-          setActive(WindowLevelTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Pan":
-          // 显式选择平移时，使用左键拖拽更直观
-          setActive(PanTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Zoom":
-          // 显式选择缩放时，使用左键拖拽更直观
-          setActive(ZoomTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Length":
-          setActive(LengthTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "RectangleROI":
-          setActive(RectangleROITool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "EllipticalROI":
-          setActive(EllipticalROITool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "CircleROI":
-          setActive(CircleROITool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "ArrowAnnotate":
-          setActive(ArrowAnnotateTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "BrushTool":
-          // setActive(BrushTool, primary);
-          try {
-            setIsDrawingOpen(true);
-          } catch {}
-          break;
-        case "Probe":
-          setActive(ProbeTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Angle":
-          setActive(AngleTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Bidirectional":
-          setActive(BidirectionalTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "PlanarFreehandROI":
-          setActive(PlanarFreehandROITool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "CobbAngle":
-          setActive(CobbAngleTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "RectangleROIStartEndThreshold":
-          setActive(RectangleROIStartEndThresholdTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "RectangleROIThreshold":
-          setActive(RectangleROIThresholdTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "SplineROI":
-          setActive(SplineROITool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "LivewireContour":
-          setActive(LivewireContourTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Magnify":
-          setActive(MagnifyTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "OverlayGrid":
-          setActive(OverlayGridTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "AdvancedMagnify":
-          setActive(AdvancedMagnifyTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "UltrasoundDirectional":
-          setActive(UltrasoundDirectionalTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "RectangleScissors":
-          setActive(RectangleScissorsTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "CircleScissors":
-          setActive(CircleScissorsTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "SphereScissors":
-          setActive(SphereScissorsTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-        case "Label":
-          setActive(LabelTool, primary);
-          try {
-            setIsDrawingOpen(false);
-          } catch {}
-          break;
-      }
-
-      setActiveTool(toolName);
-
-      // 切换后强制渲染以确保生效
-      try {
-        const re = renderingEngineRef.current as any;
-        re?.render?.();
-      } catch {}
-
-      console.log(`已切换到工具: ${toolName}`);
-    } catch (error) {
-      console.error("切换工具失败:", error);
+    if (isOriginal && userInfo.role === 3) {
+      addToast({ color: "danger", description: "您没有权限编辑原始数据" });
+      return;
     }
+
+    setActiveTool(toolName);
   }, []);
 
   // 删除当前选中的标注
@@ -1608,8 +1232,6 @@ function DetailPage() {
           // 验证标注是否真的被添加了
           console.log(`🚀标注 ${annotationUID} 已添加到状态`);
 
-          // 不主动触发“添加事件”，避免触发默认的选中/高亮副作用
-
           // 如果保存数据里带有颜色，使用新的 UID 恢复该颜色
           try {
             const savedStyle = (annotation as any)?.data?.style;
@@ -1665,7 +1287,7 @@ function DetailPage() {
             }
 
             // 恢复后统一取消选中，避免多选
-            // deselectAllAnnotations();
+            deselectAllAnnotations();
 
             // 强制重新渲染
             renderingEngineRef.current.render();
@@ -1686,53 +1308,6 @@ function DetailPage() {
       console.error("🚀恢复标注数据失败:", error);
     }
   };
-
-  // 更新监控参数
-  const updateMonitoringParameters = useCallback(() => {
-    if (!renderingEngineRef.current) return;
-
-    try {
-      const renderingEngine = renderingEngineRef.current;
-      const viewport: any = renderingEngine.getViewport("CT_SAGITTAL_STACK");
-
-      if (viewport) {
-        // Zoom 优先从 getScale 获取，其次通过 parallelScale 基准比值计算
-        let z: number | undefined;
-        const s = viewport?.getScale?.();
-        if (typeof s === "number" && s > 0) {
-          z = s;
-        } else {
-          const cam = viewport?.getCamera?.();
-          const ps = cam?.parallelScale;
-          const base = initialParallelScaleRef.current;
-          if (
-            typeof ps === "number" &&
-            ps > 0 &&
-            typeof base === "number" &&
-            base > 0
-          ) {
-            z = base / ps;
-          }
-        }
-        if (typeof z === "number" && Number.isFinite(z)) setZoom(z);
-
-        // 窗宽窗位
-        const viewportOptions = viewport?.getViewportOptions?.();
-        if (viewportOptions) {
-          if (typeof viewportOptions.voi?.windowWidth === "number") {
-            setWindowWidth(viewportOptions.voi.windowWidth);
-          }
-          if (typeof viewportOptions.voi?.windowCenter === "number") {
-            setWindowCenter(viewportOptions.voi.windowCenter);
-          }
-        }
-
-        // 渲染时间：不强制触发渲染，避免循环
-      }
-    } catch (error) {
-      console.warn("更新监控参数失败:", error);
-    }
-  }, []);
 
   // 初始化完成后自动加载（取消上一次未完成的加载）
   useEffect(() => {
@@ -1785,27 +1360,9 @@ function DetailPage() {
     handleDeleteAnnotation,
   ]);
 
-  // 可选：把 #rrggbb 转 rgb(r,g,b)
-  function hexToRgb(hex: string) {
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!m) return hex;
-    return `rgb(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(
-      m[3],
-      16
-    )})`;
-  }
-
   // 监听窗口尺寸变化，调整视口大小
   useEffect(() => {
     const handleResize = () => {
-      // 更新覆盖绘图层尺寸（CanvasDraw 需要数值尺寸）
-      try {
-        setCanvasSize({
-          width: Math.round(window.innerWidth * canvasScale),
-          height: Math.round(window.innerHeight * canvasScale),
-        });
-      } catch {}
-
       if (renderingEngineRef.current && elementRef.current) {
         try {
           setTimeout(() => {
@@ -1826,31 +1383,12 @@ function DetailPage() {
     // 初始化时也调用一次
     if (isInitialized) {
       setTimeout(handleResize, 200);
-    } else {
-      // 页面初载也设置一次尺寸，防止 0x0 导致第三方库内部未初始化
-      try {
-        setCanvasSize({
-          width: Math.round(window.innerWidth * canvasScale),
-          height: Math.round(window.innerHeight * canvasScale),
-        });
-      } catch {}
     }
 
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [isInitialized, canvasScale]);
-
-  // 定期更新监控参数
-  useEffect(() => {
-    if (!isInitialized || !renderingEngineRef.current) return;
-
-    const interval = setInterval(() => {
-      updateMonitoringParameters();
-    }, 100); // 每100ms更新一次
-
-    return () => clearInterval(interval);
-  }, [isInitialized, updateMonitoringParameters]);
+  }, [isInitialized]);
 
   // 监听标注颜色变化，更新工具组配置
   useEffect(() => {
@@ -1859,11 +1397,6 @@ function DetailPage() {
     }
   }, [annotationColor, isInitialized, changeAnnotationColor]);
 
-  // 处理复制数据
-  const [loading, setLoading] = useState<{
-    copy: boolean;
-    delete: boolean;
-  }>({ copy: false, delete: false });
   // 获取数据名称
   const getDataName = (
     data: StudentCopyDataDetail | OriginalDataDetail
@@ -1872,6 +1405,7 @@ function DetailPage() {
     if ("copy_name" in data) return data.copy_name;
     return "未知数据";
   };
+
   const handleCopyData = async () => {
     if (!userInfo?.user_id) {
       addToast({
@@ -1881,7 +1415,6 @@ function DetailPage() {
       return;
     }
 
-    setLoading((prev) => ({ ...prev, copy: true }));
     try {
       const res = await copyPublicDataToPrivateRequest({
         original_id: dcmData.original_id,
@@ -1899,7 +1432,6 @@ function DetailPage() {
     } catch (error) {
       errorHandler.handleApiError(error, "复制失败");
     } finally {
-      setLoading((prev) => ({ ...prev, copy: false }));
     }
   };
 
@@ -1964,140 +1496,27 @@ function DetailPage() {
           (dcmData as any)?.files?.[currentImageIndex] ||
           (dcmData as any)?.original_data?.files?.[currentImageIndex]
         }
-        dicomMetadata={dicomMetadata}
       />
 
       {/* 实时监控面板 */}
       <ParameterMonitoringPanel
         currentImageIndex={currentImageIndex + 1}
         totalImages={imageIds.length}
-        frameRate={frameRate}
         zoom={zoom}
-        windowWidth={windowWidth}
-        windowCenter={windowCenter}
         isVisible={!!dcmData && isInitialized}
       />
 
-      {isDrawingOpen && (
-        <div className="w-full h-full fixed top-0 z-[99999] left-0">
-          {canvasSize.width > 0 && canvasSize.height > 0 && (
-            <CanvasDraw
-              ref={drawRef}
-              canvasWidth={canvasSize.width}
-              canvasHeight={canvasSize.height}
-              brushRadius={drawBrushRadius}
-              brushColor={drawBrushColor}
-              backgroundColor="transparent"
-              lazyRadius={0}
-              hideGrid
-            />
-          )}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 bg-white/90 border border-gray-200 rounded-lg shadow-md">
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-sm text-gray-700">画笔颜色</span>
-              <input
-                type="color"
-                value={drawBrushColor}
-                onChange={(e) => setDrawBrushColor(e.target.value)}
-                className="w-8 h-8 rounded border border-gray-300 cursor-pointer bg-white"
-                title="选择画笔颜色"
-              />
-              <button
-                onClick={() => setDrawBrushColor("#ff0000")}
-                className="px-2 py-1 text-xs rounded bg-red-600 text-white cursor-pointer"
-              >
-                红
-              </button>
-              <button
-                onClick={() => setDrawBrushColor("#00aa00")}
-                className="px-2 py-1 text-xs rounded bg-green-600 text-white cursor-pointer"
-              >
-                绿
-              </button>
-              <button
-                onClick={() => setDrawBrushColor("#0077ff")}
-                className="px-2 py-1 text-xs rounded bg-blue-600 text-white cursor-pointer"
-              >
-                蓝
-              </button>
-
-              <span className="mx-2 h-5 w-px bg-gray-300" />
-
-              <span className="text-sm text-gray-700">画笔粗细</span>
-              <button
-                onClick={() => setDrawBrushRadius((r) => Math.max(1, r - 1))}
-                className="px-2 py-1 text-xs rounded bg-gray-700 text-white cursor-pointer"
-              >
-                -
-              </button>
-              <span className="text-sm text-gray-800 min-w-[2ch] text-center">
-                {drawBrushRadius}
-              </span>
-              <button
-                onClick={() => setDrawBrushRadius((r) => Math.min(100, r + 1))}
-                className="px-2 py-1 text-xs rounded bg-gray-700 text-white cursor-pointer"
-              >
-                +
-              </button>
-
-              <span className="mx-2 h-5 w-px bg-gray-300" />
-
-              <button
-                onClick={() => drawRef.current?.undo?.()}
-                className="px-3 py-1 text-xs rounded bg-yellow-600 text-white cursor-pointer"
-              >
-                撤销
-              </button>
-              <button
-                onClick={() => drawRef.current?.clear?.()}
-                className="px-3 py-1 text-xs rounded bg-red-500 text-white cursor-pointer"
-              >
-                清空
-              </button>
-              <button
-                onClick={() => {
-                  try {
-                    const dataUrl = drawRef.current?.getDataURL?.("image/png");
-                    if (!dataUrl) return;
-                    const rawTitle = dcmData ? getDataName(dcmData) : "DICOM";
-                    const safeTitle = String(rawTitle)
-                      .replace(/[\\/:*?"<>|]/g, "_")
-                      .replace(/\s+/g, "_");
-                    const idx = (currentImageIndex || 0) + 1;
-                    const ts = Date.now();
-                    const filename = `${safeTitle}-图像${idx}-${ts}.png`;
-                    const link = document.createElement("a");
-                    link.href = dataUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  } catch (e) {
-                    console.warn("保存图片失败", e);
-                  }
-                }}
-                className="px-3 py-1 text-xs rounded bg-blue-700 text-white cursor-pointer"
-              >
-                保存图片
-              </button>
-              <span className="mx-2 h-5 w-px bg-gray-300" />
-
-              <button
-                onClick={() => {
-                  try {
-                    setIsDrawingOpen(false);
-                    switchTool("WindowLevel");
-                  } catch {}
-                }}
-                className="px-3 py-1 text-xs rounded bg-red-500 text-white cursor-pointer"
-                title="退出画笔"
-              >
-                退出画笔
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DrawingOverlay
+        open={isDrawingOpen}
+        title={(dcmData as any)?.name || (dcmData as any)?.copy_name || "DICOM"}
+        imageIndex={currentImageIndex}
+        onClose={() => {
+          try {
+            setIsDrawingOpen(false);
+            switchTool("WindowLevel");
+          } catch {}
+        }}
+      />
     </div>
   );
 }

@@ -16,8 +16,6 @@ export default function ParameterMonitoringPanel({
   totalImages,
   frameRate = 0,
   zoom = 1,
-  windowWidth = 0,
-  windowCenter = 0,
   renderTime = 0,
   isVisible = true,
 }: ParameterMonitoringPanelProps) {
@@ -47,15 +45,6 @@ export default function ParameterMonitoringPanel({
           <span className="text-gray-300">Zoom:</span>
           <em className="text-white font-mono">
             {zoom ? zoom.toFixed(2) : "1.00"}
-          </em>
-        </div>
-
-        {/* 窗宽窗位 */}
-        <div className="flex justify-between items-center">
-          <span className="text-gray-300">WW/WL:</span>
-          <em className="text-white font-mono">
-            {windowWidth ? windowWidth.toFixed(0) : "0"}/
-            {windowCenter ? windowCenter.toFixed(0) : "0"}
           </em>
         </div>
 
