@@ -1989,6 +1989,7 @@ function DetailPage() {
               brushColor={drawBrushColor}
               backgroundColor="transparent"
               lazyRadius={0}
+              hideGrid
             />
           )}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 bg-white/90 border border-gray-200 rounded-lg shadow-md">
@@ -2058,9 +2059,16 @@ function DetailPage() {
                   try {
                     const dataUrl = drawRef.current?.getDataURL?.("image/png");
                     if (!dataUrl) return;
+                    const rawTitle = dcmData ? getDataName(dcmData) : "DICOM";
+                    const safeTitle = String(rawTitle)
+                      .replace(/[\\/:*?"<>|]/g, "_")
+                      .replace(/\s+/g, "_");
+                    const idx = (currentImageIndex || 0) + 1;
+                    const ts = Date.now();
+                    const filename = `${safeTitle}-图像${idx}-${ts}.png`;
                     const link = document.createElement("a");
                     link.href = dataUrl;
-                    link.download = `canvas-${Date.now()}.png`;
+                    link.download = filename;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -2078,6 +2086,7 @@ function DetailPage() {
                 onClick={() => {
                   try {
                     setIsDrawingOpen(false);
+                    switchTool("WindowLevel");
                   } catch {}
                 }}
                 className="px-3 py-1 text-xs rounded bg-red-500 text-white cursor-pointer"
