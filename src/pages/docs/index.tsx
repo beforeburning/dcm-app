@@ -3,36 +3,36 @@ import { useNavigate } from "react-router-dom";
 
 export default function DocsPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"list" | "cards">("list");
+  const [mode, setMode] = useState<"list" | "cards">("cards");
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const cards = [
     {
-      title: "胸部X光数据集",
-      desc: "常用于胸部异常检测和分类。",
+      title: "X光数据集",
+      desc: "常用于异常检测和分类。",
       key: "xray",
       img: "/images/Rectangle 16.png",
     },
     {
-      title: "腹部CT数据集",
+      title: "CT数据集",
       desc: "脏器分割、肿瘤检测等任务。",
       key: "ct",
       img: "/images/Rectangle 16-1.png",
     },
     {
-      title: "脑部MRI数据集",
+      title: "MRI数据集",
       desc: "多序列病灶分割与诊断研究。",
       key: "mri",
       img: "/images/Rectangle 16-2.png",
     },
     {
-      title: "心脏超声数据集",
-      desc: "心腔测量与功能评估。",
+      title: "超声数据集",
+      desc: "测量与功能评估。",
       key: "us",
       img: "/images/Rectangle 16-3.png",
     },
     {
       title: "全身PET-CT数据集",
-      desc: "代谢与解剖信息联合分析。",
+      desc: "信息联合分析。",
       key: "petct",
       img: "/images/Rectangle 16-4.png",
     },
@@ -45,7 +45,7 @@ export default function DocsPage() {
   ];
 
   const tableRows = Array.from({ length: 10 }).map((_, idx) => {
-    const name = `FILE0肝部CT-XXX`;
+    const name = `FILE0CT-XXX`;
     const createdAt = `2025-08-18 12:00:19`;
     const annotated = idx % 3 !== 1;
     const annotatedAt = annotated ? `2025-08-19 12:00:19` : `——`;
@@ -83,7 +83,49 @@ export default function DocsPage() {
         </aside>
 
         <section className="flex-1">
-          {mode === "list" ? (
+          {mode === "cards" ? (
+            <>
+              <div className="flex items-center justify-between mb-4 mt-2">
+                <div className="text-lg font-semibold text-gray-900">
+                  数据文档 · 专题
+                </div>
+                <button
+                  className="px-3 py-1.5 text-xs rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-pointer"
+                  onClick={() => setMode("list")}
+                >
+                  返回列表
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {cards.map((c) => (
+                  <div
+                    key={c.key}
+                    className="bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition"
+                    onClick={() => setMode("list")}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100 text-sm font-medium text-gray-800 flex items-center gap-2">
+                      <span className="w-1 h-4 bg-blue-600 rounded-sm inline-block" />
+                      {c.title}
+                    </div>
+                    <div className="p-4">
+                      <div className="aspect-[16/10] bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                        <img
+                          src={c.img as string}
+                          alt={c.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-xs leading-6 text-gray-500">
+                        {c.desc}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
             <div className="mt-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -158,8 +200,8 @@ export default function DocsPage() {
                               className="text-blue-600 hover:text-blue-700 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setMode("cards");
                                 setMenuOpenId(null);
+                                navigate(`/detail/${row.id}`);
                               }}
                             >
                               查看
@@ -209,48 +251,6 @@ export default function DocsPage() {
                 </table>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4 mt-2">
-                <div className="text-lg font-semibold text-gray-900">
-                  数据文档 · 专题
-                </div>
-                <button
-                  className="px-3 py-1.5 text-xs rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-pointer"
-                  onClick={() => setMode("list")}
-                >
-                  返回列表
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {cards.map((c) => (
-                  <div
-                    key={c.key}
-                    className="bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition"
-                    onClick={() => navigate("/original/9")}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="px-4 py-3 border-b border-gray-100 text-sm font-medium text-gray-800 flex items-center gap-2">
-                      <span className="w-1 h-4 bg-blue-600 rounded-sm inline-block" />
-                      {c.title}
-                    </div>
-                    <div className="p-4">
-                      <div className="aspect-[16/10] bg-gray-100 rounded-lg mb-3 overflow-hidden">
-                        <img
-                          src={c.img as string}
-                          alt={c.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="text-xs leading-6 text-gray-500">
-                        {c.desc}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
           )}
         </section>
       </div>
