@@ -13,7 +13,9 @@ function LoginPage(): React.JSX.Element {
       <div className="max-w-xl w-full mx-auto p-8">
         {/* Logo 区域 */}
         <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold text-white">智慧诊疗 v1.5</h1>
+          <h1 className="text-3xl font-bold text-white">
+            医学图像信息管理与标注系统
+          </h1>
         </div>
 
         <div className="bg-gray-800 rounded-lg p-6">

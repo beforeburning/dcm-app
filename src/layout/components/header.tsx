@@ -153,7 +153,9 @@ const HeaderComponents = (): React.JSX.Element => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white text-sm font-bold">智</span>
               </div>
-              <h1 className="text-xl font-bold text-white">智慧诊疗 v1.5</h1>
+              <h1 className="text-xl font-bold text-white">
+                医学图像信息管理与标注系统
+              </h1>
             </div>
           </div>
 
